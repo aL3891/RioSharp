@@ -30,14 +30,7 @@ namespace RioSharp
             _currentInputSegment = null;
 
         }
-
-        public override void Close()
-        {
-            Imports.closesocket(_socket);
-            Imports.ThrowLastWSAError();
-            //destroy the queue?
-        }
-
+        
         public void WritePreAllocated(RIO_BUFSEGMENT Segment)
         {
             _pool.WritePreAllocated(Segment, _requestQueue);
@@ -146,6 +139,8 @@ namespace RioSharp
         protected override void Dispose(bool disposing)
         {
             Flush(false);
+            Imports.closesocket(_socket);
+            Imports.ThrowLastWSAError();
             _pool.ReciveBufferPool.ReleaseBuffer(_currentInputSegment.Segment);
             incommingSegments.Complete();
             IList<BufferSegment> segments;

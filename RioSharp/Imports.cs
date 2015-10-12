@@ -153,10 +153,13 @@ namespace RioSharp
         const string Kernel_32 = "Kernel32";
         public const long INVALID_HANDLE_VALUE = -1;
 
-        [DllImport(Kernel_32, SetLastError = true), SuppressUnmanagedCodeSecurity]
+
+
+
+        [DllImport(Kernel_32, SetLastError = true)]
         public unsafe static extern IntPtr CreateIoCompletionPort(IntPtr handle, IntPtr hExistingCompletionPort, int puiCompletionKey, uint uiNumberOfConcurrentThreads);
 
-        [DllImport(Kernel_32, SetLastError = true), SuppressUnmanagedCodeSecurity]
+        [DllImport(Kernel_32, SetLastError = true)]
         public static extern unsafe bool GetQueuedCompletionStatus(IntPtr CompletionPort, out uint lpNumberOfBytes, out uint lpCompletionKey, out NativeOverlapped* lpOverlapped, int dwMilliseconds);
 
 
@@ -172,25 +175,25 @@ namespace RioSharp
 
         //readonly static IntPtr RIO_INVALID_BUFFERID = (IntPtr)0xFFFFFFFF;
 
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true), SuppressUnmanagedCodeSecurity]
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         public delegate IntPtr RIORegisterBuffer([In] IntPtr DataBuffer, [In] UInt32 DataLength);
 
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true), SuppressUnmanagedCodeSecurity]
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         public delegate void RIODeregisterBuffer([In] IntPtr BufferId);
 
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true), SuppressUnmanagedCodeSecurity]
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         public unsafe delegate bool RIOSend([In] IntPtr SocketQueue, [In] RIO_BUFSEGMENT* RioBuffer, [In] UInt32 DataBufferCount, [In] RIO_SEND_FLAGS Flags, [In] long RequestCorrelation);
 
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true), SuppressUnmanagedCodeSecurity]
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         public delegate bool RIOReceive([In] IntPtr SocketQueue, [In] ref RIO_BUFSEGMENT RioBuffer, [In] UInt32 DataBufferCount, [In] RIO_RECEIVE_FLAGS Flags, [In] long RequestCorrelation);
 
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true), SuppressUnmanagedCodeSecurity]
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         public delegate IntPtr RIOCreateCompletionQueue([In] uint QueueSize, [In] RIO_NOTIFICATION_COMPLETION NotificationCompletion);
 
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true), SuppressUnmanagedCodeSecurity]
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         public delegate void RIOCloseCompletionQueue([In] IntPtr CQ);
 
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true), SuppressUnmanagedCodeSecurity]
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         public delegate IntPtr RIOCreateRequestQueue(
                                       [In] IntPtr Socket,
                                       [In] UInt32 MaxOutstandingReceive,
@@ -202,25 +205,25 @@ namespace RioSharp
                                       [In] long ConnectionCorrelation
                                     );
 
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true), SuppressUnmanagedCodeSecurity]
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         public delegate uint RIODequeueCompletion([In] IntPtr CQ, [In] IntPtr ResultArray, [In] uint ResultArrayLength);
 
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true), SuppressUnmanagedCodeSecurity]
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         public delegate Int32 RIONotify([In] IntPtr CQ);
 
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true), SuppressUnmanagedCodeSecurity]
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         public delegate bool RIOResizeCompletionQueue([In] IntPtr CQ, [In] UInt32 QueueSize);
 
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true), SuppressUnmanagedCodeSecurity]
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         public delegate bool RIOResizeRequestQueue([In] IntPtr RQ, [In] UInt32 MaxOutstandingReceive, [In] UInt32 MaxOutstandingSend);
 
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true), SuppressUnmanagedCodeSecurity]
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         public delegate bool DisconnectEx([In] IntPtr hSocket, [In] IntPtr lpOverlapped, [In] UInt32 dwFlags, [In] UInt32 reserved);
 
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true), SuppressUnmanagedCodeSecurity]
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         public delegate bool ConnectEx([In] IntPtr s, [In] sockaddr_in name, [In] int namelen, [In] IntPtr lpSendBuffer, [In] uint dwSendDataLength, [Out] uint lpdwBytesSent, [In] IntPtr lpOverlapped);
 
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true), SuppressUnmanagedCodeSecurity]
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         public delegate bool AcceptEx([In] IntPtr sListenSocket, [In] IntPtr sAcceptSocket, [In] IntPtr lpOutputBuffer, [In] int dwReceiveDataLength, [In] int dwLocalAddressLength, [In] int dwRemoteAddressLength, [In, Out] ref int lpdwBytesReceived, [In] IntPtr lpOverlapped);
 
 
@@ -292,7 +295,7 @@ namespace RioSharp
             }
         }
 
-        [DllImport(WS2_32, SetLastError = true), SuppressUnmanagedCodeSecurity]
+        [DllImport(WS2_32, SetLastError = true)]
         public static extern int WSAIoctl(
           [In] IntPtr socket,
           [In] uint dwIoControlCode,
@@ -305,10 +308,10 @@ namespace RioSharp
           [In] IntPtr lpCompletionRoutine
         );
 
-        [DllImport(WS2_32, SetLastError = true), SuppressUnmanagedCodeSecurity]
+        [DllImport(WS2_32, SetLastError = true)]
         public static extern int connect([In] IntPtr s, [In] ref sockaddr_in name, [In] int namelen);
 
-        [DllImport(WS2_32, SetLastError = true, EntryPoint = "WSAIoctl"), SuppressUnmanagedCodeSecurity]
+        [DllImport(WS2_32, SetLastError = true, EntryPoint = "WSAIoctl")]
         public unsafe static extern int WSAIoctlGeneral(
           [In] IntPtr socket,
           [In] int dwIoControlCode,
@@ -321,28 +324,28 @@ namespace RioSharp
           [In] IntPtr lpCompletionRoutine
         );
 
-        [DllImport(WS2_32, SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = true, ThrowOnUnmappableChar = true), SuppressUnmanagedCodeSecurity]
+        [DllImport(WS2_32, SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = true, ThrowOnUnmappableChar = true)]
         internal static extern SocketError WSAStartup([In] short wVersionRequested, [Out] out WSAData lpWSAData);
 
-        [DllImport(WS2_32, SetLastError = true, CharSet = CharSet.Ansi), SuppressUnmanagedCodeSecurity]
+        [DllImport(WS2_32, SetLastError = true, CharSet = CharSet.Ansi)]
         public static extern IntPtr WSASocket([In] ADDRESS_FAMILIES af, [In] SOCKET_TYPE type, [In] PROTOCOL protocol, [In] IntPtr lpProtocolInfo, [In] Int32 group, [In] SOCKET_FLAGS dwFlags);
 
-        [DllImport(WS2_32, SetLastError = true), SuppressUnmanagedCodeSecurity]
+        [DllImport(WS2_32, SetLastError = true)]
         public static extern ushort htons([In] ushort hostshort);
 
         [DllImport(WS2_32, SetLastError = true, CharSet = CharSet.Ansi)]
         public static extern int bind(IntPtr s, ref sockaddr_in name, int namelen);
 
-        [DllImport(WS2_32, SetLastError = true), SuppressUnmanagedCodeSecurity]
+        [DllImport(WS2_32, SetLastError = true)]
         public static extern int listen(IntPtr s, int backlog);
 
-        [DllImport(WS2_32, SetLastError = true), SuppressUnmanagedCodeSecurity]
+        [DllImport(WS2_32, SetLastError = true)]
         public unsafe static extern int setsockopt(IntPtr s, int level, int optname, char* optval, int optlen);
 
-        [DllImport(WS2_32, SetLastError = true), SuppressUnmanagedCodeSecurity]
+        [DllImport(WS2_32, SetLastError = true)]
         public static extern IntPtr accept(IntPtr s, ref sockaddr_in addr, ref int addrlen);
 
-        [DllImport(WS2_32), SuppressUnmanagedCodeSecurity]
+        [DllImport(WS2_32)]
         public static extern Int32 WSAGetLastError();
 
         public static int ThrowLastWSAError()
@@ -356,10 +359,10 @@ namespace RioSharp
         }
 
 
-        [DllImport(WS2_32, SetLastError = true), SuppressUnmanagedCodeSecurity]
+        [DllImport(WS2_32, SetLastError = true)]
         public static extern Int32 WSACleanup();
 
-        [DllImport(WS2_32, SetLastError = true), SuppressUnmanagedCodeSecurity]
+        [DllImport(WS2_32, SetLastError = true)]
         public static extern int closesocket(IntPtr s);
 
         public const int SOCKET_ERROR = -1;

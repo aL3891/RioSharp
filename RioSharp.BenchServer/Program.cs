@@ -25,7 +25,6 @@ namespace ConsoleApplication1
 
         static void Main()
         {
-            ThreadPool.SetMinThreads(100, 100);
             var l = new RioTcpListener(new RioFixedBufferPool(100, 512), new RioFixedBufferPool(100, 512));
             l.Bind(new IPEndPoint(new IPAddress(new byte[] { 127, 0, 0, 1 }), 5000));
             l.Listen(500);
@@ -97,7 +96,7 @@ namespace ConsoleApplication1
             }
             finally
             {
-                socket.Close();
+                socket.Dispose();
             }
         }
 

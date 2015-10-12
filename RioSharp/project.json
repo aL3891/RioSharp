@@ -7,14 +7,27 @@
   "licenseUrl": "",
 
   "dependencies": {
+    "System.ComponentModel": "4.0.1-beta-23225",
+    "System.Net.NetworkInformation": "4.1.0-beta-23225",
+    "System.Net.Sockets": "4.1.0-beta-23225",
     "System.Collections": "4.0.11-beta-23225",
     "System.Linq": "4.0.1-beta-23405",
     "System.Threading": "4.0.11-beta-23225",
+    "System.Threading.Overlapped": "4.0.1-beta-23225",
     "System.Runtime": "4.0.21-beta-23225",
     "Microsoft.CSharp": "4.0.1-beta-23405",
-    "Microsoft.Tpl.Dataflow": "4.5.24"
+    "Microsoft.Tpl.Dataflow": "4.5.24",
+    "System.Collections.Concurrent": "4.0.11-beta-23225",
+    "System.Threading.Thread": "4.0.0-beta-*",
+    "System.Threading.ThreadPool": "4.0.10-beta-*",
+    "System.Net.Primitives": "4.0.11-beta-*",
+    "System.Runtime.Extensions": "4.0.11-beta-*",
+    "System.Runtime.InteropServices": "4.0.21-beta-*",
+    "System.Console": "4.0.0-beta-*"
   },
-  "compilationOptions": { "allowUnsafe": true },
+  "compilationOptions": {
+    "allowUnsafe": true
+  },
   "frameworks": {
     "dotnet": { }
   }

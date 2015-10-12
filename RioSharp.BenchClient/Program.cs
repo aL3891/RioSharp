@@ -100,9 +100,9 @@ namespace ConsoleApplication2
                     }
 
                     if (!keepAlive)
-                        connection.Close();
+                        connection.Dispose();
                 }
-                connection.Close();
+                connection.Dispose();
                 return responses;
             }
         }

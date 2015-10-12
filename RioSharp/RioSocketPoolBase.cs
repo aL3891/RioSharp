@@ -82,6 +82,7 @@ namespace RioSharp
 
             if ((ReceiveCompletionQueue = RioStatic.CreateCompletionQueue((uint)MaxOutsandingCompletions, receiveCompletionMethod)) == IntPtr.Zero)
                 Imports.ThrowLastWSAError();
+            
 
             Thread reciveThread = new Thread(ProcessReceiveCompletes);
             reciveThread.IsBackground = true;

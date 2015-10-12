@@ -1,0 +1,21 @@
+﻿{
+  "version": "1.0.0-*",
+  "description": "RioSharp Class Library",
+  "authors": [ "aL3891" ],
+  "tags": [ "" ],
+  "projectUrl": "https://github.com/aL3891/RioSharp",
+  "licenseUrl": "",
+
+  "dependencies": {
+    "System.Collections": "4.0.11-beta-23225",
+    "System.Linq": "4.0.1-beta-23405",
+    "System.Threading": "4.0.11-beta-23225",
+    "System.Runtime": "4.0.21-beta-23225",
+    "Microsoft.CSharp": "4.0.1-beta-23405",
+    "Microsoft.Tpl.Dataflow": "4.5.24"
+  },
+  "compilationOptions": { "allowUnsafe": true },
+  "frameworks": {
+    "dotnet": { }
+  }
+}

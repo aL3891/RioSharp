@@ -1,0 +1,30 @@
+﻿{
+  "version": "1.0.0-*",
+  "description": "RioSharp.BenchServer Console Application",
+  "authors": [ "aL3891" ],
+  "tags": [ "" ],
+  "projectUrl": "https://github.com/aL3891/RioSharp",
+  "licenseUrl": "",
+
+  "dependencies": {
+    "RioSharp": "1.0.0-*"
+  },
+
+  "compilationOptions": { "allowUnsafe": true },
+  "commands": {
+    "RioSharp.BenchServer": "RioSharp.BenchServer"
+  },
+
+  "frameworks": {
+    "dnx451": { },
+    "dnxcore50": {
+      "dependencies": {
+        "System.Collections": "4.0.11-beta-23405",
+        "System.Console": "4.0.0-beta-23225",
+        "System.Linq": "4.0.1-beta-23225",
+        "System.Threading": "4.0.11-beta-23225",
+        "Microsoft.CSharp": "4.0.1-beta-23225"
+      }
+    }
+  }
+}

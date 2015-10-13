@@ -10,3 +10,10 @@ Some other goals are/where
 * Support making outgoing http calls using rio (via HttpHandlers)
 
 So far the basic tcp/http scenario works, however even that is very experimental and the code can probably be cleaned up significantly. The main objective with this project for me was perf, as opposed to security or safety of use.
+
+Currently my road map is something like this
+
+* Implement support for doing outgoing tcp calls
+* Implement support for udp
+* Investigate socket reuse via ConnectEx, AcceptEx and DisconnectEx
+* Implement httpClient support

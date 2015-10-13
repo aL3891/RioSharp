@@ -1,7 +1,7 @@
 # RioSharp
 A .net wrapper around the registered io winsock extensions
 
-This was inspired by the work Ben Adams did over at the asp.net 5 benchmarking repo. I wanted to create soemthing similar to the .net socket classes while still retaining the perf of rio.
+This was inspired (and based on) by the work Ben Adams did over at the asp.net 5 benchmarking repo. I wanted to create soemthing similar to the .net socket classes while still retaining the perf of rio.
 
 Some other goals are/where
 

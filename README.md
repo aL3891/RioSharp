@@ -10,11 +10,12 @@ Some other goals are/where
 * Support making outgoing http calls using rio (via HttpClient)
 * Enable high performance benchmarking of tcp/udp and http servers (similar to wrk but on windows)
 
-So far the basic tcp/http scenario works, however even that is very experimental and the code can probably be cleaned up significantly. The main objective with this project for me was perf, as opposed to security or safety of use.
+So far the basic tcp/http scenario works, however even that is very experimental and the code can probably be cleaned up significantly. The main objective with this project for me was perf, as opposed to security or safety of use. This project i also something i work on between putting kids to bed and passing out on the couch, so it might not be production level, lets say.
 
 Currently my road map is something like this:
 
 * Implement support for doing outgoing tcp calls
 * Implement support for udp
+* Add ctstraffic test client and server
 * Investigate socket reuse via ConnectEx, AcceptEx and DisconnectEx
 * Implement httpClient support

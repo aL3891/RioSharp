@@ -175,6 +175,9 @@ namespace RioSharp
 
         //readonly static IntPtr RIO_INVALID_BUFFERID = (IntPtr)0xFFFFFFFF;
 
+
+
+
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         public delegate IntPtr RIORegisterBuffer([In] IntPtr DataBuffer, [In] UInt32 DataLength);
 
@@ -294,6 +297,17 @@ namespace RioSharp
                 return rioFunctions;
             }
         }
+
+        [DllImport(WS2_32, ExactSpelling = true, CharSet = CharSet.Unicode, BestFitMapping = false, ThrowOnUnmappableChar = true, SetLastError = true)]
+        internal static extern int GetAddrInfoW(
+                [In] string nodename,
+                [In] string servicename,
+                [In] ref AddressInfo hints,
+                [Out] out IntPtr handle
+                );
+
+        [DllImport(WS2_32, ExactSpelling = true, SetLastError = true)]
+        internal static extern void freeaddrinfo([In] IntPtr info);
 
         [DllImport(WS2_32, SetLastError = true)]
         public static extern int WSAIoctl(

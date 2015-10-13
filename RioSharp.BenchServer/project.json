@@ -10,10 +10,10 @@
     "RioSharp": "1.0.0-*",
     "System.Threading.Overlapped": "4.0.1-beta-23225",
     "System.Collections": "4.0.11-beta-23225",
-    "System.Linq": "4.0.1-beta-23405",
+    "System.Linq": "4.0.1-beta-23225",
     "System.Threading": "4.0.11-beta-23225",
     "System.Runtime": "4.0.21-beta-23225",
-    "Microsoft.CSharp": "4.0.1-beta-23405",
+    "Microsoft.CSharp": "4.0.1-beta-23225",
     "Microsoft.Tpl.Dataflow": "4.5.24",
     "System.Collections.Concurrent": "4.0.11-beta-23225",
     "System.Console": "4.0.0-beta-*"

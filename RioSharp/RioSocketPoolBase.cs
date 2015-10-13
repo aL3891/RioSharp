@@ -27,7 +27,7 @@ namespace RioSharp
         public uint MaxConnections = 512;
 
         internal ConcurrentDictionary<long, RioTcpConnection> connections = new ConcurrentDictionary<long, RioTcpConnection>();
-        public static long dontFree = 1 << 64;
+        public static long dontFree = 1 << 63;
 
         public unsafe RioSocketPoolBase(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool)
         {
@@ -111,12 +111,17 @@ namespace RioSharp
             {
                 Buffer.MemoryCopy(p, (byte*)SendBufferPool.BufferPointer.ToPointer() + currentSegment, SendBufferPool.SegmentLength, buffer.Length);
             }
-            return new RIO_BUFSEGMENT(_reciveBufferId, currentSegment, (uint)buffer.Length);
+            return new RIO_BUFSEGMENT(_sendBufferId, currentSegment, (uint)buffer.Length);
+        }
+
+        public void FreePreAllocated(RIO_BUFSEGMENT segment) {
+            SendBufferPool.ReleaseBuffer(segment.Offset);
         }
 
         public unsafe void WritePreAllocated(RIO_BUFSEGMENT Segment, IntPtr _requestQueue)
         {
-            if (!RioStatic.Send(_requestQueue, &Segment, 1, RIO_SEND_FLAGS.NONE, dontFree | Segment.Offset))
+            var currentBuffer = Segment;
+            if (!RioStatic.Send(_requestQueue, &currentBuffer, 1, RIO_SEND_FLAGS.NONE, dontFree | Segment.Offset))
                 Imports.ThrowLastWSAError();
         }
 

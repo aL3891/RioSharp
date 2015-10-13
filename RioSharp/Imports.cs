@@ -298,16 +298,8 @@ namespace RioSharp
             }
         }
 
-        [DllImport(WS2_32, ExactSpelling = true, CharSet = CharSet.Unicode, BestFitMapping = false, ThrowOnUnmappableChar = true, SetLastError = true)]
-        internal static extern int GetAddrInfoW(
-                [In] string nodename,
-                [In] string servicename,
-                [In] ref AddressInfo hints,
-                [Out] out IntPtr handle
-                );
 
-        [DllImport(WS2_32, ExactSpelling = true, SetLastError = true)]
-        internal static extern void freeaddrinfo([In] IntPtr info);
+
 
         [DllImport(WS2_32, SetLastError = true)]
         public static extern int WSAIoctl(
@@ -468,7 +460,7 @@ namespace RioSharp
     [StructLayout(LayoutKind.Sequential)]
     public struct RIO_BUFSEGMENT
     {
-        public RIO_BUFSEGMENT(IntPtr bufferId, uint offset, uint length) // should be longs?
+        internal RIO_BUFSEGMENT(IntPtr bufferId, uint offset, uint length) // should be longs?
         {
             BufferId = bufferId;
             Offset = offset;

@@ -12,25 +12,50 @@ namespace ConsoleApplication1
 {
     class Program
     {
-        static readonly string responseStr = "HTTP/1.1 200 OK\r\n" +
-    "Content-Type: text/plain;charset=UTF-8\r\n" +
-    "Content-Length: 10\r\n" +
-    //"Connection: keep-alive\r\n" +
-    "Server: Dummy\r\n" +
-    "\r\n" +
-    "HelloWorld";
+        static RIO_BUFSEGMENT currentSegment;
+        static RioFixedBufferPool sendPool = new RioFixedBufferPool(100, 512), recivePool = new RioFixedBufferPool(100, 512);
+        private static RioTcpListener listener;
 
 
-        static byte[] _responseBytes = Encoding.UTF8.GetBytes(responseStr);
-
-        static void Main()
+        public static byte[] GetResponse()
         {
-            var l = new RioTcpListener(new RioFixedBufferPool(100, 512), new RioFixedBufferPool(100, 512));
-            l.Bind(new IPEndPoint(new IPAddress(new byte[] { 127, 0, 0, 1 }), 5000));
-            l.Listen(500);
+            var responseStr = "HTTP/1.1 200 OK\r\n" +
+                              "Content-Type: text/plain\r\n" +
+                              "Content-Length: 13\r\n" +
+                              "Date: " + DateTime.UtcNow.ToString("r") + "\r\n" + //"Connection: keep-alive\r\n" +
+                              "Server: Dummy\r\n" +
+                              "\r\n" +
+                              "Hello, World!";
+
+            return Encoding.ASCII.GetBytes(responseStr);
+        }
+
+        static void UpdateResponse()
+        {
+            var newSegment = listener.PreAllocateWrite(GetResponse());
+            var oldSegment = currentSegment;
+            currentSegment = newSegment;
+            listener.FreePreAllocated(oldSegment);
+        }
+
+        static void Main(string[] args)
+        {
+            listener = new RioTcpListener(sendPool, recivePool);
+            currentSegment = listener.PreAllocateWrite(GetResponse());
+            Task.Run(async () =>
+            {
+                while (true)
+                {
+                    UpdateResponse();
+                    await Task.Delay(1000);
+                }
+            });
+
+            listener.Bind(new IPEndPoint(new IPAddress(new byte[] { 127, 0, 0, 1 }), 5000));
+            listener.Listen(1024);
             while (true)
             {
-                var socket = l.Accept();
+                var socket = listener.Accept();
                 Task.Run(() => Serve(socket));
             }
         }
@@ -49,17 +74,15 @@ namespace ConsoleApplication1
                 {
                     int r = await socket.ReadAsync(buffer, 0, buffer.Length);
                     if (r == 0)
-                    {
-                        Console.WriteLine("quitting");
                         break;
-                    }
+
 
                     for (int i = 0; leftoverLength != 0 && i < 4 - leftoverLength; i++)
                     {
                         current += buffer[i];
                         current = current << 8;
                         if (current == endOfRequest)
-                            socket.WriteFixed(_responseBytes);
+                            socket.WritePreAllocated(currentSegment);
                     }
 
                     leftoverLength = r % 4;
@@ -67,15 +90,15 @@ namespace ConsoleApplication1
 
                     unsafe
                     {
-                        fixed (byte* apa = &buffer[oldleftoverLength])
+                        fixed (byte* currentPtr = &buffer[oldleftoverLength])
                         {
-                            var start = apa;
-                            var end = apa + length;
+                            var start = currentPtr;
+                            var end = currentPtr + length;
 
                             for (; start <= end; start++)
                             {
                                 if (*(uint*)start == endOfRequest)
-                                    socket.WriteFixed(_responseBytes);
+                                    socket.WritePreAllocated(currentSegment);
                             }
                         }
                     }
@@ -87,7 +110,7 @@ namespace ConsoleApplication1
                         current += buffer[i];
                         current = current << 4;
                     }
-                    
+
                 }
             }
             catch (Exception ex)
@@ -99,6 +122,5 @@ namespace ConsoleApplication1
                 socket.Dispose();
             }
         }
-
     }
 }

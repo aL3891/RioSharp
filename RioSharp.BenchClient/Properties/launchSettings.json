@@ -2,6 +2,7 @@
   "profiles": {
     "RioSharp.BenchClient": {
       "commandName": "RioSharp.BenchClient",
+      "commandLineArgs": "http://localhost:5000/",
       "sdkVersion": "dnx-clr-win-x64.1.0.0-beta7"
     }
   }

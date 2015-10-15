@@ -27,11 +27,11 @@ namespace ConsoleApplication2
         static void Main(string[] args)
         {
             clientPool = new RioTcpClientPool(new RioFixedBufferPool(100, 512), new RioFixedBufferPool(100, 512));
-            int connections = 1;
+            int connections = int.Parse(args.FirstOrDefault(f => f.StartsWith("-c"))?.Substring(2) ?? "1");
             timer = new Stopwatch();
-            span = TimeSpan.FromSeconds(10);
+            span = TimeSpan.FromSeconds(int.Parse(args.FirstOrDefault(f => f.StartsWith("-d"))?.Substring(2) ?? "10"));
             timer.Start();
-            uri = new Uri("http://localhost:5000/");
+            uri = new Uri(args.First(a => !a.StartsWith("-")));
             keepAlive = true;
             pipeLineDeph = 1;
             rb = Enumerable.Repeat(_requestBytes, pipeLineDeph).SelectMany(b => b).ToArray();

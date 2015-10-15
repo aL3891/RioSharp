@@ -22,11 +22,14 @@ namespace RioSharp
             if ((sock = Imports.WSASocket(ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_STREAM, PROTOCOL.IPPROTO_TCP, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.OVERLAPPED)) == IntPtr.Zero)
                 Imports.ThrowLastWSAError();
 
-            var apa = Dns.GetHostAddressesAsync(adress.Host).Result;
-
-            apa[0].GetAddressBytes();
-
+            var apa = Dns.GetHostAddressesAsync(adress.Host).Result.First(i => i.AddressFamily== AddressFamily.InterNetwork);
+            
             in_addr inAddress = new in_addr();
+            inAddress.s_b1 = apa.GetAddressBytes()[0];
+            inAddress.s_b2 = apa.GetAddressBytes()[1];
+            inAddress.s_b3 = apa.GetAddressBytes()[2];
+            inAddress.s_b4 = apa.GetAddressBytes()[3];
+
 
             sockaddr_in sa = new sockaddr_in();
             sa.sin_family = ADDRESS_FAMILIES.AF_INET;

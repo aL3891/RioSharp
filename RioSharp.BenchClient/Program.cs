@@ -26,14 +26,15 @@ namespace ConsoleApplication2
 
         static void Main(string[] args)
         {
-            clientPool = new RioTcpClientPool(new RioFixedBufferPool(1000, 512), new RioFixedBufferPool(1000, 512));
+            pipeLineDeph = int.Parse(args.FirstOrDefault(f => f.StartsWith("-p"))?.Substring(2) ?? "1");
+            clientPool = new RioTcpClientPool(new RioFixedBufferPool(1000, (uint)(64 * pipeLineDeph)), new RioFixedBufferPool(1000, (uint)(140 * pipeLineDeph)));
             int connections = int.Parse(args.FirstOrDefault(f => f.StartsWith("-c"))?.Substring(2) ?? "1");
             timer = new Stopwatch();
             span = TimeSpan.FromSeconds(int.Parse(args.FirstOrDefault(f => f.StartsWith("-d"))?.Substring(2) ?? "10"));
             timer.Start();
             uri = new Uri(args.First(a => !a.StartsWith("-")));
             keepAlive = true;
-            pipeLineDeph = 1;
+
             rb = Enumerable.Repeat(_requestBytes, pipeLineDeph).SelectMany(b => b).ToArray();
             var tasks = Enumerable.Range(0, connections).Select(t => Task.Run(doit));
 
@@ -45,7 +46,7 @@ namespace ConsoleApplication2
         public async static Task<int> doit()
         {
             {
-                var buffer = new byte[512];
+                var buffer = new byte[140*32];
                 var leftoverLength = 0;
                 var oldleftoverLength = 0;
                 uint endOfRequest = 0x0a0d0a0d;

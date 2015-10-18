@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.24606.1
+VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "RioSharp", "RioSharp\RioSharp.xproj", "{36DDDB67-1DA4-4670-9D20-605AA2EAF1D3}"
 EndProject
@@ -18,7 +18,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RioSharp46", "RioSharp46\Ri
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RioSharp.BenchClient46", "RioSharp.BenchClient46\RioSharp.BenchClient46.csproj", "{D3344BC8-690E-4225-AB5D-5E4B76DEFE6E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RioSharp.BenchServer46", "RioSharp.BenchServer46\RioSharp.BenchServer46.csproj", "{4C3356B2-F358-43B2-8709-8FEBD913F856}"
+EndProject
 Global
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
@@ -44,6 +49,10 @@ Global
 		{D3344BC8-690E-4225-AB5D-5E4B76DEFE6E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D3344BC8-690E-4225-AB5D-5E4B76DEFE6E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D3344BC8-690E-4225-AB5D-5E4B76DEFE6E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4C3356B2-F358-43B2-8709-8FEBD913F856}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4C3356B2-F358-43B2-8709-8FEBD913F856}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4C3356B2-F358-43B2-8709-8FEBD913F856}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4C3356B2-F358-43B2-8709-8FEBD913F856}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -13,7 +13,7 @@ namespace ConsoleApplication1
     class Program
     {
         static RIO_BUFSEGMENT currentSegment;
-        static RioFixedBufferPool sendPool = new RioFixedBufferPool(100, 512), recivePool = new RioFixedBufferPool(100, 512);
+        static RioFixedBufferPool sendPool = new RioFixedBufferPool(10000, 140*3), recivePool = new RioFixedBufferPool(10000, 64*3);
         private static RioTcpListener listener;
 
 
@@ -64,7 +64,7 @@ namespace ConsoleApplication1
         {
             try
             {
-                var buffer = new byte[512];
+                var buffer = new byte[64*3];
                 var leftoverLength = 0;
                 var oldleftoverLength = 0;
                 uint endOfRequest = 0x0a0d0a0d;

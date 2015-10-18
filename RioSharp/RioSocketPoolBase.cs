@@ -82,7 +82,7 @@ namespace RioSharp
 
             if ((ReceiveCompletionQueue = RioStatic.CreateCompletionQueue((uint)MaxOutsandingCompletions, receiveCompletionMethod)) == IntPtr.Zero)
                 Imports.ThrowLastWSAError();
-            
+
 
             Thread reciveThread = new Thread(ProcessReceiveCompletes);
             reciveThread.IsBackground = true;
@@ -114,7 +114,8 @@ namespace RioSharp
             return new RIO_BUFSEGMENT(_sendBufferId, currentSegment, (uint)buffer.Length);
         }
 
-        public void FreePreAllocated(RIO_BUFSEGMENT segment) {
+        public void FreePreAllocated(RIO_BUFSEGMENT segment)
+        {
             SendBufferPool.ReleaseBuffer(segment.Offset);
         }
 
@@ -211,9 +212,10 @@ namespace RioSharp
             }
         }
 
-        internal void Recycle(IntPtr socket)
+        internal void Recycle(RioTcpConnection socket)
         {
-
+            RioTcpConnection c;
+            connections.TryRemove(socket.GetHashCode(), out c);
         }
 
         public virtual void Dispose()

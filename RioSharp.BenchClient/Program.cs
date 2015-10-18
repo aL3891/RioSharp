@@ -26,7 +26,7 @@ namespace ConsoleApplication2
 
         static void Main(string[] args)
         {
-            clientPool = new RioTcpClientPool(new RioFixedBufferPool(100, 512), new RioFixedBufferPool(100, 512));
+            clientPool = new RioTcpClientPool(new RioFixedBufferPool(1000, 512), new RioFixedBufferPool(1000, 512));
             int connections = int.Parse(args.FirstOrDefault(f => f.StartsWith("-c"))?.Substring(2) ?? "1");
             timer = new Stopwatch();
             span = TimeSpan.FromSeconds(int.Parse(args.FirstOrDefault(f => f.StartsWith("-d"))?.Substring(2) ?? "10"));
@@ -38,7 +38,8 @@ namespace ConsoleApplication2
             var tasks = Enumerable.Range(0, connections).Select(t => Task.Run(doit));
 
             var ss = tasks.Sum(t => t.Result);
-
+            Console.WriteLine(ss / span.TotalSeconds);
+            Console.ReadLine();
         }
 
         public async static Task<int> doit()
@@ -50,6 +51,7 @@ namespace ConsoleApplication2
                 uint endOfRequest = 0x0a0d0a0d;
                 uint current = 0;
                 int responses = 0;
+                int total = 0;
 
                 var connection = clientPool.Connect(uri);
                 while (timer.Elapsed < span)
@@ -98,12 +100,14 @@ namespace ConsoleApplication2
                         }
 
                     }
+                    total += responses;
+                    responses = 0;
 
                     if (!keepAlive)
                         connection.Dispose();
                 }
                 connection.Dispose();
-                return responses;
+                return total;
             }
         }
     }

@@ -28,9 +28,9 @@ namespace RioSharp
             _requestQueue = RioStatic.CreateRequestQueue(_socket, _pool.MaxOutstandingReceive, 1, _pool.MaxOutstandingSend, 1, _pool.ReceiveCompletionQueue, _pool.SendCompletionQueue, GetHashCode());
             Imports.ThrowLastWSAError();
             _currentInputSegment = null;
-
+            _currentOutputSegment = _pool.SendBufferPool.GetBuffer();
         }
-        
+
         public void WritePreAllocated(RIO_BUFSEGMENT Segment)
         {
             _pool.WritePreAllocated(Segment, _requestQueue);
@@ -141,16 +141,21 @@ namespace RioSharp
             Flush(false);
             Imports.closesocket(_socket);
             Imports.ThrowLastWSAError();
-            _pool.ReciveBufferPool.ReleaseBuffer(_currentInputSegment.Segment);
+            if (_currentInputSegment != null)
+                _pool.ReciveBufferPool.ReleaseBuffer(_currentInputSegment.Segment);
+
             incommingSegments.Complete();
             IList<BufferSegment> segments;
             incommingSegments.TryReceiveAll(out segments);
+            if (segments != null)
+                foreach (var s in segments)
+                    _pool.ReciveBufferPool.ReleaseBuffer(s.Segment);
 
-            foreach (var s in segments)
-                _pool.ReciveBufferPool.ReleaseBuffer(s.Segment);
 
             _pool.SendBufferPool.ReleaseBuffer(_currentOutputSegment);
             base.Dispose(disposing);
+
+            _pool.Recycle(this);
 
         }
 

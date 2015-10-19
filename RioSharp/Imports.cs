@@ -159,7 +159,7 @@ namespace RioSharp
         [DllImport(Kernel_32, SetLastError = true)]
         public unsafe static extern IntPtr CreateIoCompletionPort(IntPtr handle, IntPtr hExistingCompletionPort, int puiCompletionKey, uint uiNumberOfConcurrentThreads);
 
-        [DllImport(Kernel_32, SetLastError = true)]
+        [DllImport(Kernel_32, SetLastError = false)]
         public static extern unsafe bool GetQueuedCompletionStatus(IntPtr CompletionPort, out uint lpNumberOfBytes, out uint lpCompletionKey, out NativeOverlapped* lpOverlapped, int dwMilliseconds);
 
 
@@ -184,10 +184,12 @@ namespace RioSharp
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         public delegate void RIODeregisterBuffer([In] IntPtr BufferId);
 
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = false)]
+        [SuppressUnmanagedCodeSecurity]
         public unsafe delegate bool RIOSend([In] IntPtr SocketQueue, [In] RIO_BUFSEGMENT* RioBuffer, [In] UInt32 DataBufferCount, [In] RIO_SEND_FLAGS Flags, [In] long RequestCorrelation);
 
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = false)]
+        [SuppressUnmanagedCodeSecurity]
         public delegate bool RIOReceive([In] IntPtr SocketQueue, [In] ref RIO_BUFSEGMENT RioBuffer, [In] UInt32 DataBufferCount, [In] RIO_RECEIVE_FLAGS Flags, [In] long RequestCorrelation);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
@@ -208,10 +210,12 @@ namespace RioSharp
                                       [In] long ConnectionCorrelation
                                     );
 
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = false)]
+        [SuppressUnmanagedCodeSecurity]
         public delegate uint RIODequeueCompletion([In] IntPtr CQ, [In] IntPtr ResultArray, [In] uint ResultArrayLength);
 
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = false)]
+        [SuppressUnmanagedCodeSecurity]
         public delegate Int32 RIONotify([In] IntPtr CQ);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]

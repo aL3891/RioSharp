@@ -16,7 +16,7 @@ namespace RioSharp
         IntPtr _requestQueue;
         BufferSegment _currentInputSegment;
         uint _currentOutputSegment;
-        long _bytesReadInCurrentSegment = 0;
+        int _bytesReadInCurrentSegment = 0;
         long _bytesWrittenInCurrentSegment = 0;
 
         internal BufferBlock<BufferSegment> incommingSegments = new BufferBlock<BufferSegment>();
@@ -43,7 +43,7 @@ namespace RioSharp
 
         public async override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            long readInCurrentRequest = 0;
+            int readInCurrentRequest = 0;
 
             do
             {
@@ -76,7 +76,7 @@ namespace RioSharp
                 if (_currentInputSegment.Length == 0)
                     return 0;
 
-                var toCopy = Math.Min(count, _currentInputSegment.Length - _bytesReadInCurrentSegment);
+                var toCopy = Math.Min(count, (int)_currentInputSegment.Length - _bytesReadInCurrentSegment);
                 unsafe
                 {
                     var pointer = (byte*)_pool.ReciveBufferPool.BufferPointer.ToPointer() + _currentInputSegment.Segment;
@@ -100,7 +100,7 @@ namespace RioSharp
 
             } while (readInCurrentRequest < count);
 
-            return (int)readInCurrentRequest;
+            return readInCurrentRequest;
         }
 
         public override int Read(byte[] buffer, int offset, int count)

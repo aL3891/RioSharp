@@ -16,11 +16,21 @@ namespace RioSharp
 
         }
 
-        public RioTcpConnection Connect(Uri adress)
+
+        public unsafe RioTcpConnection Connect(Uri adress)
         {
             IntPtr sock;
             if ((sock = Imports.WSASocket(ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_STREAM, PROTOCOL.IPPROTO_TCP, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.OVERLAPPED)) == IntPtr.Zero)
                 Imports.ThrowLastWSAError();
+
+            int True = -1;
+            UInt32 dwBytes = 0;
+
+            Imports.setsockopt(sock, Imports.IPPROTO_TCP, Imports.TCP_NODELAY, (char*)&True, 4);
+            Imports.WSAIoctlGeneral(sock, Imports.SIO_LOOPBACK_FAST_PATH,
+                                &True, 4, null, 0,
+                                out dwBytes, IntPtr.Zero, IntPtr.Zero);
+
 
             var apa = Dns.GetHostAddressesAsync(adress.Host).Result.First(i => i.AddressFamily == AddressFamily.InterNetwork);
 

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ConsoleApplication2
@@ -40,13 +41,12 @@ namespace ConsoleApplication2
 
             var ss = tasks.Sum(t => t.Result);
             Console.WriteLine(ss / span.TotalSeconds);
-            Console.ReadLine();
         }
 
         public async static Task<int> doit()
         {
             {
-                var buffer = new byte[140*32];
+                var buffer = new byte[140* pipeLineDeph];
                 var leftoverLength = 0;
                 var oldleftoverLength = 0;
                 uint endOfRequest = 0x0a0d0a0d;

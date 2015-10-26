@@ -14,7 +14,8 @@ So far the basic tcp/http scenario works, however even that is very experimental
 
 Currently my road map is something like this:
 
-* Implement support for doing outgoing tcp calls
+* Implement support for doing outgoing tcp calls - _Done_
+* Implement simple http server and client for benchmarking - _Done_
 * Implement support for udp
 * Add ctstraffic test client and server
 * Investigate socket reuse via ConnectEx, AcceptEx and DisconnectEx

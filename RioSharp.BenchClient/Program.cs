@@ -62,7 +62,7 @@ namespace ConsoleApplication2
 
                     while (responses < pipeLineDeph)
                     {
-                        int r = await connection.ReadAsync(buffer, 0, buffer.Length);
+                        int r = await connection.Stream.ReadAsync(buffer, 0, buffer.Length);
                         if (r == 0)
                             break;
 

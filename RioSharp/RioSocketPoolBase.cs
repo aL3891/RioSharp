@@ -26,7 +26,7 @@ namespace RioSharp
         public uint MaxOutstandingSend = 512;
         public uint MaxConnections = 512;
 
-        internal ConcurrentDictionary<long, RioTcpConnection> connections = new ConcurrentDictionary<long, RioTcpConnection>();
+        internal ConcurrentDictionary<long, RioSocketBase> connections = new ConcurrentDictionary<long, RioSocketBase>();
         public static long dontFree = 1 << 63;
 
         public unsafe RioSocketPoolBase(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool)
@@ -150,7 +150,7 @@ namespace RioSharp
         {
             const int maxResults = 1024;
             RIO_RESULT* results = stackalloc RIO_RESULT[maxResults];
-            RioTcpConnection connection;
+            RioSocketBase connection;
             uint count, key, bytes;
             NativeOverlapped* overlapped;
             RIO_RESULT result;
@@ -212,9 +212,12 @@ namespace RioSharp
             }
         }
 
-        internal void Recycle(RioTcpConnection socket)
+        internal void Recycle(RioSocketBase socket)
         {
-            RioTcpConnection c;
+            Imports.closesocket(socket._socket);
+            Imports.ThrowLastWSAError();
+
+            RioSocketBase c;
             connections.TryRemove(socket.GetHashCode(), out c);
         }
 

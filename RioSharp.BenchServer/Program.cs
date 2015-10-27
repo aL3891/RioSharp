@@ -75,7 +75,7 @@ namespace ConsoleApplication1
             }
         }
 
-        static async Task ServeFixed(RioTcpConnection socket)
+        static async Task ServeFixed(RioTcpSocket socket)
         {
             try
             {
@@ -87,7 +87,7 @@ namespace ConsoleApplication1
 
                 while (true)
                 {
-                    int r = await socket.ReadAsync(buffer, 0, buffer.Length);
+                    int r = await socket.Stream.ReadAsync(buffer, 0, buffer.Length);
                     if (r == 0)
                         break;
 
@@ -125,7 +125,7 @@ namespace ConsoleApplication1
                         current += buffer[i];
                         current = current << 4;
                     }
-                    socket.Flush(false);
+                    socket.Stream.Flush(false);
                 }
             }
             catch (Exception ex)
@@ -138,7 +138,7 @@ namespace ConsoleApplication1
             }
         }
 
-        static async Task Servebuff(RioTcpConnection socket)
+        static async Task Servebuff(RioTcpSocket socket)
         {
             try
             {
@@ -150,7 +150,7 @@ namespace ConsoleApplication1
 
                 while (true)
                 {
-                    int r = await socket.ReadAsync(buffer, 0, buffer.Length);
+                    int r = await socket.Stream.ReadAsync(buffer, 0, buffer.Length);
                     if (r == 0)
                         break;
 
@@ -160,7 +160,7 @@ namespace ConsoleApplication1
                         current += buffer[i];
                         current = current << 8;
                         if (current == endOfRequest)
-                            socket.Write(responseBytes,0,responseBytes.Length);
+                            socket.Stream.Write(responseBytes,0,responseBytes.Length);
                     }
 
                     leftoverLength = r % 4;
@@ -176,7 +176,7 @@ namespace ConsoleApplication1
                             for (; start <= end; start++)
                             {
                                 if (*(uint*)start == endOfRequest)
-                                    socket.Write(responseBytes, 0, responseBytes.Length);
+                                    socket.Stream.Write(responseBytes, 0, responseBytes.Length);
                             }
                         }
                     }
@@ -188,7 +188,7 @@ namespace ConsoleApplication1
                         current += buffer[i];
                         current = current << 4;
                     }
-                    socket.Flush();
+                    socket.Stream.Flush();
                 }
             }
             catch (Exception ex)

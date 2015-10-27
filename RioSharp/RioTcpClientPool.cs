@@ -17,7 +17,7 @@ namespace RioSharp
         }
 
 
-        public unsafe RioTcpConnection Connect(Uri adress)
+        public unsafe RioTcpSocket Connect(Uri adress)
         {
             IntPtr sock;
             if ((sock = Imports.WSASocket(ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_STREAM, PROTOCOL.IPPROTO_TCP, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.OVERLAPPED)) == IntPtr.Zero)
@@ -53,7 +53,7 @@ namespace RioSharp
                     Imports.ThrowLastWSAError();
             }
 
-            var connection = new RioTcpConnection(sock, this);
+            var connection = new RioTcpSocket(sock, this);
             connections.TryAdd(connection.GetHashCode(), connection);
             return connection;
         }

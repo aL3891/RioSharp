@@ -59,7 +59,7 @@ namespace RioSharp
                 Imports.ThrowLastWSAError();
         }
 
-        public RioTcpConnection Accept()
+        public RioTcpSocket Accept()
         {
             unsafe
             {
@@ -69,7 +69,7 @@ namespace RioSharp
                 if (accepted == new IntPtr(-1))
                     Imports.ThrowLastWSAError();
 
-                var res = new RioTcpConnection(accepted, this);
+                var res = new RioTcpSocket(accepted, this);
                 connections.TryAdd(res.GetHashCode(), res);
                 return res;
             }

@@ -49,11 +49,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\RioSharp\BufferSegment.cs">
+      <Link>BufferSegment.cs</Link>
+    </Compile>
     <Compile Include="..\RioSharp\Imports.cs">
       <Link>Imports.cs</Link>
     </Compile>
     <Compile Include="..\RioSharp\RioBufferPool.cs">
       <Link>RioBufferPool.cs</Link>
+    </Compile>
+    <Compile Include="..\RioSharp\RioSocketBase.cs">
+      <Link>RioSocketBase.cs</Link>
     </Compile>
     <Compile Include="..\RioSharp\RioSocketPoolBase.cs">
       <Link>RioSocketPoolBase.cs</Link>
@@ -67,8 +73,17 @@
     <Compile Include="..\RioSharp\RioTcpListener.cs">
       <Link>RioTcpListener.cs</Link>
     </Compile>
+    <Compile Include="..\RioSharp\RioTcpSocketPoolBase.cs">
+      <Link>RioTcpSocketPoolBase.cs</Link>
+    </Compile>
+    <Compile Include="..\RioSharp\RioTcpSocketStream.cs">
+      <Link>RioTcpSocketStream.cs</Link>
+    </Compile>
     <Compile Include="..\RioSharp\RioUdpPool.cs">
       <Link>RioUdpPool.cs</Link>
+    </Compile>
+    <Compile Include="..\RioSharp\RioUdpSocket.cs">
+      <Link>RioUdpSocket.cs</Link>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

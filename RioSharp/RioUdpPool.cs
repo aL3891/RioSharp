@@ -6,7 +6,18 @@ using System.Threading.Tasks;
 
 namespace RioSharp
 {
-    public class RioUdpPool
+    public class RioUdpPool : RioSocketPoolBase
     {
+        
+        public RioUdpPool(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool) : base(sendPool, revicePool)
+        {
+        }
+
+        public RioUdpSocket GetSocket()
+        {
+
+
+            return null;
+        }
     }
 }

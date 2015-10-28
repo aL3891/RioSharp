@@ -55,7 +55,7 @@ namespace RioSharp
         {
 
             IntPtr tempSocket;
-            tempSocket = Imports.WSASocket(ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_STREAM, PROTOCOL.IPPROTO_TCP, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.OVERLAPPED);
+            tempSocket = Imports.WSASocket(ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_STREAM, PROTOCOL.IPPROTO_TCP, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.WSA_FLAG_OVERLAPPED);
             Imports.ThrowLastWSAError();
 
             UInt32 dwBytes = 0;
@@ -381,28 +381,105 @@ namespace RioSharp
 
     public enum ADDRESS_FAMILIES : short
     {
-        AF_INET = 2,
+        AF_UNSPEC = 0,               // unspecified
+        AF_UNIX = 1,               // local to host (pipes, portals)
+        AF_INET = 2,               // internetwork: UDP, TCP, etc.
+        AF_IMPLINK = 3,               // arpanet imp addresses
+        AF_PUP = 4,               // pup protocols: e.g. BSP
+        AF_CHAOS = 5,               // mit CHAOS protocols
+        AF_NS = 6,               // XEROX NS protocols
+        AF_IPX = AF_NS,           // IPX protocols: IPX, SPX, etc.
+        AF_ISO = 7,               // ISO protocols
+        AF_OSI = AF_ISO,          // OSI is ISO
+        AF_ECMA = 8,               // european computer manufacturers
+        AF_DATAKIT = 9,               // datakit protocols
+        AF_CCITT = 10,              // CCITT protocols, X.25 etc
+        AF_SNA = 11,              // IBM SNA
+        AF_DECnet = 12,              // DECnet
+        AF_DLI = 13,              // Direct data link interface
+        AF_LAT = 14,              // LAT
+        AF_HYLINK = 15,              // NSC Hyperchannel
+        AF_APPLETALK = 16,              // AppleTalk
+        AF_NETBIOS = 17,              // NetBios-style addresses
+        AF_VOICEVIEW = 18,              // VoiceView
+        AF_FIREFOX = 19,              // Protocols from Firefox
+        AF_UNKNOWN1 = 20,              // Somebody is using this!
+        AF_BAN = 21,              // Banyan
+        AF_ATM = 22,              // Native ATM Services
+        AF_INET6 = 23,              // Internetwork Version 6
+        AF_CLUSTER = 24,              // Microsoft Wolfpack
+        AF_12844 = 25,              // IEEE 1284.4 WG AF
+        AF_IRDA = 26,              // IrDA
+        AF_NETDES = 28,              // Network Designers OSI & gateway              
+        AF_TCNPROCESS = 29,
+        AF_TCNMESSAGE = 30,
+        AF_ICLFXBM = 31,
+        AF_BTH = 32,              // Bluetooth RFCOMM/L2CAP protocols
+        AF_LINK = 33,
+        AF_HYPERV = 34,
+        AF_MAX = 35,
     }
 
     public enum SOCKET_TYPE : short
     {
         SOCK_STREAM = 1,
+        SOCK_DGRAM = 2,
+        SOCK_RAW = 3,
+        SOCK_RDM = 4,
+        SOCK_SEQPACKET = 5,
     }
 
-    public enum PROTOCOL : short
+    public enum PROTOCOL
     {
+        IPPROTO_HOPOPTS = 0,  // IPv6 Hop-by-Hop options
+        IPPROTO_ICMP = 1,
+        IPPROTO_IGMP = 2,
+        IPPROTO_GGP = 3,
+        IPPROTO_IPV4 = 4,
+        IPPROTO_ST = 5,
         IPPROTO_TCP = 6,
+        IPPROTO_CBT = 7,
+        IPPROTO_EGP = 8,
+        IPPROTO_IGP = 9,
+        IPPROTO_PUP = 12,
+        IPPROTO_UDP = 17,
+        IPPROTO_IDP = 22,
+        IPPROTO_RDP = 27,
+        IPPROTO_IPV6 = 41, // IPv6 header
+        IPPROTO_ROUTING = 43, // IPv6 Routing header
+        IPPROTO_FRAGMENT = 44, // IPv6 fragmentation header
+        IPPROTO_ESP = 50, // encapsulating security payload
+        IPPROTO_AH = 51, // authentication header
+        IPPROTO_ICMPV6 = 58, // ICMPv6
+        IPPROTO_NONE = 59, // IPv6 no next header
+        IPPROTO_DSTOPTS = 60, // IPv6 Destination options
+        IPPROTO_ND = 77,
+        IPPROTO_ICLFXBM = 78,
+        IPPROTO_PIM = 103,
+        IPPROTO_PGM = 113,
+        IPPROTO_L2TP = 115,
+        IPPROTO_SCTP = 132,
+        IPPROTO_RAW = 255,
+        IPPROTO_MAX = 256,
+        //
+        //  These are reserved for internal use by Windows.
+        //
+        IPPROTO_RESERVED_RAW = 257,
+        IPPROTO_RESERVED_IPSEC = 258,
+        IPPROTO_RESERVED_IPSECOFFLOAD = 259,
+        IPPROTO_RESERVED_WNV = 260,
+        IPPROTO_RESERVED_MAX = 261
     }
 
     public enum SOCKET_FLAGS : UInt32
     {
-        OVERLAPPED = 0x01,
-        MULTIPOINT_C_ROOT = 0x02,
-        MULTIPOINT_C_LEAF = 0x04,
-        MULTIPOINT_D_ROOT = 0x08,
-        MULTIPOINT_D_LEAF = 0x10,
-        ACCESS_SYSTEM_SECURITY = 0x40,
-        NO_HANDLE_INHERIT = 0x80,
+        WSA_FLAG_OVERLAPPED = 0x01,
+        WSA_FLAG_MULTIPOINT_C_ROOT = 0x02,
+        WSA_FLAG_MULTIPOINT_C_LEAF = 0x04,
+        WSA_FLAG_MULTIPOINT_D_ROOT = 0x08,
+        WSA_FLAG_MULTIPOINT_D_LEAF = 0x10,
+        WSA_FLAG_ACCESS_SYSTEM_SECURITY = 0x40,
+        WSA_FLAG_NO_HANDLE_INHERIT = 0x80,
         REGISTERED_IO = 0x100
     }
 
@@ -420,6 +497,164 @@ namespace RioSharp
         DEFER = 0x00000002,
         WAITALL = 0x00000004,
         COMMIT_ONLY = 0x00000008
+    }
+
+    public enum IPPROTO_IP_SocketOptions
+    {
+        IP_OPTIONS = 1, // Set/get IP options.
+        IP_HDRINCL = 2, // Header is included with data.
+        IP_TOS = 3, // IP type of service.
+        IP_TTL = 4, // IP TTL (hop limit).
+        IP_MULTICAST_IF = 9, // IP multicast interface.
+        IP_MULTICAST_TTL = 10, // IP multicast TTL (hop limit).
+        IP_MULTICAST_LOOP = 11, // IP multicast loopback.
+        IP_ADD_MEMBERSHIP = 12, // Add an IP group membership.
+        IP_DROP_MEMBERSHIP = 13, // Drop an IP group membership.
+        IP_DONTFRAGMENT = 14, // Don't fragment IP datagrams.
+        IP_ADD_SOURCE_MEMBERSHIP = 15, // Join IP group/source.
+        IP_DROP_SOURCE_MEMBERSHIP = 16, // Leave IP group/source.
+        IP_BLOCK_SOURCE = 17, // Block IP group/source.
+        IP_UNBLOCK_SOURCE = 18, // Unblock IP group/source.
+        IP_PKTINFO = 19, // Receive packet information.
+        IP_HOPLIMIT = 21, // Receive packet hop limit.
+        IP_RECEIVE_BROADCAST = 22, // Allow/block broadcast reception.
+        IP_RECVIF = 24, // Receive arrival interface.
+        IP_RECVDSTADDR = 25, // Receive destination address.
+        IP_IFLIST = 28, // Enable/Disable an interface list.
+        IP_ADD_IFLIST = 29, // Add an interface list entry.
+        IP_DEL_IFLIST = 30, // Delete an interface list entry.
+        IP_UNICAST_IF = 31, // IP unicast interface.
+        IP_RTHDR = 32, // Set/get IPv6 routing header.
+        IP_GET_IFLIST = 33, // Get an interface list.
+        IP_RECVRTHDR = 38, // Receive the routing header.
+        IP_TCLASS = 39, // Packet traffic class.
+        IP_RECVTCLASS = 40, // Receive packet traffic class.
+        IP_ORIGINAL_ARRIVAL_IF = 47, // Original Arrival Interface Index.
+        IP_ECN = 50, // Receive ECN codepoints in the IP header
+        IP_PKTINFO_EX = 51, // Receive extended packet information.
+        IP_WFP_REDIRECT_RECORDS = 60, // WFP's Connection Redirect Records
+        IP_WFP_REDIRECT_CONTEXT = 70, // WFP's Connection Redirect Context
+        IP_UNSPECIFIED_TYPE_OF_SERVICE = -1
+    }
+
+    public enum IPPROTO_IPV6_SocketOptions
+    {
+        IPV6_HOPOPTS = 1, // Set/get IPv6 hop-by-hop options.
+        IPV6_HDRINCL = 2, // Header is included with data.
+        IPV6_UNICAST_HOPS = 4, // IP unicast hop limit.
+        IPV6_MULTICAST_IF = 9, // IP multicast interface.
+        IPV6_MULTICAST_HOPS = 10, // IP multicast hop limit.
+        IPV6_MULTICAST_LOOP = 11, // IP multicast loopback.
+        IPV6_ADD_MEMBERSHIP = 12, // Add an IP group membership.
+        IPV6_JOIN_GROUP = IPV6_ADD_MEMBERSHIP,
+        IPV6_DROP_MEMBERSHIP = 13, // Drop an IP group membership.
+        IPV6_LEAVE_GROUP = IPV6_DROP_MEMBERSHIP,
+        IPV6_DONTFRAG = 14, // Don't fragment IP datagrams.
+        IPV6_PKTINFO = 19, // Receive packet information.
+        IPV6_HOPLIMIT = 21, // Receive packet hop limit.
+        IPV6_PROTECTION_LEVEL = 23, // Set/get IPv6 protection level.
+        IPV6_RECVIF = 24, // Receive arrival interface.
+        IPV6_RECVDSTADDR = 25, // Receive destination address.
+        IPV6_CHECKSUM = 26, // Offset to checksum for raw IP socket send.
+        IPV6_V6ONLY = 27, // Treat wildcard bind as AF_INET6-only.
+        IPV6_IFLIST = 28, // Enable/Disable an interface list.
+        IPV6_ADD_IFLIST = 29, // Add an interface list entry.
+        IPV6_DEL_IFLIST = 30, // Delete an interface list entry.
+        IPV6_UNICAST_IF = 31, // IP unicast interface.
+        IPV6_RTHDR = 32, // Set/get IPv6 routing header.
+        IPV6_GET_IFLIST = 33, // Get an interface list.
+        IPV6_RECVRTHDR = 38, // Receive the routing header.
+        IPV6_TCLASS = 39, // Packet traffic class.
+        IPV6_RECVTCLASS = 40, // Receive packet traffic class.
+        IPV6_ECN = 50, // Receive ECN codepoints in the IP header.
+        IPV6_PKTINFO_EX = 51, // Receive extended packet information.
+        IPV6_WFP_REDIRECT_RECORDS = 60, // WFP's Connection Redirect Records
+        IPV6_WFP_REDIRECT_CONTEXT = 70, // WFP's Connection Redirect Context
+        IP_UNSPECIFIED_HOP_LIMIT = -1
+    }
+
+    public enum IPPROTO_RM_SocketOptions
+    { }
+
+    public enum IPPROTO_TCP_SocketOptions
+    {
+        TCP_NODELAY = 0x0001,
+        TCP_EXPEDITED_1122 = 0x0002,
+        TCP_KEEPALIVE = 3,
+        TCP_MAXSEG = 4,
+        TCP_MAXRT = 5,
+        TCP_STDURG = 6,
+        TCP_NOURG = 7,
+        TCP_ATMARK = 8,
+        TCP_NOSYNRETRIES = 9,
+        TCP_TIMESTAMPS = 10,
+        TCP_OFFLOAD_PREFERENCE = 11,
+        TCP_CONGESTION_ALGORITHM = 12,
+        TCP_DELAY_FIN_ACK = 13,
+        TCP_MAXRTMS = 14,
+        TCP_BSDURGENT = 0x7000
+    }
+
+    public enum IPPROTO_UDP_SocketOptions
+    {
+        UDP_NOCHECKSUM = 1,
+        UDP_CHECKSUM_COVERAGE = 20  /* Set/get UDP-Lite checksum coverage */
+    }
+
+    public enum NSPROTO_IPX_SocketOptions
+    { }
+
+    public enum SOL_APPLETALK_SocketOptions
+    { }
+
+    public enum SOL_IRLMP_SocketOptions
+    { }
+
+    public enum SOL_SOCKET_SocketOptions
+    {
+        SO_DEBUG = 0x0001,         /* turn on debugging info recording */
+        SO_ACCEPTCONN = 0x0002,         /* socket has had listen() */
+        SO_REUSEADDR = 0x0004,         /* allow local address reuse */
+        SO_KEEPALIVE = 0x0008,         /* keep connections alive */
+        SO_DONTROUTE = 0x0010,         /* just use interface addresses */
+        SO_BROADCAST = 0x0020,         /* permit sending of broadcast msgs */
+        SO_USELOOPBACK = 0x0040,         /* bypass hardware when possible */
+        SO_LINGER = 0x0080,         /* linger on close if data present */
+        SO_OOBINLINE = 0x0100,         /* leave received OOB data in line */
+        SO_MAXDG = 0x7009,
+        SO_MAXPATHDG = 0x700A,
+        SO_UPDATE_ACCEPT_CONTEXT = 0x700B,
+        SO_CONNECT_TIME = 0x700C,
+        SO_UPDATE_CONNECT_CONTEXT = 0x7010,
+        SO_SNDBUF = 0x1001,         /* send buffer size */
+        SO_RCVBUF = 0x1002,         /* receive buffer size */
+        SO_SNDLOWAT = 0x1003,         /* send low-water mark */
+        SO_RCVLOWAT = 0x1004,         /* receive low-water mark */
+        SO_SNDTIMEO = 0x1005,         /* send timeout */
+        SO_RCVTIMEO = 0x1006,         /* receive timeout */
+        SO_ERROR = 0x1007,         /* get error status and clear */
+        SO_TYPE = 0x1008,         /* get socket type */
+        SO_BSP_STATE = 0x1009,      // get socket 5-tuple state
+
+        SO_GROUP_ID = 0x2001,     /* ID of a socket group */
+        SO_GROUP_PRIORITY = 0x2002,     /* the relative priority within a group*/
+        SO_MAX_MSG_SIZE = 0x2003,     /* maximum message size */
+        SO_PROTOCOL_INFOA = 0x2004,     /* WSAPROTOCOL_INFOA structure */
+        SO_PROTOCOL_INFOW = 0x2005,     /* WSAPROTOCOL_INFOW structure */
+        PVD_CONFIG = 0x3001,      /* configuration info for service provider */
+        SO_CONDITIONAL_ACCEPT = 0x3002,  /* enable true conditional accept: */
+                                         /*  connection is not ack-ed to the */
+                                         /*  other side until conditional */
+                                         /*  function returns CF_ACCEPT */
+        SO_PAUSE_ACCEPT = 0x3003,// pause accepting new connections
+        SO_COMPARTMENT_ID = 0x3004,// get/set the compartment for a socket
+        SO_RANDOMIZE_PORT = 0x3005,// randomize assignment of wildcard ports
+        SO_PORT_SCALABILITY = 0x3006,// enable port scalability
+        SO_REUSE_UNICASTPORT = 0x3007,// defer ephemeral port allocation for 
+                                      // outbound connections
+        SO_REUSE_MULTICASTPORT = 0x3008, // enable port reuse and disable unicast 
+                                         //reception.
+
     }
 
     [StructLayout(LayoutKind.Sequential)]

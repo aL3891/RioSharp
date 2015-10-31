@@ -12,7 +12,7 @@ namespace ConsoleApplication1
 {
     class Program
     {
-        static RIO_BUFSEGMENT currentSegment;
+        static RioBufferSegment currentSegment;
         static RioFixedBufferPool sendPool, recivePool;
         private static RioTcpListener listener;
         private static uint pipeLineDeph;
@@ -44,7 +44,7 @@ namespace ConsoleApplication1
         static void Main(string[] args)
         {
             pipeLineDeph = uint.Parse(args.FirstOrDefault(f => f.StartsWith("-p"))?.Substring(2) ?? "1");
-            uint connections = uint.Parse(args.FirstOrDefault(f => f.StartsWith("-c"))?.Substring(2) ?? "1");
+            uint connections = uint.Parse(args.FirstOrDefault(f => f.StartsWith("-c"))?.Substring(2) ?? "128");
 
             sendPool = new RioFixedBufferPool(1000, 140 * pipeLineDeph);
             recivePool = new RioFixedBufferPool(1000, 64 * pipeLineDeph);

@@ -49,9 +49,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\RioSharp\BufferSegment.cs">
-      <Link>BufferSegment.cs</Link>
-    </Compile>
     <Compile Include="..\RioSharp\Imports.cs">
       <Link>Imports.cs</Link>
     </Compile>

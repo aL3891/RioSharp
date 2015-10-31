@@ -43,7 +43,7 @@ namespace RioSharp
             sockaddr_in sa = new sockaddr_in();
             sa.sin_family = ADDRESS_FAMILIES.AF_INET;
             sa.sin_port = Imports.htons((ushort)localEP.Port);
-            Imports.ThrowLastWSAError();
+            //Imports.ThrowLastWSAError();
             sa.sin_addr = inAddress;
 
             unsafe

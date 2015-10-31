@@ -11,8 +11,8 @@ namespace RioSharp
     public class RioTcpSocketStream : Stream
     {
         RioTcpSocket _socket;
-        BufferSegment _currentInputSegment;
-        uint _currentOutputSegment;
+        RioBufferSegment _currentInputSegment;
+        RioBufferSegment _currentOutputSegment;
         int _bytesReadInCurrentSegment = 0;
         long _bytesWrittenInCurrentSegment = 0;
 
@@ -29,13 +29,12 @@ namespace RioSharp
                 _socket._pool.CommitSend(_socket._requestQueue);
             else
             {
-                _socket._pool.SendInternal(_currentOutputSegment, (uint)_bytesWrittenInCurrentSegment, RIO_SEND_FLAGS.NONE, _socket._requestQueue);
-            }
-
-            if (moreData)
-            {
-                _currentOutputSegment = _socket._pool.SendBufferPool.GetBuffer();
-                _bytesWrittenInCurrentSegment = 0;
+                _socket._pool.SendInternal(_currentOutputSegment, RIO_SEND_FLAGS.NONE, _socket._requestQueue);
+                if (moreData)
+                {
+                    _currentOutputSegment = _socket._pool.SendBufferPool.GetBuffer();
+                    _bytesWrittenInCurrentSegment = 0;
+                }
             }
         }
 
@@ -76,13 +75,13 @@ namespace RioSharp
                     _bytesReadInCurrentSegment = 0;
                 }
 
-                if (_currentInputSegment.Length == 0)
+                if (_currentInputSegment.CurrentLength == 0)
                     return 0;
 
-                var toCopy = Math.Min(count, (int)_currentInputSegment.Length - _bytesReadInCurrentSegment);
+                var toCopy = Math.Min(count, (int)_currentInputSegment.CurrentLength - _bytesReadInCurrentSegment);
                 unsafe
                 {
-                    var pointer = (byte*)_socket._pool.ReciveBufferPool.BufferPointer.ToPointer() + _currentInputSegment.Segment;
+                    var pointer = (byte*)_currentInputSegment.Pointer.ToPointer();
 
                     fixed (byte* p = &buffer[0])
                     {
@@ -94,9 +93,9 @@ namespace RioSharp
                     _bytesReadInCurrentSegment += toCopy;
                     readInCurrentRequest += toCopy;
 
-                    if (_bytesReadInCurrentSegment == _currentInputSegment.Length)
+                    if (_bytesReadInCurrentSegment == _currentInputSegment.CurrentLength)
                     {
-                        _socket._pool.ReciveBufferPool.ReleaseBuffer(_currentInputSegment.Segment);
+                        _currentInputSegment.Dispose();
                         _currentInputSegment = null;
                     }
                 }
@@ -121,7 +120,7 @@ namespace RioSharp
                 remainingSpaceInSegment = _socket._pool.SendBufferPool.SegmentLength - _bytesWrittenInCurrentSegment;
                 if (remainingSpaceInSegment == 0)
                 {
-                    _socket._pool.SendInternal(_currentOutputSegment, (uint)_bytesWrittenInCurrentSegment, RIO_SEND_FLAGS.DEFER | RIO_SEND_FLAGS.DONT_NOTIFY, _socket._requestQueue);
+                    _socket._pool.SendInternal(_currentOutputSegment, RIO_SEND_FLAGS.DEFER | RIO_SEND_FLAGS.DONT_NOTIFY, _socket._requestQueue);
                     _currentOutputSegment = _socket._pool.SendBufferPool.GetBuffer();
                     _bytesWrittenInCurrentSegment = 0;
                     continue;
@@ -131,7 +130,7 @@ namespace RioSharp
 
                 fixed (byte* p = &buffer[0])
                 {
-                    Buffer.MemoryCopy(p + offset + written, (byte*)_socket._pool.SendBufferPool.BufferPointer.ToPointer() + _bytesWrittenInCurrentSegment + _currentOutputSegment, remainingSpaceInSegment, toWrite);
+                    Buffer.MemoryCopy(p + offset + written, (byte*)_currentOutputSegment.Pointer.ToPointer() + _bytesWrittenInCurrentSegment, remainingSpaceInSegment, toWrite);
                 }
 
                 _bytesWrittenInCurrentSegment += (int)toWrite;
@@ -144,13 +143,10 @@ namespace RioSharp
             Flush(false);
 
             if (_currentInputSegment != null)
-                _socket._pool.ReciveBufferPool.ReleaseBuffer(_currentInputSegment.Segment);
+                _currentInputSegment.Dispose();
 
-            _socket._pool.SendBufferPool.ReleaseBuffer(_currentOutputSegment);
+            _currentOutputSegment.Dispose();
         }
-
- 
-
 
         public override bool CanRead => true;
         public override bool CanSeek => false;

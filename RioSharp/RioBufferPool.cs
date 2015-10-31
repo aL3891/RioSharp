@@ -9,47 +9,92 @@ using System.Threading.Tasks.Dataflow;
 
 namespace RioSharp
 {
+
+    public class RioBufferSegment : IDisposable
+    {
+        internal IntPtr Pointer;
+        internal uint Index;
+        internal uint totalLength;
+        internal uint CurrentLength;
+        internal uint Offset;
+        RioFixedBufferPool pool;
+        internal RIO_BUFSEGMENT internalSegment;
+        internal bool AutoFree;
+
+        public RioBufferSegment(RioFixedBufferPool pool, IntPtr pointer, uint index, uint totalLength, uint offset)
+        {
+            Pointer = pointer;
+            Index = index;
+            this.totalLength = totalLength;
+            CurrentLength = 0;
+            Offset = offset;
+            this.pool = pool;
+            AutoFree = true;
+        }
+
+        public void SetBufferId(IntPtr id)
+        {
+            internalSegment = new RIO_BUFSEGMENT(id, Offset, totalLength);
+        }
+
+        public void Dispose()
+        {
+            pool.ReleaseBuffer(this);
+        }
+    }
+
     public class RioFixedBufferPool : IDisposable
     {
-        public IntPtr BufferPointer;
-        public uint SegmentLength;
-        public uint TotalLength;
-        BufferBlock<uint> _availableSegments = new BufferBlock<uint>();
+        internal IntPtr BufferPointer;
+        internal uint SegmentLength;
+        internal uint TotalLength;
+        ConcurrentStack<RioBufferSegment> _availableSegments = new ConcurrentStack<RioBufferSegment>();
+        internal RioBufferSegment[] allSegments;
 
         public RioFixedBufferPool(uint segmentCount, uint segmentLength)
         {
+            allSegments = new RioBufferSegment[segmentCount];
             SegmentLength = segmentLength;
             TotalLength = segmentCount * segmentLength;
             BufferPointer = Marshal.AllocHGlobal(new IntPtr(TotalLength));
 
             for (uint i = 0; i < segmentCount; i++)
-                _availableSegments.Post(i * SegmentLength);
+            {
+                var b = new RioBufferSegment(this, BufferPointer + (int)(i * SegmentLength), i, SegmentLength, (i * SegmentLength));
+                allSegments[i] = b;
+                _availableSegments.Push(b);
+            }
         }
 
-        public uint GetBuffer()
+        public void SetBufferId(IntPtr id)
         {
-            uint bufferNo;
-            if (_availableSegments.TryReceive(out bufferNo))
-                return bufferNo;
-            else
-                return _availableSegments.ReceiveAsync().Result;
+            for (int i = 0; i < allSegments.Length; i++)
+                allSegments[i].SetBufferId(id);
         }
 
-
-        public uint GetBuffer(int requestedBufferSize, out uint actualBufferSize)
+        public RioBufferSegment GetBuffer()
         {
-            uint bufferNo;
-            actualBufferSize = SegmentLength;
-            if (_availableSegments.TryReceive(out bufferNo))
-                return bufferNo;
-            else
-                return _availableSegments.ReceiveAsync().Result;
+            RioBufferSegment buf;
+            do
+            {
+                if (_availableSegments.TryPop(out buf))
+                    return buf;
+            } while (true);
         }
 
-
-        public void ReleaseBuffer(uint bufferIndex)
+        public RioBufferSegment GetBuffer(int requestedBufferSize)
         {
-            _availableSegments.Post(bufferIndex);
+            RioBufferSegment buf;
+            do
+            {
+                if (_availableSegments.TryPop(out buf))
+                    return buf;
+            } while (true);
+        }
+
+        public void ReleaseBuffer(RioBufferSegment bufferIndex)
+        {
+            _availableSegments.Push(bufferIndex);
         }
 
         public void Dispose()

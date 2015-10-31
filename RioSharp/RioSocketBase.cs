@@ -11,7 +11,7 @@ namespace RioSharp
         internal IntPtr _socket;
         internal RioSocketPoolBase _pool;
         internal IntPtr _requestQueue;
-        internal BufferBlock<BufferSegment> incommingSegments = new BufferBlock<BufferSegment>();
+        internal BufferBlock<RioBufferSegment> incommingSegments = new BufferBlock<RioBufferSegment>();
         
         public RioSocketBase(IntPtr socket, RioSocketPoolBase pool)
         {
@@ -23,7 +23,7 @@ namespace RioSharp
         }
 
 
-        public void WritePreAllocated(RIO_BUFSEGMENT Segment)
+        public void WritePreAllocated(RioBufferSegment Segment)
         {
             _pool.WritePreAllocated(Segment, _requestQueue);
         }
@@ -36,11 +36,11 @@ namespace RioSharp
         public virtual void Dispose()
         {
             incommingSegments.Complete();
-            IList<BufferSegment> segments;
+            IList<RioBufferSegment> segments;
             incommingSegments.TryReceiveAll(out segments);
             if (segments != null)
                 foreach (var s in segments)
-                    _pool.ReciveBufferPool.ReleaseBuffer(s.Segment);
+                    _pool.ReciveBufferPool.ReleaseBuffer(s);
 
             _pool.Recycle(this);
         }

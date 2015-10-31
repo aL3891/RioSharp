@@ -51,9 +51,11 @@ namespace RioSharp
 
             _sendBufferId = RioStatic.RegisterBuffer(SendBufferPool.BufferPointer, SendBufferPool.TotalLength);
             Imports.ThrowLastWSAError();
+            SendBufferPool.SetBufferId(_sendBufferId);
 
             _reciveBufferId = RioStatic.RegisterBuffer(ReciveBufferPool.BufferPointer, ReciveBufferPool.TotalLength);
             Imports.ThrowLastWSAError();
+            ReciveBufferPool.SetBufferId(_reciveBufferId);
 
             var sendCompletionMethod = new RIO_NOTIFICATION_COMPLETION()
             {
@@ -98,31 +100,32 @@ namespace RioSharp
             var currentSegment = SendBufferPool.GetBuffer();
             fixed (byte* p = &buffer[0])
             {
-                Buffer.MemoryCopy(p, (byte*)SendBufferPool.BufferPointer.ToPointer() + currentSegment, SendBufferPool.SegmentLength, buffer.Length);
+                Buffer.MemoryCopy(p, (byte*)currentSegment.Pointer.ToPointer(), currentSegment.totalLength, buffer.Length);
             }
 
-            SendInternal(currentSegment, (uint)buffer.Length, RIO_SEND_FLAGS.NONE, _requestQueue);
+            SendInternal(currentSegment, RIO_SEND_FLAGS.NONE, _requestQueue);
         }
 
-        public unsafe RIO_BUFSEGMENT PreAllocateWrite(byte[] buffer)
+        public unsafe RioBufferSegment PreAllocateWrite(byte[] buffer)
         {
             var currentSegment = SendBufferPool.GetBuffer();
             fixed (byte* p = &buffer[0])
             {
-                Buffer.MemoryCopy(p, (byte*)SendBufferPool.BufferPointer.ToPointer() + currentSegment, SendBufferPool.SegmentLength, buffer.Length);
+                Buffer.MemoryCopy(p, (byte*)currentSegment.Pointer.ToPointer(), SendBufferPool.SegmentLength, buffer.Length);
             }
-            return new RIO_BUFSEGMENT(_sendBufferId, currentSegment, (uint)buffer.Length);
+            currentSegment.AutoFree = false;
+            return currentSegment;
         }
 
-        public void FreePreAllocated(RIO_BUFSEGMENT segment)
+        public void FreePreAllocated(RioBufferSegment segment)
         {
-            SendBufferPool.ReleaseBuffer(segment.Offset);
+            segment.Dispose();
         }
 
-        public unsafe void WritePreAllocated(RIO_BUFSEGMENT Segment, IntPtr _requestQueue)
+        public unsafe void WritePreAllocated(RioBufferSegment Segment, IntPtr _requestQueue)
         {
-            var currentBuffer = Segment;
-            if (!RioStatic.Send(_requestQueue, &currentBuffer, 1, RIO_SEND_FLAGS.NONE, dontFree | Segment.Offset))
+            var currentBuffer = Segment.internalSegment;
+            if (!RioStatic.Send(_requestQueue, &currentBuffer, 1, RIO_SEND_FLAGS.NONE, Segment.Index))
                 Imports.ThrowLastWSAError();
         }
 
@@ -132,17 +135,18 @@ namespace RioSharp
                 Imports.ThrowLastWSAError();
         }
 
-        internal unsafe void SendInternal(uint segment, uint length, RIO_SEND_FLAGS flags, IntPtr _requestQueue)
+        internal unsafe void SendInternal(RioBufferSegment segment, RIO_SEND_FLAGS flags, IntPtr _requestQueue)
         {
-            var currentBuffer = new RIO_BUFSEGMENT(_sendBufferId, segment, length);
-            if (!RioStatic.Send(_requestQueue, &currentBuffer, 1, flags, segment))
+            var currentBuffer = segment.internalSegment;
+            if (!RioStatic.Send(_requestQueue, &currentBuffer, 1, flags, segment.Index))
                 Imports.ThrowLastWSAError();
         }
 
         internal unsafe void ReciveInternal(IntPtr _requestQueue)
         {
-            var currentBuffer = new RIO_BUFSEGMENT(_reciveBufferId, ReciveBufferPool.GetBuffer(), ReciveBufferPool.SegmentLength);
-            if (!RioStatic.Receive(_requestQueue, ref currentBuffer, 1, RIO_RECEIVE_FLAGS.NONE, currentBuffer.Offset))
+            var buf = ReciveBufferPool.GetBuffer();
+            var currentBuffer = buf.internalSegment;
+            if (!RioStatic.Receive(_requestQueue, &currentBuffer, 1, RIO_RECEIVE_FLAGS.NONE, buf.Index))
                 Imports.ThrowLastWSAError();
         }
 
@@ -154,7 +158,7 @@ namespace RioSharp
             uint count, key, bytes;
             NativeOverlapped* overlapped;
             RIO_RESULT result;
-
+            RioBufferSegment buf;
 
             while (true)
             {
@@ -171,8 +175,14 @@ namespace RioSharp
                         for (var i = 0; i < count; i++)
                         {
                             result = results[i];
+                            buf = ReciveBufferPool.allSegments[result.RequestCorrelation];
                             if (connections.TryGetValue(result.ConnectionCorrelation, out connection))
-                                connection.incommingSegments.Post(new BufferSegment((uint)result.RequestCorrelation, result.BytesTransferred));
+                            {
+                                buf.CurrentLength = result.BytesTransferred;
+                                connection.incommingSegments.Post(buf);
+                            }
+                            else
+                                buf.Dispose();
                         }
 
                     } while (count > 0);
@@ -200,10 +210,10 @@ namespace RioSharp
                         Imports.ThrowLastWSAError();
                         for (var i = 0; i < count; i++)
                         {
-                            if ((results[i].RequestCorrelation & dontFree) != dontFree)
-                                SendBufferPool.ReleaseBuffer((uint)results[i].RequestCorrelation);
+                            var buf = SendBufferPool.allSegments[results[i].RequestCorrelation];
+                            if (buf.AutoFree)
+                                buf.Dispose();
                         }
-
 
                     } while (count > 0);
                 }

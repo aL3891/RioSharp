@@ -61,12 +61,6 @@ namespace ConsoleApplication1
             });
 
             listener.Bind(new IPEndPoint(new IPAddress(new byte[] { 0, 0, 0, 0 }), 5000));
-            listener.MaxConnections = 1024 * connections;
-            listener.MaxOutsandingCompletions = 2048 * (int)connections;
-            listener.MaxOutstandingReceive = 1024 * connections;
-            listener.MaxOutstandingSend = 1024 * connections;
-
-
             listener.Listen(1024 * (int)connections);
             while (true)
             {

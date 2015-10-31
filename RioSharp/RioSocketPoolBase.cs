@@ -11,26 +11,21 @@ namespace RioSharp
 {
     public class RioSocketPoolBase : IDisposable
     {
-        internal RioFixedBufferPool SendBufferPool;
-        internal RioFixedBufferPool ReciveBufferPool;
-        internal IntPtr _sendBufferId;
-        internal IntPtr _reciveBufferId;
-
-        internal IntPtr SendCompletionPort;
-        internal IntPtr SendCompletionQueue;
-        internal IntPtr ReceiveCompletionPort;
-        internal IntPtr ReceiveCompletionQueue;
-
-        public int MaxOutsandingCompletions = 1024 * 128;
-        public uint MaxOutstandingReceive = 512;
-        public uint MaxOutstandingSend = 512;
-        public uint MaxConnections = 512;
+        internal RioFixedBufferPool SendBufferPool, ReciveBufferPool;
+        internal IntPtr _sendBufferId, _reciveBufferId;
+        internal IntPtr SendCompletionPort, SendCompletionQueue, ReceiveCompletionPort, ReceiveCompletionQueue;
+        internal uint MaxOutstandingReceive, MaxOutstandingSend, MaxConnections, MaxOutsandingCompletions;
 
         internal ConcurrentDictionary<long, RioSocketBase> connections = new ConcurrentDictionary<long, RioSocketBase>();
         public static long dontFree = 1 << 63;
 
-        public unsafe RioSocketPoolBase(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool)
+        public unsafe RioSocketPoolBase(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool, uint maxOutstandingReceive = 1024, uint maxOutstandingSend = 1024, uint maxConnections = 1024)
         {
+            MaxOutstandingReceive = maxOutstandingReceive;
+            MaxOutstandingSend = maxOutstandingSend;
+            MaxConnections = maxConnections;
+            MaxOutsandingCompletions = (MaxOutstandingReceive + MaxOutstandingSend) * MaxConnections;
+
             SendBufferPool = sendPool;
             ReciveBufferPool = revicePool;
 

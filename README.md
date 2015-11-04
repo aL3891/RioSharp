@@ -16,7 +16,7 @@ Currently my road map is something like this:
 
 * Implement support for doing outgoing tcp calls - _Done_
 * Implement simple http server and client for benchmarking - _Done_
-* Implement support for udp
-* Add ctstraffic test client and server
+* Implement support for udp - _In progress_
+* Add ctstraffic test client and server - _In progress_
 * Investigate socket reuse via ConnectEx, AcceptEx and DisconnectEx
 * Implement httpClient support

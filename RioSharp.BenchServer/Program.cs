@@ -37,8 +37,10 @@ namespace ConsoleApplication1
             var newSegment = listener.PreAllocateWrite(responseBytes);
             var oldSegment = currentSegment;
             currentSegment = newSegment;
-            listener.FreePreAllocated(oldSegment);
+            oldSegment.Dispose();
         }
+
+       
 
 
         static void Main(string[] args)
@@ -154,7 +156,7 @@ namespace ConsoleApplication1
                         current += buffer[i];
                         current = current << 8;
                         if (current == endOfRequest)
-                            socket.Stream.Write(responseBytes,0,responseBytes.Length);
+                            socket.Stream.Write(responseBytes, 0, responseBytes.Length);
                     }
 
                     leftoverLength = r % 4;

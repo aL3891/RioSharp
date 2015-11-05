@@ -12,7 +12,7 @@ namespace RioSharp
         internal RioSocketPoolBase _pool;
         internal IntPtr _requestQueue;
         internal BufferBlock<RioBufferSegment> incommingSegments = new BufferBlock<RioBufferSegment>();
-        
+
         public RioSocketBase(IntPtr socket, RioSocketPoolBase pool)
         {
             _socket = socket;
@@ -22,15 +22,43 @@ namespace RioSharp
 
         }
 
-
-        public void WritePreAllocated(RioBufferSegment Segment)
+        public unsafe void WritePreAllocated(RioBufferSegment Segment)
         {
-            _pool.WritePreAllocated(Segment, _requestQueue);
+            var currentBuffer = Segment.internalSegment;
+            if (!RioStatic.Send(_requestQueue, &currentBuffer, 1, RIO_SEND_FLAGS.NONE, Segment.Index))
+                Imports.ThrowLastWSAError();
         }
 
-        public void WriteFixed(byte[] buffer)
+        internal unsafe void CommitSend()
         {
-            _pool.WriteFixed(buffer, _requestQueue);
+            if (!RioStatic.Send(_requestQueue, null, 0, RIO_SEND_FLAGS.COMMIT_ONLY, 0))
+                Imports.ThrowLastWSAError();
+        }
+
+        internal unsafe void SendInternal(RioBufferSegment segment, RIO_SEND_FLAGS flags)
+        {
+            var currentBuffer = segment.internalSegment;
+            if (!RioStatic.Send(_requestQueue, &currentBuffer, 1, flags, segment.Index))
+                Imports.ThrowLastWSAError();
+        }
+
+        internal unsafe void ReciveInternal()
+        {
+            var buf = _pool.ReciveBufferPool.GetBuffer();
+            var currentBuffer = buf.internalSegment;
+            if (!RioStatic.Receive(_requestQueue, &currentBuffer, 1, RIO_RECEIVE_FLAGS.NONE, buf.Index))
+                Imports.ThrowLastWSAError();
+        }
+
+        public unsafe void WriteFixed(byte[] buffer)
+        {
+            var currentSegment = _pool.SendBufferPool.GetBuffer();
+            fixed (byte* p = &buffer[0])
+            {
+                Buffer.MemoryCopy(p, (byte*)currentSegment.Pointer.ToPointer(), currentSegment.totalLength, buffer.Length);
+            }
+
+            SendInternal(currentSegment, RIO_SEND_FLAGS.NONE);
         }
 
         public virtual void Dispose()

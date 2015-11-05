@@ -49,6 +49,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\RioSharp\AwaitableQueue.cs">
+      <Link>AwaitableQueue.cs</Link>
+    </Compile>
     <Compile Include="..\RioSharp\Imports.cs">
       <Link>Imports.cs</Link>
     </Compile>
@@ -64,11 +67,11 @@
     <Compile Include="..\RioSharp\RioTcpClientPool.cs">
       <Link>RioTcpClientPool.cs</Link>
     </Compile>
-    <Compile Include="..\RioSharp\RioTcpConnection.cs">
-      <Link>RioTcpConnection.cs</Link>
-    </Compile>
     <Compile Include="..\RioSharp\RioTcpListener.cs">
       <Link>RioTcpListener.cs</Link>
+    </Compile>
+    <Compile Include="..\RioSharp\RioTcpSocket.cs">
+      <Link>RioTcpSocket.cs</Link>
     </Compile>
     <Compile Include="..\RioSharp\RioTcpSocketPoolBase.cs">
       <Link>RioTcpSocketPoolBase.cs</Link>

@@ -88,19 +88,7 @@ namespace RioSharp
             sendThread.IsBackground = true;
             sendThread.Start();
         }
-
-
-        public unsafe void WriteFixed(byte[] buffer, IntPtr _requestQueue)
-        {
-            var currentSegment = SendBufferPool.GetBuffer();
-            fixed (byte* p = &buffer[0])
-            {
-                Buffer.MemoryCopy(p, (byte*)currentSegment.Pointer.ToPointer(), currentSegment.totalLength, buffer.Length);
-            }
-
-            SendInternal(currentSegment, RIO_SEND_FLAGS.NONE, _requestQueue);
-        }
-
+        
         public unsafe RioBufferSegment PreAllocateWrite(byte[] buffer)
         {
             var currentSegment = SendBufferPool.GetBuffer();
@@ -111,40 +99,7 @@ namespace RioSharp
             currentSegment.AutoFree = false;
             return currentSegment;
         }
-
-        public void FreePreAllocated(RioBufferSegment segment)
-        {
-            segment.Dispose();
-        }
-
-        public unsafe void WritePreAllocated(RioBufferSegment Segment, IntPtr _requestQueue)
-        {
-            var currentBuffer = Segment.internalSegment;
-            if (!RioStatic.Send(_requestQueue, &currentBuffer, 1, RIO_SEND_FLAGS.NONE, Segment.Index))
-                Imports.ThrowLastWSAError();
-        }
-
-        internal unsafe void CommitSend(IntPtr _requestQueue)
-        {
-            if (!RioStatic.Send(_requestQueue, null, 0, RIO_SEND_FLAGS.COMMIT_ONLY, 0))
-                Imports.ThrowLastWSAError();
-        }
-
-        internal unsafe void SendInternal(RioBufferSegment segment, RIO_SEND_FLAGS flags, IntPtr _requestQueue)
-        {
-            var currentBuffer = segment.internalSegment;
-            if (!RioStatic.Send(_requestQueue, &currentBuffer, 1, flags, segment.Index))
-                Imports.ThrowLastWSAError();
-        }
-
-        internal unsafe void ReciveInternal(IntPtr _requestQueue)
-        {
-            var buf = ReciveBufferPool.GetBuffer();
-            var currentBuffer = buf.internalSegment;
-            if (!RioStatic.Receive(_requestQueue, &currentBuffer, 1, RIO_RECEIVE_FLAGS.NONE, buf.Index))
-                Imports.ThrowLastWSAError();
-        }
-
+        
         unsafe void ProcessReceiveCompletes(object o)
         {
             const int maxResults = 1024;

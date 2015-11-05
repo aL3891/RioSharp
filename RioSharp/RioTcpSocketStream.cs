@@ -14,7 +14,7 @@ namespace RioSharp
         RioBufferSegment _currentInputSegment;
         RioBufferSegment _currentOutputSegment;
         int _bytesReadInCurrentSegment = 0;
-        long _bytesWrittenInCurrentSegment = 0;
+        int _bytesWrittenInCurrentSegment = 0;
 
         public RioTcpSocketStream(RioTcpSocket socket)
         {
@@ -26,10 +26,10 @@ namespace RioSharp
         public void Flush(bool moreData)
         {
             if (_bytesWrittenInCurrentSegment == 0)
-                _socket._pool.CommitSend(_socket._requestQueue);
+                _socket.CommitSend();
             else
             {
-                _socket._pool.SendInternal(_currentOutputSegment, RIO_SEND_FLAGS.NONE, _socket._requestQueue);
+                _socket.SendInternal(_currentOutputSegment, RIO_SEND_FLAGS.NONE);
                 if (moreData)
                 {
                     _currentOutputSegment = _socket._pool.SendBufferPool.GetBuffer();
@@ -60,7 +60,7 @@ namespace RioSharp
                         }
                         else
                         {
-                            _socket._pool.ReciveInternal(_socket._requestQueue);
+                            _socket.ReciveInternal();
 
                             try
                             {
@@ -112,30 +112,30 @@ namespace RioSharp
 
         public override unsafe void Write(byte[] buffer, int offset, int count)
         {
-            long remainingSpaceInSegment;
-            var written = 0L;
+            int remainingSpaceInSegment;
+            var writtenFromBuffer = 0;
 
             do
             {
-                remainingSpaceInSegment = _socket._pool.SendBufferPool.SegmentLength - _bytesWrittenInCurrentSegment;
+                remainingSpaceInSegment = (int)_currentOutputSegment.totalLength - _bytesWrittenInCurrentSegment;
                 if (remainingSpaceInSegment == 0)
                 {
-                    _socket._pool.SendInternal(_currentOutputSegment, RIO_SEND_FLAGS.DEFER | RIO_SEND_FLAGS.DONT_NOTIFY, _socket._requestQueue);
+                    _socket.SendInternal(_currentOutputSegment, RIO_SEND_FLAGS.DEFER | RIO_SEND_FLAGS.DONT_NOTIFY);
                     _currentOutputSegment = _socket._pool.SendBufferPool.GetBuffer();
                     _bytesWrittenInCurrentSegment = 0;
                     continue;
                 }
 
-                var toWrite = Math.Min(remainingSpaceInSegment, count - written);
+                var toWrite = Math.Min(remainingSpaceInSegment, count - writtenFromBuffer);
 
                 fixed (byte* p = &buffer[0])
                 {
-                    Buffer.MemoryCopy(p + offset + written, (byte*)_currentOutputSegment.Pointer.ToPointer() + _bytesWrittenInCurrentSegment, remainingSpaceInSegment, toWrite);
+                    Buffer.MemoryCopy(p + offset + writtenFromBuffer, (byte*)_currentOutputSegment.Pointer.ToPointer() + _bytesWrittenInCurrentSegment, remainingSpaceInSegment, toWrite);
                 }
 
                 _bytesWrittenInCurrentSegment += (int)toWrite;
-                written += toWrite;
-            } while (written < count);
+                writtenFromBuffer += toWrite;
+            } while (writtenFromBuffer < count);
         }
 
         protected override void Dispose(bool disposing)

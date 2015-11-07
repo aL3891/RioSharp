@@ -21,7 +21,7 @@ namespace RioSharp
 
             var res = new RioUdpSocket(sock, this);
 
-            return null;
+            return res;
         }
     }
 }

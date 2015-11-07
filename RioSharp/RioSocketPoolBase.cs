@@ -5,7 +5,6 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
 
 namespace RioSharp
 {
@@ -129,7 +128,8 @@ namespace RioSharp
                             if (connections.TryGetValue(result.ConnectionCorrelation, out connection))
                             {
                                 buf.CurrentLength = result.BytesTransferred;
-                                connection.incommingSegments.Post(buf);
+                                connection.incommingSegments.Enqueue(buf);
+                                connection.ReciveInternal();
                             }
                             else
                                 buf.Dispose();

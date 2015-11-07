@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
+
 
 namespace RioSharp
 {
@@ -51,25 +51,18 @@ namespace RioSharp
             {
                 if (_currentInputSegment == null)
                 {
-                    if (!_socket.incommingSegments.TryReceive(out _currentInputSegment))
+                    if (!_socket.incommingSegments.TryDequeue(out _currentInputSegment))
                     {
                         if (readInCurrentRequest != 0)
                         {
                             _currentInputSegment = null;
-                            return (int)readInCurrentRequest;
+                            return readInCurrentRequest;
                         }
                         else
                         {
-                            _socket.ReciveInternal();
-
-                            try
-                            {
-                                _currentInputSegment = await _socket.incommingSegments.ReceiveAsync(cancellationToken);
-                            }
-                            catch (InvalidOperationException)
-                            {
+                            _currentInputSegment = await _socket.incommingSegments;
+                            if (_currentInputSegment == null)
                                 return 0;
-                            }
                         }
                     }
                     _bytesReadInCurrentSegment = 0;

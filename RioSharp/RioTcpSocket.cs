@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
+
 
 namespace RioSharp
 {
@@ -17,13 +17,13 @@ namespace RioSharp
         {
             Stream = new RioTcpSocketStream(this);
         }
-        
+
         public override void Dispose()
         {
             Stream.Dispose();
             base.Dispose();
         }
-        
+
     }
 
 

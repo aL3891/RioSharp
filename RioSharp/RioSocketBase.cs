@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
+
 
 namespace RioSharp
 {
@@ -11,7 +11,7 @@ namespace RioSharp
         internal IntPtr _socket;
         internal RioSocketPoolBase _pool;
         internal IntPtr _requestQueue;
-        internal BufferBlock<RioBufferSegment> incommingSegments = new BufferBlock<RioBufferSegment>();
+        public AwaitableQueue<RioBufferSegment> incommingSegments = new AwaitableQueue<RioBufferSegment>();
 
         public RioSocketBase(IntPtr socket, RioSocketPoolBase pool)
         {
@@ -19,7 +19,7 @@ namespace RioSharp
             _pool = pool;
             _requestQueue = RioStatic.CreateRequestQueue(_socket, _pool.MaxOutstandingReceive, 1, _pool.MaxOutstandingSend, 1, _pool.ReceiveCompletionQueue, _pool.SendCompletionQueue, GetHashCode());
             Imports.ThrowLastWSAError();
-
+            ReciveInternal(); ReciveInternal();
         }
 
         public unsafe void WritePreAllocated(RioBufferSegment Segment)
@@ -28,7 +28,7 @@ namespace RioSharp
             if (!RioStatic.Send(_requestQueue, &currentBuffer, 1, RIO_SEND_FLAGS.NONE, Segment.Index))
                 Imports.ThrowLastWSAError();
         }
-
+        
         internal unsafe void CommitSend()
         {
             if (!RioStatic.Send(_requestQueue, null, 0, RIO_SEND_FLAGS.COMMIT_ONLY, 0))
@@ -63,14 +63,14 @@ namespace RioSharp
 
         public virtual void Dispose()
         {
-            incommingSegments.Complete();
-            IList<RioBufferSegment> segments;
-            incommingSegments.TryReceiveAll(out segments);
-            if (segments != null)
-                foreach (var s in segments)
-                    _pool.ReciveBufferPool.ReleaseBuffer(s);
+
+            RioBufferSegment s;
+            while (incommingSegments.TryDequeue(out s))
+                s.Dispose();
+
 
             _pool.Recycle(this);
         }
     }
 }
+

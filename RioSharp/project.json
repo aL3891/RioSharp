@@ -1,11 +1,10 @@
-﻿{
+{
   "version": "0.0.4-*",
   "description": "RioSharp Class Library",
   "authors": [ "aL3891" ],
   "tags": [ "" ],
   "projectUrl": "https://github.com/aL3891/RioSharp",
   "licenseUrl": "",
-
   "compilationOptions": {
     "allowUnsafe": true,
     "optimize": true
@@ -13,7 +12,7 @@
   "frameworks": {
     "dnx46": {
       "dependencies": {
-        "System.Threading.Tasks.Dataflow": "4.5.25"
+   
       },
       "frameworkAssemblies": {
         "System": "4.0.0.0",
@@ -29,25 +28,24 @@
     },
     "dnxcore50": {
       "dependencies": {
-        "System.ComponentModel": "4.0.1-beta-23225",
-        "System.Net.NetworkInformation": "4.1.0-beta-23225",
-        "System.Net.Sockets": "4.1.0-beta-23225",
-        "System.Collections": "4.0.11-beta-23225",
-        "System.Linq": "4.0.1-beta-23225",
-        "System.Threading": "4.0.11-beta-23225",
-        "System.Threading.Overlapped": "4.0.1-beta-23225",
-        "System.Runtime": "4.0.21-beta-23225",
-        "Microsoft.CSharp": "4.0.1-beta-23225",
-        "Microsoft.Tpl.Dataflow": "4.5.24",
-        "System.Collections.Concurrent": "4.0.11-beta-23225",
+        "System.ComponentModel": "4.0.1-beta-*",
+        "System.Net.NetworkInformation": "4.1.0-beta-*",
+        "System.Net.Sockets": "4.1.0-beta-*",
+        "System.Collections": "4.0.11-beta-*",
+        "System.Linq": "4.0.1-beta-*",
+        "System.Threading": "4.0.11-beta-*",
+        "System.Threading.Overlapped": "4.0.1-beta-*",
+        "System.Runtime": "4.0.21-beta-*",
+        "Microsoft.CSharp": "4.0.1-beta-*",
+        "System.Collections.Concurrent": "4.0.11-beta-*",
         "System.Threading.Thread": "4.0.0-beta-*",
         "System.Threading.ThreadPool": "4.0.10-beta-*",
         "System.Net.Primitives": "4.0.11-beta-*",
         "System.Runtime.Extensions": "4.0.11-beta-*",
         "System.Runtime.InteropServices": "4.0.21-beta-*",
         "System.Console": "4.0.0-beta-*",
-        "Microsoft.Win32.Primitives": "4.0.1-beta-23225",
-        "System.Net.NameResolution": "4.0.0-beta-23225"
+        "Microsoft.Win32.Primitives": "4.0.1-beta-*",
+        "System.Net.NameResolution": "4.0.0-beta-*"
       }
     }
   }

@@ -3,13 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-
-#if !DNX46 
-
-namespace System.Security
+namespace RioSharp.Aspnet.Host
 {
-    public class SuppressUnmanagedCodeSecurityAttribute : Attribute
+    public class Program
     {
+        public void Main(string[] args)
+        {
+        }
     }
 }
-#endif

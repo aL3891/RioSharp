@@ -1,0 +1,31 @@
+﻿{
+  "version": "1.0.0-*",
+  "description": "RioSharp.Aspnet.Host Console Application",
+  "authors": [ "allan.lindqvist" ],
+  "tags": [ "" ],
+  "projectUrl": "",
+  "licenseUrl": "",
+
+  "dependencies": {
+    "Microsoft.AspNet.Hosting": "1.0.0-*",
+    "RioSharp": "0.0.0-*"
+  },
+
+  "commands": {
+    "RioSharp.Aspnet.Host": "RioSharp.Aspnet.Host"
+  },
+
+  "frameworks": {
+    "dnx46": {
+      "frameworkAssemblies": {
+        "System.Net.Http": ""
+      }
+    },
+    "dotnet5.4": {
+      "dependencies": {
+        "System.Diagnostics.Contracts": "4.0.1-beta-*",
+        "System.Net.Http": "4.0.1-beta-*"
+      }
+    }
+  }
+}

@@ -8,7 +8,7 @@
 
   "dependencies": {
     "Microsoft.AspNet.Hosting": "1.0.0-*",
-    "RioSharp": "0.0.0-*"
+    "RioSharp": "0.0.4-*"
   },
 
   "commands": {

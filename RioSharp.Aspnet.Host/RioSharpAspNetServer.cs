@@ -13,7 +13,7 @@ namespace RioSharp.Aspnet.Host
 {
     public class RioSharpServer : IServer
     {
-        private IConfiguration configuration;
+
         private ILogger _logger;
         private IApplicationLifetime _appLifetime;
         private IHttpContextFactory _httpContextFactory;
@@ -33,12 +33,12 @@ namespace RioSharp.Aspnet.Host
 
         public void Dispose()
         {
-            throw new NotImplementedException();
+            
         }
 
         public void Start(RequestDelegate requestDelegate)
         {
-            throw new NotImplementedException();
+            
         }
     }
 }

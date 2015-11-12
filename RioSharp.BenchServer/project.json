@@ -53,6 +53,6 @@
     }
   },
   "dependencies": {
-    "RioSharp": "0.0.0-*"
+    "RioSharp": "0.0.4-*"
   }
 }

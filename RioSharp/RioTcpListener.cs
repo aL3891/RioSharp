@@ -11,13 +11,11 @@ using System.Threading.Tasks;
 
 namespace RioSharp
 {
-    public class RioTcpListener : RioSocketPoolBase, IDisposable
+    public class RioTcpListener : IDisposable
     {
         internal IntPtr _listenerSocket;
-
-
-
-        public unsafe RioTcpListener(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool) : base(sendPool, revicePool)
+        
+        public unsafe RioTcpListener() 
         {
             if ((_listenerSocket = Imports.WSASocket(ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_STREAM, PROTOCOL.IPPROTO_TCP, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.WSA_FLAG_OVERLAPPED)) == IntPtr.Zero)
                 Imports.ThrowLastWSAError();
@@ -73,6 +71,11 @@ namespace RioSharp
                 connections.TryAdd(res.GetHashCode(), res);
                 return res;
             }
+        }
+
+        public void Dispose()
+        {
+            throw new NotImplementedException();
         }
     }
 }

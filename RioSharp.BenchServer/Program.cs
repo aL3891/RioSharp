@@ -15,6 +15,7 @@ namespace ConsoleApplication1
         static RioBufferSegment currentSegment;
         static RioFixedBufferPool sendPool, recivePool;
         private static RioTcpListener listener;
+        static RioSocketPool socketPool;
         private static uint pipeLineDeph;
         private static byte[] responseBytes;
 
@@ -34,7 +35,7 @@ namespace ConsoleApplication1
         static void UpdateResponse()
         {
             responseBytes = GetResponse();
-            var newSegment = listener.PreAllocateWrite(responseBytes);
+            var newSegment = socketPool.PreAllocateWrite(responseBytes);
             var oldSegment = currentSegment;
             currentSegment = newSegment;
             oldSegment.Dispose();
@@ -51,8 +52,8 @@ namespace ConsoleApplication1
             sendPool = new RioFixedBufferPool(1000, 140 * pipeLineDeph);
             recivePool = new RioFixedBufferPool(1000, 64 * pipeLineDeph);
 
-            listener = new RioTcpListener(sendPool, recivePool);
-            currentSegment = listener.PreAllocateWrite(GetResponse());
+            listener = new RioTcpListener(socketPool);
+            currentSegment = socketPool.PreAllocateWrite(GetResponse());
             Task.Run(async () =>
             {
                 while (true)
@@ -71,7 +72,7 @@ namespace ConsoleApplication1
             }
         }
 
-        static async Task ServeFixed(RioTcpSocket socket)
+        static async Task ServeFixed(RioSocket socket)
         {
             try
             {
@@ -80,10 +81,11 @@ namespace ConsoleApplication1
                 var oldleftoverLength = 0;
                 uint endOfRequest = 0x0a0d0a0d;
                 uint current = 0;
+                var stream = new RioStream(socket);
 
                 while (true)
                 {
-                    int r = await socket.Stream.ReadAsync(buffer, 0, buffer.Length);
+                    int r = await stream.ReadAsync(buffer, 0, buffer.Length);
                     if (r == 0)
                         break;
 
@@ -121,7 +123,7 @@ namespace ConsoleApplication1
                         current += buffer[i];
                         current = current << 4;
                     }
-                    socket.Stream.Flush(false);
+                    stream.Flush(false);
                 }
             }
             catch (Exception ex)
@@ -134,7 +136,7 @@ namespace ConsoleApplication1
             }
         }
 
-        static async Task Servebuff(RioTcpSocket socket)
+        static async Task Servebuff(RioSocket socket)
         {
             try
             {
@@ -143,10 +145,11 @@ namespace ConsoleApplication1
                 var oldleftoverLength = 0;
                 uint endOfRequest = 0x0a0d0a0d;
                 uint current = 0;
+                var stream = new RioStream(socket);
 
                 while (true)
                 {
-                    int r = await socket.Stream.ReadAsync(buffer, 0, buffer.Length);
+                    int r = await stream.ReadAsync(buffer, 0, buffer.Length);
                     if (r == 0)
                         break;
 
@@ -156,7 +159,7 @@ namespace ConsoleApplication1
                         current += buffer[i];
                         current = current << 8;
                         if (current == endOfRequest)
-                            socket.Stream.Write(responseBytes, 0, responseBytes.Length);
+                            stream.Write(responseBytes, 0, responseBytes.Length);
                     }
 
                     leftoverLength = r % 4;
@@ -172,7 +175,7 @@ namespace ConsoleApplication1
                             for (; start <= end; start++)
                             {
                                 if (*(uint*)start == endOfRequest)
-                                    socket.Stream.Write(responseBytes, 0, responseBytes.Length);
+                                    stream.Write(responseBytes, 0, responseBytes.Length);
                             }
                         }
                     }
@@ -184,7 +187,7 @@ namespace ConsoleApplication1
                         current += buffer[i];
                         current = current << 4;
                     }
-                    socket.Stream.Flush();
+                    stream.Flush();
                 }
             }
             catch (Exception ex)

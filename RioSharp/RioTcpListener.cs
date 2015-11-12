@@ -14,9 +14,12 @@ namespace RioSharp
     public class RioTcpListener : IDisposable
     {
         internal IntPtr _listenerSocket;
-        
-        public unsafe RioTcpListener() 
+        private RioSocketPool _pool;
+
+        public unsafe RioTcpListener(RioSocketPool pool)
         {
+            _pool = pool;
+
             if ((_listenerSocket = Imports.WSASocket(ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_STREAM, PROTOCOL.IPPROTO_TCP, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.WSA_FLAG_OVERLAPPED)) == IntPtr.Zero)
                 Imports.ThrowLastWSAError();
 
@@ -57,7 +60,7 @@ namespace RioSharp
                 Imports.ThrowLastWSAError();
         }
 
-        public RioTcpSocket Accept()
+        public RioSocket Accept()
         {
             unsafe
             {
@@ -67,15 +70,15 @@ namespace RioSharp
                 if (accepted == new IntPtr(-1))
                     Imports.ThrowLastWSAError();
 
-                var res = new RioTcpSocket(accepted, this);
-                connections.TryAdd(res.GetHashCode(), res);
+                var res = new RioSocket(accepted, _pool);
+                _pool.connections.TryAdd(res.GetHashCode(), res);
                 return res;
             }
         }
 
         public void Dispose()
         {
-            throw new NotImplementedException();
+            //stop listening? 
         }
     }
 }

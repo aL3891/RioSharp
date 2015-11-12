@@ -14,13 +14,7 @@ namespace RioSharp
         T _currentValue;
         Action _continuation = null;
 
-        public bool IsCompleted
-        {
-            get
-            {
-                return _queue.TryDequeue(out _currentValue);
-            }
-        }
+        public bool IsCompleted => _queue.TryDequeue(out _currentValue);
 
         public void OnCompleted(Action continuation)
         {
@@ -41,21 +35,12 @@ namespace RioSharp
             }
         }
 
-        public bool TryDequeue(out T item)
-        {
-            return _queue.TryDequeue(out item);
-        }
+        public bool TryDequeue(out T item) => _queue.TryDequeue(out item);
 
-        public T GetResult()
-        {
-            return _currentValue;
-        }
+        public T GetResult() => _currentValue;
 
-        public AwaitableQueue<T> GetAwaiter()
-        {
-            return this;
-        }
+        public AwaitableQueue<T> GetAwaiter() => this;
 
-        
+
     }
 }

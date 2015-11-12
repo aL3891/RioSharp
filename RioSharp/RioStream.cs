@@ -8,15 +8,15 @@ using System.Threading.Tasks;
 
 namespace RioSharp
 {
-    public class RioTcpSocketStream : Stream
+    public class RioStream : Stream
     {
-        RioTcpSocket _socket;
+        RioSocket _socket;
         RioBufferSegment _currentInputSegment;
         RioBufferSegment _currentOutputSegment;
         int _bytesReadInCurrentSegment = 0;
         int _bytesWrittenInCurrentSegment = 0;
 
-        public RioTcpSocketStream(RioTcpSocket socket)
+        public RioStream(RioSocket socket)
         {
             _socket = socket;
             _currentInputSegment = null;

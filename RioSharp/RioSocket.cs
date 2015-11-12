@@ -6,14 +6,14 @@ using System.Threading.Tasks;
 
 namespace RioSharp
 {
-    public class RioSocketBase : IDisposable
+    public class RioSocket : IDisposable
     {
         internal IntPtr _socket;
-        internal RioSocketPoolBase _pool;
+        internal RioSocketPool _pool;
         internal IntPtr _requestQueue;
         public AwaitableQueue<RioBufferSegment> incommingSegments = new AwaitableQueue<RioBufferSegment>();
 
-        public RioSocketBase(IntPtr socket, RioSocketPoolBase pool)
+        public RioSocket(IntPtr socket, RioSocketPool pool)
         {
             _socket = socket;
             _pool = pool;

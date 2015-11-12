@@ -17,7 +17,7 @@ namespace ConsoleApplication2
             "\r\n";
 
         static byte[] _requestBytes = Encoding.UTF8.GetBytes(responseStr);
-        private static RioTcpClientPool clientPool;
+        private static RioSocketPool clientPool;
         private static Uri uri;
         private static bool keepAlive;
         private static int pipeLineDeph;
@@ -28,7 +28,7 @@ namespace ConsoleApplication2
         static void Main(string[] args)
         {
             pipeLineDeph = int.Parse(args.FirstOrDefault(f => f.StartsWith("-p"))?.Substring(2) ?? "1");
-            clientPool = new RioTcpClientPool(new RioFixedBufferPool(1000, (uint)(64 * pipeLineDeph)), new RioFixedBufferPool(1000, (uint)(140 * pipeLineDeph)));
+            clientPool = new RioSocketPool(new RioFixedBufferPool(1000, (uint)(64 * pipeLineDeph)), new RioFixedBufferPool(1000, (uint)(140 * pipeLineDeph)));
             int connections = int.Parse(args.FirstOrDefault(f => f.StartsWith("-c"))?.Substring(2) ?? "1");
             timer = new Stopwatch();
             span = TimeSpan.FromSeconds(int.Parse(args.FirstOrDefault(f => f.StartsWith("-d"))?.Substring(2) ?? "10"));
@@ -46,7 +46,7 @@ namespace ConsoleApplication2
         public async static Task<int> doit()
         {
             {
-                var buffer = new byte[140* pipeLineDeph];
+                var buffer = new byte[140 * pipeLineDeph];
                 var leftoverLength = 0;
                 var oldleftoverLength = 0;
                 uint endOfRequest = 0x0a0d0a0d;
@@ -55,6 +55,7 @@ namespace ConsoleApplication2
                 int total = 0;
 
                 var connection = clientPool.Connect(uri);
+                var stream = new RioStream(connection);
                 while (timer.Elapsed < span)
                 {
                     //check if connection is valid?                
@@ -62,7 +63,7 @@ namespace ConsoleApplication2
 
                     while (responses < pipeLineDeph)
                     {
-                        int r = await connection.Stream.ReadAsync(buffer, 0, buffer.Length);
+                        int r = await stream.ReadAsync(buffer, 0, buffer.Length);
                         if (r == 0)
                             break;
 

@@ -51,35 +51,26 @@
     <Compile Include="..\RioSharp\Imports.cs">
       <Link>Imports.cs</Link>
     </Compile>
-    <Compile Include="..\RioSharp\RioBufferPool.cs">
-      <Link>RioBufferPool.cs</Link>
+    <Compile Include="..\RioSharp\RioBufferSegment.cs">
+      <Link>RioBufferSegment.cs</Link>
     </Compile>
-    <Compile Include="..\RioSharp\RioSocketBase.cs">
-      <Link>RioSocketBase.cs</Link>
+    <Compile Include="..\RioSharp\RioFixedBufferPool.cs">
+      <Link>RioFixedBufferPool.cs</Link>
     </Compile>
-    <Compile Include="..\RioSharp\RioSocketPoolBase.cs">
-      <Link>RioSocketPoolBase.cs</Link>
+    <Compile Include="..\RioSharp\RioSocket.cs">
+      <Link>RioSocket.cs</Link>
     </Compile>
-    <Compile Include="..\RioSharp\RioTcpClientPool.cs">
-      <Link>RioTcpClientPool.cs</Link>
+    <Compile Include="..\RioSharp\RioSocketPool.cs">
+      <Link>RioSocketPool.cs</Link>
+    </Compile>
+    <Compile Include="..\RioSharp\RioStream.cs">
+      <Link>RioStream.cs</Link>
     </Compile>
     <Compile Include="..\RioSharp\RioTcpListener.cs">
       <Link>RioTcpListener.cs</Link>
     </Compile>
-    <Compile Include="..\RioSharp\RioTcpSocket.cs">
-      <Link>RioTcpSocket.cs</Link>
-    </Compile>
-    <Compile Include="..\RioSharp\RioTcpSocketPoolBase.cs">
-      <Link>RioTcpSocketPoolBase.cs</Link>
-    </Compile>
-    <Compile Include="..\RioSharp\RioTcpSocketStream.cs">
-      <Link>RioTcpSocketStream.cs</Link>
-    </Compile>
-    <Compile Include="..\RioSharp\RioUdpPool.cs">
-      <Link>RioUdpPool.cs</Link>
-    </Compile>
-    <Compile Include="..\RioSharp\RioUdpSocket.cs">
-      <Link>RioUdpSocket.cs</Link>
+    <Compile Include="..\RioSharp\SuppressUnmanagedCodeSecurityAttribute.cs">
+      <Link>SuppressUnmanagedCodeSecurityAttribute.cs</Link>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

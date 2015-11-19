@@ -9,6 +9,8 @@ namespace RioSharp.Aspnet.Host
     {
         public void Main(string[] args)
         {
+            var mergedArgs = new[] { "--server", "RioSharp.Aspnet.Host" }.Concat(args).ToArray();
+            Microsoft.AspNet.Hosting.Program.Main(mergedArgs);
         }
     }
 }

@@ -24,6 +24,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RioSharpCtsTraffic", "RioSh
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "RioSharp.Aspnet.Host", "RioSharp.Aspnet.Host\RioSharp.Aspnet.Host.xproj", "{13D92C81-2BBB-454E-B28E-6E4648B32077}"
 EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "RioShpart.Aspnet.TestSite", "RioShpart.Aspnet.TestSite\RioShpart.Aspnet.TestSite.xproj", "{6A67A9E0-6439-44D7-BC39-36D670D4DE6C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -62,6 +64,10 @@ Global
 		{13D92C81-2BBB-454E-B28E-6E4648B32077}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{13D92C81-2BBB-454E-B28E-6E4648B32077}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{13D92C81-2BBB-454E-B28E-6E4648B32077}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6A67A9E0-6439-44D7-BC39-36D670D4DE6C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6A67A9E0-6439-44D7-BC39-36D670D4DE6C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6A67A9E0-6439-44D7-BC39-36D670D4DE6C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6A67A9E0-6439-44D7-BC39-36D670D4DE6C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

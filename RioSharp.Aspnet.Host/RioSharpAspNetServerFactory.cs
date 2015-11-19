@@ -35,7 +35,7 @@ namespace RioSharp.Aspnet.Host
             serverFeatures.Set<IRioSharpServerInformation>(information);
             serverFeatures.Set<IServerAddressesFeature>(information);
 
-            return new RioSharpServer(serverFeatures, _appLifetime, _loggerFactory.CreateLogger("Microsoft.AspNet.Server.Kestrel"), _httpContextFactory);
+            return new RioSharpServer(serverFeatures, _appLifetime, _loggerFactory.CreateLogger("RioSharp.Aspnet"), _httpContextFactory);
         }
     }
 }

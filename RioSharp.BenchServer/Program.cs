@@ -41,7 +41,7 @@ namespace ConsoleApplication1
             oldSegment.Dispose();
         }
 
-       
+
 
 
         static void Main(string[] args)
@@ -52,6 +52,7 @@ namespace ConsoleApplication1
             sendPool = new RioFixedBufferPool(1000, 140 * pipeLineDeph);
             recivePool = new RioFixedBufferPool(1000, 64 * pipeLineDeph);
 
+            socketPool = new RioSocketPool(sendPool, recivePool);
             listener = new RioTcpListener(socketPool);
             currentSegment = socketPool.PreAllocateWrite(GetResponse());
             Task.Run(async () =>

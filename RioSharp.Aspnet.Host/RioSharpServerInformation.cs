@@ -5,14 +5,15 @@ using Microsoft.AspNet.Server.Features;
 
 namespace RioSharp.Aspnet.Host
 {
-    internal class RioSharpServerInformation: IServerAddressesFeature, IRioSharpServerInformation
+    internal class RioSharpServerInformation : IServerAddressesFeature, IRioSharpServerInformation
     {
         public ICollection<string> Addresses { get; } = new List<string>();
 
-        public int ThreadCount { get; set; }
-
         public bool NoDelay { get; set; }
-        
+
+        public int Connections { get; set; }
+
+        public uint PipeLineDepth { get; set; }
 
         public void Initialize(IConfiguration configuration)
         {

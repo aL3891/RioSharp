@@ -8,6 +8,7 @@
 
   "dependencies": {
     "Microsoft.AspNet.Hosting": "1.0.0-*",
+    "Microsoft.Extensions.Logging.Abstractions": "1.0.0-*",
     "RioSharp": "0.0.4-*"
   },
 
@@ -23,8 +24,7 @@
     },
     "dotnet5.4": {
       "dependencies": {
-        "System.Diagnostics.Contracts": "4.0.1-beta-*",
-        "System.Net.Http": "4.0.1-beta-*"
+
       }
     }
   }

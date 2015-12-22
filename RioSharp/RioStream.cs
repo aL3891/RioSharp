@@ -51,20 +51,15 @@ namespace RioSharp
             {
                 if (_currentInputSegment == null)
                 {
-                    if (!_socket.incommingSegments.TryDequeue(out _currentInputSegment))
-                    {
-                        if (readInCurrentRequest != 0)
-                        {
-                            _currentInputSegment = null;
-                            return readInCurrentRequest;
-                        }
-                        else
-                        {
-                            _currentInputSegment = await _socket.incommingSegments;
-                            if (_currentInputSegment == null)
-                                return 0;
-                        }
-                    }
+
+                    if (readInCurrentRequest != 0)
+                        return readInCurrentRequest;
+                    else
+                        _currentInputSegment = await _socket.incommingSegments;
+
+                    if (_currentInputSegment == null)
+                        return 0;
+
                     _bytesReadInCurrentSegment = 0;
                 }
 

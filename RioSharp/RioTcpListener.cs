@@ -72,6 +72,7 @@ namespace RioSharp
 
                 var res = new RioSocket(accepted, _pool);
                 _pool.connections.TryAdd(res.GetHashCode(), res);
+                res.ReciveInternal();
                 return res;
             }
         }

@@ -232,6 +232,7 @@ namespace RioSharp
 
             var connection = new RioSocket(sock, this);
             connections.TryAdd(connection.GetHashCode(), connection);
+            connection.ReciveInternal();
             return connection;
         }
 
@@ -243,7 +244,7 @@ namespace RioSharp
                 Imports.ThrowLastWSAError();
 
             var res = new RioSocket(sock, this);
-
+            res.ReciveInternal();
             return res;
         }
 

@@ -14,7 +14,6 @@ namespace RioSharp.Aspnet.Host
 {
     public class RioSharpServer : IServer
     {
-
         private ILogger _logger;
         private IApplicationLifetime _appLifetime;
         private IHttpContextFactory _httpContextFactory;
@@ -40,8 +39,8 @@ namespace RioSharp.Aspnet.Host
         {
 
         }
-
-        public void Start(RequestDelegate requestDelegate)
+        
+        public void Start<TContext>(IHttpApplication<TContext> application)
         {
             var information = Features.Get<IRioSharpServerInformation>();
 
@@ -53,7 +52,6 @@ namespace RioSharp.Aspnet.Host
             listener.Bind(new IPEndPoint(new IPAddress(new byte[] { 0, 0, 0, 0 }), 5000));
             listener.Listen(1024 * information.Connections);
             // do things
-
         }
     }
 }

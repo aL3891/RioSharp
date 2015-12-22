@@ -8,13 +8,13 @@ using System.Threading.Tasks;
 
 namespace RioSharp
 {
-    public class _AwaitableQueue<T> : INotifyCompletion
+    public class AwaitableQueue2<T> : INotifyCompletion where T : class
     {
         ConcurrentQueue<T> _queue = new ConcurrentQueue<T>();
-        T _currentValue;
+        T _currentValue, nextValue;
         Action _continuation = null;
 
-        public bool IsCompleted => _queue.TryDequeue(out _currentValue);
+        public bool IsCompleted => _currentValue != nextValue;
 
         public void OnCompleted(Action continuation)
         {
@@ -24,23 +24,21 @@ namespace RioSharp
 
         public void Enqueue(T item)
         {
-
+            nextValue = item;
             var res = Interlocked.Exchange(ref _continuation, null);
-            if (res == null)
-                _queue.Enqueue(item);
-            else
-            {
-                _currentValue = item;
+            if (res != null)
                 res();
-            }
         }
 
-        public bool TryDequeue(out T item) => _queue.TryDequeue(out item);
 
-        public T GetResult() => _currentValue;
+        public T GetResult() => Interlocked.Exchange(ref _currentValue, nextValue) ?? _currentValue;
 
-        public _AwaitableQueue<T> GetAwaiter() => this;
+        public AwaitableQueue2<T> GetAwaiter() => this;
 
-
+        public void Clear(Action<T> cleanUp)
+        {
+            cleanUp(_currentValue);
+            cleanUp(nextValue);
+        }
     }
 }

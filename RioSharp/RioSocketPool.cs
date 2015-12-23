@@ -96,6 +96,7 @@ namespace RioSharp
             {
                 Buffer.MemoryCopy(p, (byte*)currentSegment.Pointer.ToPointer(), SendBufferPool.SegmentLength, buffer.Length);
             }
+            currentSegment.Position = (uint)buffer.Length;
             currentSegment.AutoFree = false;
             return currentSegment;
         }
@@ -128,8 +129,9 @@ namespace RioSharp
                             buf = ReciveBufferPool.allSegments[result.RequestCorrelation];
                             if (connections.TryGetValue(result.ConnectionCorrelation, out connection))
                             {
-                                buf.CurrentLength = result.BytesTransferred;
+                                buf.Position = result.BytesTransferred;
                                 connection.incommingSegments.Enqueue(buf);
+                                if(result.BytesTransferred != 0)
                                 connection.ReciveInternal();
                             }
                             else
@@ -192,8 +194,7 @@ namespace RioSharp
             SendBufferPool.Dispose();
             ReciveBufferPool.Dispose();
         }
-
-
+        
         public unsafe RioSocket Connect(Uri adress)
         {
             IntPtr sock;
@@ -235,8 +236,7 @@ namespace RioSharp
             connection.ReciveInternal();
             return connection;
         }
-
-
+        
         public RioSocket BindUdpSocket()
         {
             IntPtr sock;
@@ -247,6 +247,5 @@ namespace RioSharp
             res.ReciveInternal();
             return res;
         }
-
     }
 }

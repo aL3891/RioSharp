@@ -10,7 +10,7 @@ namespace RioSharp
         internal IntPtr Pointer;
         internal uint Index;
         internal uint totalLength;
-        internal uint CurrentLength;
+        internal uint currentLength;
         internal uint Offset;
         RioFixedBufferPool pool;
         internal RIO_BUFSEGMENT internalSegment;
@@ -21,10 +21,20 @@ namespace RioSharp
             Pointer = pointer;
             Index = index;
             this.totalLength = totalLength;
-            CurrentLength = 0;
+            currentLength = 0;
             Offset = offset;
             this.pool = pool;
             AutoFree = true;
+        }
+
+        public uint Position {
+            get {
+                return currentLength;
+            }
+            set {
+                currentLength = value;
+                internalSegment.Length = currentLength;
+            }
         }
 
         public void SetBufferId(IntPtr id)
@@ -34,6 +44,7 @@ namespace RioSharp
 
         public void Dispose()
         {
+            AutoFree = true;
             pool.ReleaseBuffer(this);
         }
     }

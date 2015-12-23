@@ -19,8 +19,7 @@ namespace RioSharp
             _pool = pool;
             _requestQueue = RioStatic.CreateRequestQueue(_socket, _pool.MaxOutstandingReceive, 1, _pool.MaxOutstandingSend, 1, _pool.ReceiveCompletionQueue, _pool.SendCompletionQueue, GetHashCode());
             Imports.ThrowLastWSAError();
-            
-        }
+                    }
 
         public unsafe void WritePreAllocated(RioBufferSegment Segment)
         {

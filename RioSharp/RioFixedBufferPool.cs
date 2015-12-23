@@ -5,15 +5,12 @@ using System.Runtime.InteropServices;
 
 namespace RioSharp
 {
-
-
-
     public class RioFixedBufferPool : IDisposable
     {
         internal IntPtr BufferPointer;
         internal uint SegmentLength;
         internal uint TotalLength;
-        ConcurrentStack<RioBufferSegment> _availableSegments = new ConcurrentStack<RioBufferSegment>();
+        ConcurrentQueue<RioBufferSegment> _availableSegments = new ConcurrentQueue<RioBufferSegment>();
         internal RioBufferSegment[] allSegments;
 
         public RioFixedBufferPool(uint segmentCount, uint segmentLength)
@@ -27,7 +24,7 @@ namespace RioSharp
             {
                 var b = new RioBufferSegment(this, BufferPointer + (int)(i * SegmentLength), i, SegmentLength, (i * SegmentLength));
                 allSegments[i] = b;
-                _availableSegments.Push(b);
+                _availableSegments.Enqueue(b);
             }
         }
 
@@ -42,7 +39,7 @@ namespace RioSharp
             RioBufferSegment buf;
             do
             {
-                if (_availableSegments.TryPop(out buf))
+                if (_availableSegments.TryDequeue(out buf))
                     return buf;
             } while (true);
         }
@@ -52,14 +49,14 @@ namespace RioSharp
             RioBufferSegment buf;
             do
             {
-                if (_availableSegments.TryPop(out buf))
+                if (_availableSegments.TryDequeue(out buf))
                     return buf;
             } while (true);
         }
 
         public void ReleaseBuffer(RioBufferSegment bufferIndex)
         {
-            _availableSegments.Push(bufferIndex);
+            _availableSegments.Enqueue(bufferIndex);
         }
 
         public void Dispose()

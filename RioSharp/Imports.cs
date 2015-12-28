@@ -186,11 +186,11 @@ namespace RioSharp
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = false)]
         [SuppressUnmanagedCodeSecurity]
-        public unsafe delegate bool RIOSend([In] IntPtr SocketQueue, [In] RIO_BUFSEGMENT* RioBuffer, [In] UInt32 DataBufferCount, [In] RIO_SEND_FLAGS Flags, [In] long RequestCorrelation);
+        public unsafe delegate bool RIOSend([In] IntPtr SocketQueue, [In] ref RIO_BUFSEGMENT RioBuffer, [In] UInt32 DataBufferCount, [In] RIO_SEND_FLAGS Flags, [In] long RequestCorrelation);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = false)]
         [SuppressUnmanagedCodeSecurity]
-        public unsafe delegate bool RIOReceive([In] IntPtr SocketQueue, [In] RIO_BUFSEGMENT* RioBuffer, [In] UInt32 DataBufferCount, [In] RIO_RECEIVE_FLAGS Flags, [In] long RequestCorrelation);
+        public unsafe delegate bool RIOReceive([In] IntPtr SocketQueue, [In] ref  RIO_BUFSEGMENT RioBuffer, [In] UInt32 DataBufferCount, [In] RIO_RECEIVE_FLAGS Flags, [In] long RequestCorrelation);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         public delegate IntPtr RIOCreateCompletionQueue([In] uint QueueSize, [In] RIO_NOTIFICATION_COMPLETION NotificationCompletion);

@@ -15,10 +15,11 @@ namespace RioSharp
 
         public RioFixedBufferPool(uint segmentCount, uint segmentLength)
         {
+            
             allSegments = new RioBufferSegment[segmentCount];
             SegmentLength = segmentLength;
             TotalLength = segmentCount * segmentLength;
-            BufferPointer = Marshal.AllocHGlobal(new IntPtr(TotalLength));
+            BufferPointer = Marshal.AllocHGlobal((int)TotalLength);
 
             for (uint i = 0; i < segmentCount; i++)
             {

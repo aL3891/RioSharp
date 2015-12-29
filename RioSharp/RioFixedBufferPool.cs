@@ -35,6 +35,11 @@ namespace RioSharp
                 allSegments[i].SetBufferId(id);
         }
 
+        public bool TryGetBuffer(out RioBufferSegment buf)
+        {
+            return _availableSegments.TryDequeue(out buf);          
+        }
+
         public RioBufferSegment GetBuffer()
         {
             RioBufferSegment buf;

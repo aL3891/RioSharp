@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 
@@ -45,9 +46,20 @@ namespace RioSharp
 
         internal unsafe void ReciveInternal()
         {
-            var buf = _pool.ReciveBufferPool.GetBuffer();
-            if (!RioStatic.Receive(_requestQueue, ref buf.internalSegment, 1, RIO_RECEIVE_FLAGS.NONE, buf.Index))
-                Imports.ThrowLastWSAError();
+            RioBufferSegment buf;
+            if (_pool.ReciveBufferPool.TryGetBuffer(out buf))
+            {
+                if (!RioStatic.Receive(_requestQueue, ref buf.internalSegment, 1, RIO_RECEIVE_FLAGS.NONE, buf.Index))
+                    Imports.ThrowLastWSAError();
+            }
+            else
+                ThreadPool.QueueUserWorkItem(o =>
+                {
+                    var b = _pool.ReciveBufferPool.GetBuffer();
+                    if (!RioStatic.Receive(_requestQueue, ref b.internalSegment, 1, RIO_RECEIVE_FLAGS.NONE, b.Index))
+                        Imports.ThrowLastWSAError();
+                }, null);
+
         }
 
         public unsafe void WriteFixed(byte[] buffer)

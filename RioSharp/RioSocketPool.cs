@@ -130,12 +130,11 @@ namespace RioSharp
                             if (connections.TryGetValue(result.ConnectionCorrelation, out connection))
                             {
                                 buf.ContentLength = result.BytesTransferred;
-                                connection.incommingSegments.Enqueue(buf);
-
-                                    
+                                connection.incommingSegments.Set(buf);
                             }
                             else
                                 buf.Dispose();
+                           
                         }
 
                     } while (count > 0);

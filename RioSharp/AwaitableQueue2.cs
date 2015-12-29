@@ -10,31 +10,71 @@ namespace RioSharp
 {
     public class AwaitableQueue2<T> : INotifyCompletion where T : class
     {
-        ConcurrentQueue<T> _queue = new ConcurrentQueue<T>();
-        T _currentValue, nextValue;
+        T _currentValue;
         Action _continuation = null;
+        SpinLock s = new SpinLock();
 
-        public bool IsCompleted => _currentValue != nextValue;
+        public bool IsCompleted
+        {
+            get
+            {
+                bool taken = false;
+                s.Enter(ref taken);
+                if (!taken)
+                    throw new ArgumentException("fuu");
+                var res = _currentValue != null;
+                if (res)
+                    s.Exit();
+                return res;
+            }
+        }
 
         public void OnCompleted(Action continuation)
         {
-            if (Interlocked.Exchange(ref _continuation, continuation) != null)
-                throw new ArgumentException("Only one client can await this instance");
+            //bool taken = false;
+            //s.Enter(ref taken);
+            //if (!taken)
+            //    throw new ArgumentException("fuu");
+            //if (_continuation != null)
+            //    throw new ArgumentException("fuu");
+
+            //if (_currentValue != null)
+            //    continuation();//throw new ArgumentException("fuu");
+            //else
+            _continuation = continuation;
+
+            s.Exit();
         }
 
-        public void Enqueue(T item)
+        public void Set(T item)
         {
-            nextValue = item;
-            var res = Interlocked.Exchange(ref _continuation, null);
-            if (res != null)
-                res();
-        }
+            bool taken = false;
+            s.Enter(ref taken);
+            if (!taken)
+                throw new ArgumentException("fuu");
 
+            if (_currentValue != null)
+                throw new ArgumentException("fuu");
+
+            var res = _continuation;
+            _continuation = null;
+            _currentValue = item;
+            s.Exit();
+
+            if (res != null)
+                ThreadPool.QueueUserWorkItem(o => { res(); }, null);
+        }
 
         public T GetResult()
         {
- Interlocked.Exchange(ref _currentValue, nextValue);
-            return  _currentValue; 
+            //bool taken = false;
+            //s.Enter(ref taken);
+            //if (!taken)
+            //    throw new ArgumentException("fuu");
+            var res = _currentValue;
+            _currentValue = null;
+            //s.Exit();
+            return res;
         }
 
         public AwaitableQueue2<T> GetAwaiter() => this;
@@ -42,7 +82,9 @@ namespace RioSharp
         public void Clear(Action<T> cleanUp)
         {
             cleanUp(_currentValue);
-            cleanUp(nextValue);
+            _currentValue = null;
+            if (_continuation != null)
+                _continuation();
         }
     }
 }

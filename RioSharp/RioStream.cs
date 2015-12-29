@@ -47,7 +47,6 @@ namespace RioSharp
             {
                 _currentInputSegment = await _socket.incommingSegments;
                 _bytesReadInCurrentSegment = 0;
-                _socket.ReciveInternal();
 
                 if (_currentInputSegment?.ContentLength == 0)
                 {
@@ -55,6 +54,8 @@ namespace RioSharp
                     _currentInputSegment = null;
                     return 0;
                 }
+                else
+                    _socket.ReciveInternal();
             }
 
             var toCopy = Math.Min(count, (int)(_currentInputSegment.ContentLength - _bytesReadInCurrentSegment));

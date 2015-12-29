@@ -31,7 +31,11 @@ namespace RioSharp
         }
 
 
-        public T GetResult() => Interlocked.Exchange(ref _currentValue, nextValue) ?? _currentValue;
+        public T GetResult()
+        {
+ Interlocked.Exchange(ref _currentValue, nextValue);
+            return  _currentValue; 
+        }
 
         public AwaitableQueue2<T> GetAwaiter() => this;
 

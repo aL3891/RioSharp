@@ -47,6 +47,7 @@ namespace RioSharp
             {
                 _currentInputSegment = await _socket.incommingSegments;
                 _bytesReadInCurrentSegment = 0;
+                _socket.ReciveInternal();
 
                 if (_currentInputSegment?.ContentLength == 0)
                 {

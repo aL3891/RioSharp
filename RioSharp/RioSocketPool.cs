@@ -131,8 +131,8 @@ namespace RioSharp
                             {
                                 buf.ContentLength = result.BytesTransferred;
                                 connection.incommingSegments.Enqueue(buf);
-                                if (result.BytesTransferred != 0)
-                                    connection.ReciveInternal();
+
+                                    
                             }
                             else
                                 buf.Dispose();

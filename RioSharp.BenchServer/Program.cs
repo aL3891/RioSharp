@@ -49,21 +49,21 @@ namespace ConsoleApplication1
             pipeLineDeph = uint.Parse(args.FirstOrDefault(f => f.StartsWith("-p"))?.Substring(2) ?? "1");
             uint connections = uint.Parse(args.FirstOrDefault(f => f.StartsWith("-c"))?.Substring(2) ?? "128");
 
-            sendPool = new RioFixedBufferPool(64, 140 * pipeLineDeph);
-            recivePool = new RioFixedBufferPool(64, 64 * pipeLineDeph);
+            sendPool = new RioFixedBufferPool(256, 8 * pipeLineDeph);
+            recivePool = new RioFixedBufferPool(256, 8 * pipeLineDeph);
 
             socketPool = new RioSocketPool(sendPool, recivePool);
             listener = new RioTcpListener(socketPool);
             //currentSegment = socketPool.PreAllocateWrite(GetResponse());
             responseBytes = GetResponse();
-            Task.Run(async () =>
-            {
-                while (true)
-                {
-                    UpdateResponse();
-                    await Task.Delay(60000);
-                }
-            });
+            //Task.Run(async () =>
+            //{
+            //    while (true)
+            //    {
+            //        UpdateResponse();
+            //        await Task.Delay(60000);
+            //    }
+            //});
 
             listener.Bind(new IPEndPoint(new IPAddress(new byte[] { 0, 0, 0, 0 }), 5000));
             listener.Listen(1024 * (int)connections);

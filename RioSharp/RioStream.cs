@@ -93,8 +93,9 @@ namespace RioSharp
                 remainingSpaceInSegment = _currentOutputSegment.RemainingSpace;
                 if (remainingSpaceInSegment == 0)
                 {
-                    _socket.SendInternal(_currentOutputSegment, RIO_SEND_FLAGS.DEFER | RIO_SEND_FLAGS.DONT_NOTIFY);
-                    _currentOutputSegment = _socket._pool.SendBufferPool.GetBuffer();
+                    _socket.SendInternal(_currentOutputSegment, RIO_SEND_FLAGS.DEFER ); //| RIO_SEND_FLAGS.DONT_NOTIFY
+                    while (!_socket._pool.SendBufferPool.TryGetBuffer(out _currentOutputSegment))
+                        _socket.CommitSend();
                     continue;
                 }
 

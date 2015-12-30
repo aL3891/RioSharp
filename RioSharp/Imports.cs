@@ -186,11 +186,11 @@ namespace RioSharp
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = false)]
         [SuppressUnmanagedCodeSecurity]
-        public unsafe delegate bool RIOSend([In] IntPtr SocketQueue, [In] ref RIO_BUFSEGMENT RioBuffer, [In] UInt32 DataBufferCount, [In] RIO_SEND_FLAGS Flags, [In] long RequestCorrelation);
+        public unsafe delegate bool RIOSend([In] IntPtr SocketQueue, RIO_BUFSEGMENT* RioBuffer, [In] UInt32 DataBufferCount, [In] RIO_SEND_FLAGS Flags, [In] long RequestCorrelation);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = false)]
         [SuppressUnmanagedCodeSecurity]
-        public unsafe delegate bool RIOReceive([In] IntPtr SocketQueue, [In] ref  RIO_BUFSEGMENT RioBuffer, [In] UInt32 DataBufferCount, [In] RIO_RECEIVE_FLAGS Flags, [In] long RequestCorrelation);
+        public unsafe delegate bool RIOReceive([In] IntPtr SocketQueue, RIO_BUFSEGMENT* RioBuffer, [In] UInt32 DataBufferCount, [In] RIO_RECEIVE_FLAGS Flags, [In] long RequestCorrelation);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         public delegate IntPtr RIOCreateCompletionQueue([In] uint QueueSize, [In] RIO_NOTIFICATION_COMPLETION NotificationCompletion);
@@ -696,9 +696,12 @@ namespace RioSharp
 
 
 
+
     [StructLayout(LayoutKind.Sequential)]
-    public struct RIO_BUFSEGMENT
+    public unsafe struct RIO_BUFSEGMENT
     {
+        public static RIO_BUFSEGMENT* NullSegment = (RIO_BUFSEGMENT*)new IntPtr().ToPointer();
+
         internal RIO_BUFSEGMENT(IntPtr bufferId, uint offset, uint length) // should be longs?
         {
             BufferId = bufferId;

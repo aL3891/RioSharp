@@ -13,7 +13,7 @@ namespace RioSharp
         internal RioSocketPool _pool;
         internal IntPtr _requestQueue;
         public AwaitableQueue2<RioBufferSegment> incommingSegments = new AwaitableQueue2<RioBufferSegment>();
-        static RIO_BUFSEGMENT nullSegment = new RIO_BUFSEGMENT();
+
 
         public RioSocket(IntPtr socket, RioSocketPool pool)
         {
@@ -26,13 +26,13 @@ namespace RioSharp
         public unsafe void WritePreAllocated(RioBufferSegment Segment)
         {
             var currentBuffer = Segment.internalSegment;
-            if (!RioStatic.Send(_requestQueue, ref currentBuffer, 1, RIO_SEND_FLAGS.NONE, Segment.Index))
+            if (!RioStatic.Send(_requestQueue, &currentBuffer, 1, RIO_SEND_FLAGS.NONE, Segment.Index))
                 Imports.ThrowLastWSAError();
         }
 
         internal unsafe void CommitSend()
         {
-            if (!RioStatic.Send(_requestQueue, ref nullSegment, 0, RIO_SEND_FLAGS.COMMIT_ONLY, 0))
+            if (!RioStatic.Send(_requestQueue, RIO_BUFSEGMENT.NullSegment, 0, RIO_SEND_FLAGS.COMMIT_ONLY, 0))
                 Imports.ThrowLastWSAError();
         }
 
@@ -40,7 +40,7 @@ namespace RioSharp
         {
             var currentBuffer = segment.internalSegment;
             currentBuffer.Length = segment.ContentLength;
-            if (!RioStatic.Send(_requestQueue, ref currentBuffer, 1, flags, segment.Index))
+            if (!RioStatic.Send(_requestQueue, &currentBuffer, 1, flags, segment.Index))
                 Imports.ThrowLastWSAError();
         }
 
@@ -49,14 +49,16 @@ namespace RioSharp
             RioBufferSegment buf;
             if (_pool.ReciveBufferPool.TryGetBuffer(out buf))
             {
-                if (!RioStatic.Receive(_requestQueue, ref buf.internalSegment, 1, RIO_RECEIVE_FLAGS.NONE, buf.Index))
+                var currentBuffer = buf.internalSegment;
+                if (!RioStatic.Receive(_requestQueue, &currentBuffer, 1, RIO_RECEIVE_FLAGS.NONE, buf.Index))
                     Imports.ThrowLastWSAError();
             }
             else
                 ThreadPool.QueueUserWorkItem(o =>
                 {
                     var b = _pool.ReciveBufferPool.GetBuffer();
-                    if (!RioStatic.Receive(_requestQueue, ref b.internalSegment, 1, RIO_RECEIVE_FLAGS.NONE, b.Index))
+                    var currentBuffer = buf.internalSegment;
+                    if (!RioStatic.Receive(_requestQueue, &currentBuffer, 1, RIO_RECEIVE_FLAGS.NONE, b.Index))
                         Imports.ThrowLastWSAError();
                 }, null);
 

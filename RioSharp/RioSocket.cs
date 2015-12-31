@@ -26,7 +26,8 @@ namespace RioSharp
         public unsafe void WritePreAllocated(RioBufferSegment Segment)
         {
             var currentBuffer = Segment.internalSegment;
-            if (!RioStatic.Send(_requestQueue, &currentBuffer, 1, RIO_SEND_FLAGS.NONE, Segment.Index))
+            currentBuffer.Length = Segment.ContentLength;
+            if (!RioStatic.Send(_requestQueue, &currentBuffer, 1, RIO_SEND_FLAGS.DEFER, Segment.Index))
                 Imports.ThrowLastWSAError();
         }
 

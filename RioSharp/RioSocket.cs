@@ -25,9 +25,7 @@ namespace RioSharp
 
         public unsafe void WritePreAllocated(RioBufferSegment Segment)
         {
-            var currentBuffer = Segment.internalSegment;
-            currentBuffer.Length = Segment.CurrentContentLength;
-            if (!RioStatic.Send(_requestQueue, &currentBuffer, 1, RIO_SEND_FLAGS.DEFER, Segment.Index))
+            if (!RioStatic.Send(_requestQueue, Segment.segmentPointer, 1, RIO_SEND_FLAGS.DEFER, Segment.Index))
                 Imports.ThrowLastWSAError();
         }
 
@@ -39,9 +37,8 @@ namespace RioSharp
 
         internal unsafe void SendInternal(RioBufferSegment segment, RIO_SEND_FLAGS flags)
         {
-            var currentBuffer = segment.internalSegment;
-            currentBuffer.Length = segment.CurrentContentLength;
-            if (!RioStatic.Send(_requestQueue, &currentBuffer, 1, flags, segment.Index))
+            segment.segmentPointer->Length = segment.CurrentContentLength;
+            if (!RioStatic.Send(_requestQueue, segment.segmentPointer, 1, flags, segment.Index))
                 Imports.ThrowLastWSAError();
         }
 
@@ -50,16 +47,14 @@ namespace RioSharp
             RioBufferSegment buf;
             if (_pool.ReciveBufferPool.TryGetBuffer(out buf))
             {
-                var currentBuffer = buf.internalSegment;
-                if (!RioStatic.Receive(_requestQueue, &currentBuffer, 1, RIO_RECEIVE_FLAGS.NONE, buf.Index))
+                if (!RioStatic.Receive(_requestQueue, buf.segmentPointer, 1, RIO_RECEIVE_FLAGS.NONE, buf.Index))
                     Imports.ThrowLastWSAError();
             }
             else
                 ThreadPool.QueueUserWorkItem(o =>
                 {
                     var b = _pool.ReciveBufferPool.GetBuffer();
-                    var currentBuffer = buf.internalSegment;
-                    if (!RioStatic.Receive(_requestQueue, &currentBuffer, 1, RIO_RECEIVE_FLAGS.NONE, b.Index))
+                    if (!RioStatic.Receive(_requestQueue, _pool.ReciveBufferPool.GetBuffer().segmentPointer, 1, RIO_RECEIVE_FLAGS.NONE, b.Index))
                         Imports.ThrowLastWSAError();
                 }, null);
 

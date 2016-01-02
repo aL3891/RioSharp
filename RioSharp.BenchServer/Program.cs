@@ -70,7 +70,7 @@ namespace ConsoleApplication1
             while (true)
             {
                 var socket = listener.Accept();
-                ThreadPool.UnsafeQueueUserWorkItem(o => Servebuff((RioSocket)o),socket);
+                ThreadPool.QueueUserWorkItem(o => Servebuff((RioSocket)o),socket);
                 
             }
         }

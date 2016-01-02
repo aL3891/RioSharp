@@ -24,7 +24,7 @@ namespace RioSharp
             
             for (uint i = 0; i < segmentCount; i++)
             {
-                var b = new RioBufferSegment(this, BufferPointer + (int)(i * SegmentLength), i, SegmentLength, (i * SegmentLength));
+                var b = new RioBufferSegment(this, BufferPointer ,segmentpointer, i, SegmentLength );
                 allSegments[i] = b;
                 _availableSegments.Enqueue(b);
             }

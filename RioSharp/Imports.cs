@@ -710,7 +710,7 @@ namespace RioSharp
         }
 
         internal IntPtr BufferId;
-        internal readonly uint Offset;
+        internal uint Offset;
         internal uint Length;
     }
 

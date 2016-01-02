@@ -7,7 +7,7 @@ namespace RioSharp
 {
     public class RioFixedBufferPool : IDisposable
     {
-        internal IntPtr BufferPointer;
+        internal IntPtr BufferPointer, segmentpointer;
         internal uint SegmentLength;
         internal uint TotalLength;
         ConcurrentQueue<RioBufferSegment> _availableSegments = new ConcurrentQueue<RioBufferSegment>();
@@ -15,12 +15,13 @@ namespace RioSharp
 
         public RioFixedBufferPool(uint segmentCount, uint segmentLength)
         {
-            
+
             allSegments = new RioBufferSegment[segmentCount];
             SegmentLength = segmentLength;
             TotalLength = segmentCount * segmentLength;
             BufferPointer = Marshal.AllocHGlobal((int)TotalLength);
-
+            segmentpointer = Marshal.AllocHGlobal(Marshal.SizeOf<RIO_BUFSEGMENT>() * (int)segmentCount);
+            
             for (uint i = 0; i < segmentCount; i++)
             {
                 var b = new RioBufferSegment(this, BufferPointer + (int)(i * SegmentLength), i, SegmentLength, (i * SegmentLength));
@@ -37,7 +38,7 @@ namespace RioSharp
 
         public bool TryGetBuffer(out RioBufferSegment buf)
         {
-            return _availableSegments.TryDequeue(out buf);          
+            return _availableSegments.TryDequeue(out buf);
         }
 
         public RioBufferSegment GetBuffer()
@@ -68,6 +69,7 @@ namespace RioSharp
         public void Dispose()
         {
             Marshal.FreeHGlobal(BufferPointer);
+            Marshal.FreeHGlobal(segmentpointer);
         }
     }
 }

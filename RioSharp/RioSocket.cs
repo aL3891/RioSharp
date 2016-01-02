@@ -26,7 +26,7 @@ namespace RioSharp
         public unsafe void WritePreAllocated(RioBufferSegment Segment)
         {
             var currentBuffer = Segment.internalSegment;
-            currentBuffer.Length = Segment.ContentLength;
+            currentBuffer.Length = Segment.CurrentContentLength;
             if (!RioStatic.Send(_requestQueue, &currentBuffer, 1, RIO_SEND_FLAGS.DEFER, Segment.Index))
                 Imports.ThrowLastWSAError();
         }
@@ -40,7 +40,7 @@ namespace RioSharp
         internal unsafe void SendInternal(RioBufferSegment segment, RIO_SEND_FLAGS flags)
         {
             var currentBuffer = segment.internalSegment;
-            currentBuffer.Length = segment.ContentLength;
+            currentBuffer.Length = segment.CurrentContentLength;
             if (!RioStatic.Send(_requestQueue, &currentBuffer, 1, flags, segment.Index))
                 Imports.ThrowLastWSAError();
         }
@@ -70,7 +70,7 @@ namespace RioSharp
             var currentSegment = _pool.SendBufferPool.GetBuffer();
             fixed (byte* p = &buffer[0])
             {
-                Buffer.MemoryCopy(p, (byte*)currentSegment.Pointer.ToPointer(), currentSegment.totalLength, buffer.Length);
+                Buffer.MemoryCopy(p, currentSegment.rawPointer, currentSegment.totalLength, buffer.Length);
             }
 
             SendInternal(currentSegment, RIO_SEND_FLAGS.NONE);

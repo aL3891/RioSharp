@@ -14,6 +14,8 @@ namespace RioSharp
         RioBufferSegment _currentInputSegment;
         RioBufferSegment _currentOutputSegment;
         int _bytesReadInCurrentSegment = 0;
+        uint remainingSpaceInOutputSegment =0;
+        private uint OutputSegmentTotalLength;
 
         public RioStream(RioSocket socket)
         {
@@ -24,15 +26,22 @@ namespace RioSharp
 
         public void Flush(bool moreData)
         {
-            if (_currentOutputSegment.RemainingSpace == 0)
+            if (remainingSpaceInOutputSegment == 0)
                 _socket.CommitSend();
+            else if (remainingSpaceInOutputSegment == OutputSegmentTotalLength)
+                return;
             else
             {
+                _currentOutputSegment.CurrentContentLength = OutputSegmentTotalLength - remainingSpaceInOutputSegment;
                 _socket.SendInternal(_currentOutputSegment, RIO_SEND_FLAGS.NONE);
+                
                 if (moreData)
                 {
                     _currentOutputSegment = _socket._pool.SendBufferPool.GetBuffer();
+                    OutputSegmentTotalLength = _currentOutputSegment.totalLength;
+                    remainingSpaceInOutputSegment = OutputSegmentTotalLength;
                 }
+                else remainingSpaceInOutputSegment = 0;
             }
         }
 
@@ -48,7 +57,7 @@ namespace RioSharp
                 _currentInputSegment = await _socket.incommingSegments;
                 _bytesReadInCurrentSegment = 0;
 
-                if (_currentInputSegment?.ContentLength == 0)
+                if (_currentInputSegment?.CurrentContentLength == 0)
                 {
                     _currentInputSegment.Dispose();
                     _currentInputSegment = null;
@@ -58,18 +67,16 @@ namespace RioSharp
                     _socket.ReciveInternal();
             }
 
-            var toCopy = Math.Min(count, (int)(_currentInputSegment.ContentLength - _bytesReadInCurrentSegment));
+            var toCopy = Math.Min(count, (int)(_currentInputSegment.CurrentContentLength - _bytesReadInCurrentSegment));
             unsafe
             {
-                var pointer = (byte*)_currentInputSegment.Pointer.ToPointer();
-
                 fixed (byte* p = &buffer[offset])
-                    Buffer.MemoryCopy(pointer + _bytesReadInCurrentSegment, p, count, toCopy);
+                    Buffer.MemoryCopy(_currentInputSegment.rawPointer + _bytesReadInCurrentSegment, p, count, toCopy);
             }
 
             _bytesReadInCurrentSegment += toCopy;
 
-            if (_currentInputSegment.ContentLength == _bytesReadInCurrentSegment)
+            if (_currentInputSegment.CurrentContentLength == _bytesReadInCurrentSegment)
             {
                 _currentInputSegment.Dispose();
                 _currentInputSegment = null;
@@ -85,29 +92,30 @@ namespace RioSharp
 
         public override unsafe void Write(byte[] buffer, int offset, int count)
         {
-            uint remainingSpaceInSegment;
             long writtenFromBuffer = 0;
-
             do
             {
-                remainingSpaceInSegment = _currentOutputSegment.RemainingSpace;
-                if (remainingSpaceInSegment == 0)
+                if (remainingSpaceInOutputSegment == 0)
                 {
+                    _currentOutputSegment.CurrentContentLength = OutputSegmentTotalLength;
                     _socket.SendInternal(_currentOutputSegment, RIO_SEND_FLAGS.DEFER ); //| RIO_SEND_FLAGS.DONT_NOTIFY
                     while (!_socket._pool.SendBufferPool.TryGetBuffer(out _currentOutputSegment))
                         _socket.CommitSend();
+                    OutputSegmentTotalLength = _currentOutputSegment.totalLength;
+                    remainingSpaceInOutputSegment = OutputSegmentTotalLength;
                     continue;
                 }
 
-                var toWrite = Math.Min(remainingSpaceInSegment, count - writtenFromBuffer);
+                var toWrite = Math.Min(remainingSpaceInOutputSegment, count - writtenFromBuffer);
 
                 fixed (byte* p = &buffer[offset])
                 {
-                    Buffer.MemoryCopy(p + writtenFromBuffer, (byte*)_currentOutputSegment.Pointer.ToPointer() + _currentOutputSegment.ContentLength, remainingSpaceInSegment, toWrite);
+                    Buffer.MemoryCopy(p + writtenFromBuffer, _currentOutputSegment.rawPointer + (OutputSegmentTotalLength - remainingSpaceInOutputSegment), remainingSpaceInOutputSegment, toWrite);
                 }
 
-                _currentOutputSegment.ContentLength += (uint)toWrite;
                 writtenFromBuffer += toWrite;
+                remainingSpaceInOutputSegment -= (uint)toWrite;
+
             } while (writtenFromBuffer < count);
         }
 

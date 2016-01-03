@@ -37,7 +37,6 @@ namespace RioSharp
 
         internal unsafe void SendInternal(RioBufferSegment segment, RIO_SEND_FLAGS flags)
         {
-            segment.segmentPointer->Length = segment.CurrentContentLength;
             if (!RioStatic.Send(_requestQueue, segment.segmentPointer, 1, flags, segment.Index))
                 Imports.ThrowLastWSAError();
         }
@@ -67,7 +66,7 @@ namespace RioSharp
             {
                 Buffer.MemoryCopy(p, currentSegment.rawPointer, currentSegment.totalLength, buffer.Length);
             }
-
+            currentSegment.segmentPointer->Length = (uint)buffer.Length;
             SendInternal(currentSegment, RIO_SEND_FLAGS.NONE);
         }
 

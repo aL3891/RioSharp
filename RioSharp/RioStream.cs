@@ -14,7 +14,7 @@ namespace RioSharp
         RioBufferSegment _currentInputSegment;
         RioBufferSegment _currentOutputSegment;
         int _bytesReadInCurrentSegment = 0;
-        uint remainingSpaceInOutputSegment =0;
+        uint remainingSpaceInOutputSegment = 0, currentContentLength = 0;
         private uint OutputSegmentTotalLength;
 
         public RioStream(RioSocket socket)
@@ -32,16 +32,24 @@ namespace RioSharp
                 return;
             else
             {
-                _currentOutputSegment.CurrentContentLength = OutputSegmentTotalLength - remainingSpaceInOutputSegment;
+                unsafe
+                {
+                    _currentOutputSegment.segmentPointer->Length = OutputSegmentTotalLength - remainingSpaceInOutputSegment;
+                }
                 _socket.SendInternal(_currentOutputSegment, RIO_SEND_FLAGS.NONE);
-                
+
                 if (moreData)
                 {
                     _currentOutputSegment = _socket._pool.SendBufferPool.GetBuffer();
                     OutputSegmentTotalLength = _currentOutputSegment.totalLength;
                     remainingSpaceInOutputSegment = OutputSegmentTotalLength;
                 }
-                else remainingSpaceInOutputSegment = 0;
+                else
+                {
+                    remainingSpaceInOutputSegment = 0;
+                    OutputSegmentTotalLength = 0;
+                }
+
             }
         }
 
@@ -55,9 +63,13 @@ namespace RioSharp
             if (_currentInputSegment == null)
             {
                 _currentInputSegment = await _socket.incommingSegments;
-                _bytesReadInCurrentSegment = 0;
+                if (_currentInputSegment == null)
+                    return 0;
 
-                if (_currentInputSegment?.CurrentContentLength == 0)
+                _bytesReadInCurrentSegment = 0;
+                currentContentLength = _currentInputSegment.CurrentContentLength;
+
+                if (currentContentLength == 0)
                 {
                     _currentInputSegment.Dispose();
                     _currentInputSegment = null;
@@ -67,7 +79,7 @@ namespace RioSharp
                     _socket.ReciveInternal();
             }
 
-            var toCopy = Math.Min(count, (int)(_currentInputSegment.CurrentContentLength - _bytesReadInCurrentSegment));
+            var toCopy = Math.Min(count, (int)(currentContentLength - _bytesReadInCurrentSegment));
             unsafe
             {
                 fixed (byte* p = &buffer[offset])
@@ -76,7 +88,7 @@ namespace RioSharp
 
             _bytesReadInCurrentSegment += toCopy;
 
-            if (_currentInputSegment.CurrentContentLength == _bytesReadInCurrentSegment)
+            if (currentContentLength == _bytesReadInCurrentSegment)
             {
                 _currentInputSegment.Dispose();
                 _currentInputSegment = null;
@@ -97,8 +109,8 @@ namespace RioSharp
             {
                 if (remainingSpaceInOutputSegment == 0)
                 {
-                    _currentOutputSegment.CurrentContentLength = OutputSegmentTotalLength;
-                    _socket.SendInternal(_currentOutputSegment, RIO_SEND_FLAGS.DEFER ); //| RIO_SEND_FLAGS.DONT_NOTIFY
+                    _currentOutputSegment.segmentPointer->Length = OutputSegmentTotalLength;
+                    _socket.SendInternal(_currentOutputSegment, RIO_SEND_FLAGS.DEFER); //| RIO_SEND_FLAGS.DONT_NOTIFY
                     while (!_socket._pool.SendBufferPool.TryGetBuffer(out _currentOutputSegment))
                         _socket.CommitSend();
                     OutputSegmentTotalLength = _currentOutputSegment.totalLength;

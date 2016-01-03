@@ -27,9 +27,6 @@ EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "RioShpart.Aspnet.TestSite", "RioShpart.Aspnet.TestSite\RioShpart.Aspnet.TestSite.xproj", "{6A67A9E0-6439-44D7-BC39-36D670D4DE6C}"
 EndProject
 Global
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU

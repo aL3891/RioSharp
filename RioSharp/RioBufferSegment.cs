@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace RioSharp
 {
-    public unsafe class RioBufferSegment : IDisposable
+    public sealed  unsafe class RioBufferSegment : IDisposable
     {
         //internal IntPtr Pointer;
         internal int Index;

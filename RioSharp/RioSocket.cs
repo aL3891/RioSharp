@@ -12,7 +12,7 @@ namespace RioSharp
         internal IntPtr _socket;
         internal RioSocketPool _pool;
         internal IntPtr _requestQueue;
-        public AwaitableQueue2<RioBufferSegment> incommingSegments = new AwaitableQueue2<RioBufferSegment>();
+        public AwaitableQueue2 incommingSegments = new AwaitableQueue2();
 
 
         public RioSocket(IntPtr socket, RioSocketPool pool)

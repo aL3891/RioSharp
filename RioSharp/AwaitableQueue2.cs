@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 
 namespace RioSharp
 {
-    public class AwaitableQueue2<T> : INotifyCompletion where T : class
+    public sealed class AwaitableQueue2 : INotifyCompletion //where T : class
     {
-        T _currentValue;
+        RioBufferSegment _currentValue;
         Action _continuation = null;
         SpinLock s = new SpinLock();
 
@@ -20,8 +20,8 @@ namespace RioSharp
             {
                 bool taken = false;
                 s.Enter(ref taken);
-                if (!taken)
-                    throw new ArgumentException("fuu");
+                //if (!taken)
+                //    throw new ArgumentException("fuu");
                 var res = _currentValue != null;
                 if (res)
                     s.Exit();
@@ -46,15 +46,15 @@ namespace RioSharp
             s.Exit();
         }
 
-        public void Set(T item)
+        public void Set(RioBufferSegment item)
         {
             bool taken = false;
             s.Enter(ref taken);
-            if (!taken)
-                throw new ArgumentException("fuu");
+            //if (!taken)
+            //    throw new ArgumentException("fuu");
 
-            if (_currentValue != null)
-                throw new ArgumentException("fuu");
+            //if (_currentValue != null)
+            //    throw new ArgumentException("fuu");
 
             var res = _continuation;
             _continuation = null;
@@ -65,7 +65,7 @@ namespace RioSharp
                 ThreadPool.QueueUserWorkItem(o => { res(); }, null);
         }
 
-        public T GetResult()
+        public RioBufferSegment GetResult()
         {
             //bool taken = false;
             //s.Enter(ref taken);
@@ -77,9 +77,9 @@ namespace RioSharp
             return res;
         }
 
-        public AwaitableQueue2<T> GetAwaiter() => this;
+        public AwaitableQueue2 GetAwaiter() => this;
 
-        public void Clear(Action<T> cleanUp)
+        public void Clear(Action<RioBufferSegment> cleanUp)
         {
             cleanUp(_currentValue);
             _currentValue = null;

@@ -46,7 +46,7 @@ namespace ConsoleApplication1
 
         static void Main(string[] args)
         {
-            pipeLineDeph = int.Parse(args.FirstOrDefault(f => f.StartsWith("-p"))?.Substring(2) ?? "256");
+            pipeLineDeph = int.Parse(args.FirstOrDefault(f => f.StartsWith("-p"))?.Substring(2) ?? "16");
             int connections = int.Parse(args.FirstOrDefault(f => f.StartsWith("-c"))?.Substring(2) ?? "512");
 
             sendPool = new RioFixedBufferPool(10*connections, 140 * pipeLineDeph);

@@ -16,7 +16,7 @@ namespace ConsoleApplication1
         static RioFixedBufferPool sendPool, recivePool;
         private static RioTcpListener listener;
         static RioSocketPool socketPool;
-        private static uint pipeLineDeph;
+        private static int pipeLineDeph;
         private static byte[] responseBytes;
 
         public static byte[] GetResponse()
@@ -46,8 +46,8 @@ namespace ConsoleApplication1
 
         static void Main(string[] args)
         {
-            pipeLineDeph = uint.Parse(args.FirstOrDefault(f => f.StartsWith("-p"))?.Substring(2) ?? "16");
-            uint connections = uint.Parse(args.FirstOrDefault(f => f.StartsWith("-c"))?.Substring(2) ?? "512");
+            pipeLineDeph = int.Parse(args.FirstOrDefault(f => f.StartsWith("-p"))?.Substring(2) ?? "256");
+            int connections = int.Parse(args.FirstOrDefault(f => f.StartsWith("-c"))?.Substring(2) ?? "512");
 
             sendPool = new RioFixedBufferPool(10*connections, 140 * pipeLineDeph);
             recivePool = new RioFixedBufferPool(10*connections, 128 * pipeLineDeph);

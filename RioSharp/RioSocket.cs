@@ -66,7 +66,7 @@ namespace RioSharp
             {
                 Buffer.MemoryCopy(p, currentSegment.rawPointer, currentSegment.totalLength, buffer.Length);
             }
-            currentSegment.segmentPointer->Length = (uint)buffer.Length;
+            currentSegment.segmentPointer->Length = buffer.Length;
             SendInternal(currentSegment, RIO_SEND_FLAGS.NONE);
         }
 

@@ -9,17 +9,17 @@ namespace RioSharp
     public unsafe class RioBufferSegment : IDisposable
     {
         //internal IntPtr Pointer;
-        internal uint Index;
-        internal uint totalLength;
-        internal uint CurrentContentLength => segmentPointer->Length;
-        internal uint Offset;
+        internal int Index;
+        internal int totalLength;
+        internal int CurrentContentLength => segmentPointer->Length;
+        internal int Offset;
         RioFixedBufferPool pool;
         internal bool AutoFree;
         internal byte* rawPointer;
         internal RIO_BUFSEGMENT* segmentPointer;
 
 
-        public RioBufferSegment(RioFixedBufferPool pool, IntPtr bufferStartPointer, IntPtr segmentStartPointer, uint index, uint Length)
+        public RioBufferSegment(RioFixedBufferPool pool, IntPtr bufferStartPointer, IntPtr segmentStartPointer, int index, int Length)
         {
             Index = index;
             totalLength = Length;
@@ -27,8 +27,8 @@ namespace RioSharp
             AutoFree = true;
 
             Offset = index * Length;
-            rawPointer = (byte*)(bufferStartPointer + (int)Offset).ToPointer();
-            segmentPointer = (RIO_BUFSEGMENT*)(segmentStartPointer + ((int)index * Marshal.SizeOf<RIO_BUFSEGMENT>())).ToPointer();
+            rawPointer = (byte*)(bufferStartPointer + Offset).ToPointer();
+            segmentPointer = (RIO_BUFSEGMENT*)(segmentStartPointer + index * Marshal.SizeOf<RIO_BUFSEGMENT>()).ToPointer();
 
             segmentPointer->BufferId = IntPtr.Zero;
             segmentPointer->Offset = Offset;

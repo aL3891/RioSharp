@@ -702,7 +702,7 @@ namespace RioSharp
     {
         public static RIO_BUFSEGMENT* NullSegment = (RIO_BUFSEGMENT*)new IntPtr().ToPointer();
 
-        internal RIO_BUFSEGMENT(IntPtr bufferId, uint offset, uint length) // should be longs?
+        internal RIO_BUFSEGMENT(IntPtr bufferId, int offset, int length) // should be longs?
         {
             BufferId = bufferId;
             Offset = offset;
@@ -710,8 +710,8 @@ namespace RioSharp
         }
 
         internal IntPtr BufferId;
-        internal uint Offset;
-        internal uint Length;
+        internal int Offset;
+        internal int Length;
     }
 
 

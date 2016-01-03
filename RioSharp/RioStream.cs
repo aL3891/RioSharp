@@ -14,8 +14,8 @@ namespace RioSharp
         RioBufferSegment _currentInputSegment;
         RioBufferSegment _currentOutputSegment;
         int _bytesReadInCurrentSegment = 0;
-        uint remainingSpaceInOutputSegment = 0, currentContentLength = 0;
-        private uint OutputSegmentTotalLength;
+        int remainingSpaceInOutputSegment = 0, currentContentLength = 0;
+        private int OutputSegmentTotalLength;
 
         public RioStream(RioSocket socket)
         {
@@ -79,7 +79,7 @@ namespace RioSharp
                     _socket.ReciveInternal();
             }
 
-            var toCopy = Math.Min(count, (int)(currentContentLength - _bytesReadInCurrentSegment));
+            var toCopy = Math.Min(count, currentContentLength - _bytesReadInCurrentSegment);
             unsafe
             {
                 fixed (byte* p = &buffer[offset])
@@ -104,7 +104,7 @@ namespace RioSharp
 
         public override unsafe void Write(byte[] buffer, int offset, int count)
         {
-            long writtenFromBuffer = 0;
+            int writtenFromBuffer = 0;
             do
             {
                 if (remainingSpaceInOutputSegment == 0)
@@ -126,7 +126,7 @@ namespace RioSharp
                 }
 
                 writtenFromBuffer += toWrite;
-                remainingSpaceInOutputSegment -= (uint)toWrite;
+                remainingSpaceInOutputSegment -= toWrite;
 
             } while (writtenFromBuffer < count);
         }

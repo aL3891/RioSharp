@@ -8,21 +8,21 @@ namespace RioSharp
     public class RioFixedBufferPool : IDisposable
     {
         internal IntPtr BufferPointer, segmentpointer;
-        internal uint SegmentLength;
-        internal uint TotalLength;
+        internal int SegmentLength;
+        internal int TotalLength;
         ConcurrentQueue<RioBufferSegment> _availableSegments = new ConcurrentQueue<RioBufferSegment>();
         internal RioBufferSegment[] allSegments;
 
-        public RioFixedBufferPool(uint segmentCount, uint segmentLength)
+        public RioFixedBufferPool(int segmentCount, int segmentLength)
         {
 
             allSegments = new RioBufferSegment[segmentCount];
             SegmentLength = segmentLength;
             TotalLength = segmentCount * segmentLength;
-            BufferPointer = Marshal.AllocHGlobal((int)TotalLength);
-            segmentpointer = Marshal.AllocHGlobal(Marshal.SizeOf<RIO_BUFSEGMENT>() * (int)segmentCount);
+            BufferPointer = Marshal.AllocHGlobal(TotalLength);
+            segmentpointer = Marshal.AllocHGlobal(Marshal.SizeOf<RIO_BUFSEGMENT>() * segmentCount);
             
-            for (uint i = 0; i < segmentCount; i++)
+            for (int i = 0; i < segmentCount; i++)
             {
                 var b = new RioBufferSegment(this, BufferPointer ,segmentpointer, i, SegmentLength );
                 allSegments[i] = b;

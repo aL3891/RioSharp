@@ -12,7 +12,20 @@ namespace RioSharp
     {
         RioBufferSegment _currentValue;
         Action _continuation = null;
+        WaitCallback continuationWrapperDelegate;
         SpinLock s = new SpinLock();
+
+        public AwaitableQueue2()
+        {
+            continuationWrapperDelegate = continuationWrapper;
+        }
+
+        private void continuationWrapper(object o)
+        {
+            var res = _continuation;
+            _continuation = null;
+            res();
+        }
 
         public bool IsCompleted
         {
@@ -20,8 +33,6 @@ namespace RioSharp
             {
                 bool taken = false;
                 s.Enter(ref taken);
-                //if (!taken)
-                //    throw new ArgumentException("fuu");
                 var res = _currentValue != null;
                 if (res)
                     s.Exit();
@@ -31,18 +42,7 @@ namespace RioSharp
 
         public void OnCompleted(Action continuation)
         {
-            //bool taken = false;
-            //s.Enter(ref taken);
-            //if (!taken)
-            //    throw new ArgumentException("fuu");
-            //if (_continuation != null)
-            //    throw new ArgumentException("fuu");
-
-            //if (_currentValue != null)
-            //    continuation();//throw new ArgumentException("fuu");
-            //else
-            _continuation = continuation;
-
+           _continuation = continuation;
             s.Exit();
         }
 
@@ -55,14 +55,11 @@ namespace RioSharp
 
             //if (_currentValue != null)
             //    throw new ArgumentException("fuu");
-
-            var res = _continuation;
-            _continuation = null;
             _currentValue = item;
             s.Exit();
 
-            if (res != null)
-                ThreadPool.QueueUserWorkItem(o => { res(); }, null);
+            if (_continuation != null)
+                ThreadPool.QueueUserWorkItem(continuationWrapperDelegate, null);
         }
 
         public RioBufferSegment GetResult()

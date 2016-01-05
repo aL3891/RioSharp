@@ -490,6 +490,7 @@ namespace RioSharp
         DEFER = 0x00000002,
         COMMIT_ONLY = 0x00000008
     }
+
     public enum RIO_RECEIVE_FLAGS : UInt32
     {
         NONE = 0x00000000,
@@ -670,8 +671,7 @@ namespace RioSharp
         internal short iMaxUdpDg;
         internal IntPtr lpVendorInfo;
     }
-
-
+    
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct sockaddr_in
     {
@@ -693,10 +693,7 @@ namespace RioSharp
         [FieldOffset(3)]
         public byte s_b4;
     }
-
-
-
-
+    
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct RIO_BUFSEGMENT
     {

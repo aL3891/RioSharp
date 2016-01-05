@@ -24,7 +24,6 @@ namespace RioSharp
 
         public void Enqueue(T item)
         {
-
             var res = Interlocked.Exchange(ref _continuation, null);
             if (res == null)
                 _queue.Enqueue(item);
@@ -40,7 +39,5 @@ namespace RioSharp
         public T GetResult() => _currentValue;
 
         public _AwaitableQueue<T> GetAwaiter() => this;
-
-
     }
 }

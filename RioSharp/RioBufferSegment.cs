@@ -8,31 +8,28 @@ namespace RioSharp
 {
     public sealed  unsafe class RioBufferSegment : IDisposable
     {
-        //internal IntPtr Pointer;
         internal int Index;
-        internal int totalLength;
-        internal int CurrentContentLength => segmentPointer->Length;
-        internal int Offset;
+        internal int TotalLength;
+        internal int CurrentContentLength => segmentPointer->Length;       
         RioFixedBufferPool pool;
         internal bool AutoFree;
         internal byte* rawPointer;
         internal RIO_BUFSEGMENT* segmentPointer;
-
-
+        
         public RioBufferSegment(RioFixedBufferPool pool, IntPtr bufferStartPointer, IntPtr segmentStartPointer, int index, int Length)
         {
             Index = index;
-            totalLength = Length;
+            TotalLength = Length;
             this.pool = pool;
             AutoFree = true;
 
-            Offset = index * Length;
-            rawPointer = (byte*)(bufferStartPointer + Offset).ToPointer();
+            var offset = index * Length;
+            rawPointer = (byte*)(bufferStartPointer + offset).ToPointer();
             segmentPointer = (RIO_BUFSEGMENT*)(segmentStartPointer + index * Marshal.SizeOf<RIO_BUFSEGMENT>()).ToPointer();
 
             segmentPointer->BufferId = IntPtr.Zero;
-            segmentPointer->Offset = Offset;
-            segmentPointer->Length = totalLength;
+            segmentPointer->Offset = offset;
+            segmentPointer->Length = TotalLength;
             
         }
 
@@ -44,7 +41,7 @@ namespace RioSharp
         public void Dispose()
         {
             AutoFree = true;
-            segmentPointer->Length = totalLength;
+            segmentPointer->Length = TotalLength;
             pool.ReleaseBuffer(this);
         }
     }

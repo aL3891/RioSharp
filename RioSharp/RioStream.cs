@@ -48,7 +48,7 @@ namespace RioSharp
                 if (moreData)
                 {
                     _currentOutputSegment = _socket._pool.SendBufferPool.GetBuffer();
-                    OutputSegmentTotalLength = _currentOutputSegment.totalLength;
+                    OutputSegmentTotalLength = _currentOutputSegment.TotalLength;
                     remainingSpaceInOutputSegment = OutputSegmentTotalLength;
                 }
                 else
@@ -150,7 +150,7 @@ namespace RioSharp
                     _socket.SendInternal(_currentOutputSegment, RIO_SEND_FLAGS.DEFER); //| RIO_SEND_FLAGS.DONT_NOTIFY
                     while (!_socket._pool.SendBufferPool.TryGetBuffer(out _currentOutputSegment))
                         _socket.CommitSend();
-                    OutputSegmentTotalLength = _currentOutputSegment.totalLength;
+                    OutputSegmentTotalLength = _currentOutputSegment.TotalLength;
                     remainingSpaceInOutputSegment = OutputSegmentTotalLength;
                     continue;
                 }

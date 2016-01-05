@@ -94,7 +94,7 @@ namespace RioSharp
             var currentSegment = SendBufferPool.GetBuffer();
             fixed (byte* p = &buffer[0])
             {
-                Buffer.MemoryCopy(p, currentSegment.rawPointer, SendBufferPool.SegmentLength, buffer.Length);
+                Buffer.MemoryCopy(p, currentSegment.rawPointer, currentSegment.TotalLength, buffer.Length);
             }
             
             currentSegment.segmentPointer->Length = buffer.Length; 
@@ -130,12 +130,11 @@ namespace RioSharp
                             buf = ReciveBufferPool.allSegments[result.RequestCorrelation];
                             if (connections.TryGetValue(result.ConnectionCorrelation, out connection))
                             {
-                                buf.segmentPointer->Length = (int)result.BytesTransferred; //use currentLength instead?
+                                buf.segmentPointer->Length = (int)result.BytesTransferred;
                                 connection.incommingSegments.Set(buf);
                             }
                             else
                                 buf.Dispose();
-                           
                         }
 
                     } while (count > 0);

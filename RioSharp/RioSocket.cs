@@ -64,7 +64,7 @@ namespace RioSharp
             var currentSegment = _pool.SendBufferPool.GetBuffer();
             fixed (byte* p = &buffer[0])
             {
-                Buffer.MemoryCopy(p, currentSegment.rawPointer, currentSegment.totalLength, buffer.Length);
+                Buffer.MemoryCopy(p, currentSegment.rawPointer, currentSegment.TotalLength, buffer.Length);
             }
             currentSegment.segmentPointer->Length = buffer.Length;
             SendInternal(currentSegment, RIO_SEND_FLAGS.NONE);
@@ -72,7 +72,7 @@ namespace RioSharp
 
         public virtual void Dispose()
         {
-            incommingSegments.Clear(s => s?.Dispose());
+            incommingSegments.Dispose();
             _pool.Recycle(this);
         }
     }

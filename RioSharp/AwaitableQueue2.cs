@@ -1,14 +1,10 @@
 ﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace RioSharp
 {
-    public sealed class AwaitableQueue2 : INotifyCompletion //where T : class
+    public sealed class AwaitableQueue2 : INotifyCompletion, IDisposable //where T : class
     {
         RioBufferSegment _currentValue;
         Action _continuation = null;
@@ -55,6 +51,7 @@ namespace RioSharp
 
             //if (_currentValue != null)
             //    throw new ArgumentException("fuu");
+            
             _currentValue = item;
             s.Exit();
 
@@ -64,21 +61,16 @@ namespace RioSharp
 
         public RioBufferSegment GetResult()
         {
-            //bool taken = false;
-            //s.Enter(ref taken);
-            //if (!taken)
-            //    throw new ArgumentException("fuu");
             var res = _currentValue;
             _currentValue = null;
-            //s.Exit();
             return res;
         }
 
         public AwaitableQueue2 GetAwaiter() => this;
 
-        public void Clear(Action<RioBufferSegment> cleanUp)
+        public void Dispose()
         {
-            cleanUp(_currentValue);
+            _currentValue?.Dispose();
             _currentValue = null;
             if (_continuation != null)
                 _continuation();

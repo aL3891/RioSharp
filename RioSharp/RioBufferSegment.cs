@@ -1,39 +1,50 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace RioSharp
 {
-    public class RioBufferSegment : IDisposable
+    public sealed  unsafe class RioBufferSegment : IDisposable
     {
-        internal IntPtr Pointer;
-        internal uint Index;
-        internal uint totalLength;
-        internal uint CurrentLength;
-        internal uint Offset;
+        //internal IntPtr Pointer;
+        internal int Index;
+        internal int totalLength;
+        internal int CurrentContentLength => segmentPointer->Length;
+        internal int Offset;
         RioFixedBufferPool pool;
-        internal RIO_BUFSEGMENT internalSegment;
         internal bool AutoFree;
+        internal byte* rawPointer;
+        internal RIO_BUFSEGMENT* segmentPointer;
 
-        public RioBufferSegment(RioFixedBufferPool pool, IntPtr pointer, uint index, uint totalLength, uint offset)
+
+        public RioBufferSegment(RioFixedBufferPool pool, IntPtr bufferStartPointer, IntPtr segmentStartPointer, int index, int Length)
         {
-            Pointer = pointer;
             Index = index;
-            this.totalLength = totalLength;
-            CurrentLength = 0;
-            Offset = offset;
+            totalLength = Length;
             this.pool = pool;
             AutoFree = true;
+
+            Offset = index * Length;
+            rawPointer = (byte*)(bufferStartPointer + Offset).ToPointer();
+            segmentPointer = (RIO_BUFSEGMENT*)(segmentStartPointer + index * Marshal.SizeOf<RIO_BUFSEGMENT>()).ToPointer();
+
+            segmentPointer->BufferId = IntPtr.Zero;
+            segmentPointer->Offset = Offset;
+            segmentPointer->Length = totalLength;
+            
         }
 
         public void SetBufferId(IntPtr id)
         {
-            internalSegment = new RIO_BUFSEGMENT(id, Offset, totalLength);
+            segmentPointer->BufferId = id;
         }
 
         public void Dispose()
         {
+            AutoFree = true;
+            segmentPointer->Length = totalLength;
             pool.ReleaseBuffer(this);
         }
     }

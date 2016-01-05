@@ -5,29 +5,28 @@ using System.Runtime.InteropServices;
 
 namespace RioSharp
 {
-
-
-
     public class RioFixedBufferPool : IDisposable
     {
-        internal IntPtr BufferPointer;
-        internal uint SegmentLength;
-        internal uint TotalLength;
-        ConcurrentStack<RioBufferSegment> _availableSegments = new ConcurrentStack<RioBufferSegment>();
+        internal IntPtr BufferPointer, segmentpointer;
+        internal int SegmentLength;
+        internal int TotalLength;
+        ConcurrentQueue<RioBufferSegment> _availableSegments = new ConcurrentQueue<RioBufferSegment>();
         internal RioBufferSegment[] allSegments;
 
-        public RioFixedBufferPool(uint segmentCount, uint segmentLength)
+        public RioFixedBufferPool(int segmentCount, int segmentLength)
         {
+
             allSegments = new RioBufferSegment[segmentCount];
             SegmentLength = segmentLength;
             TotalLength = segmentCount * segmentLength;
-            BufferPointer = Marshal.AllocHGlobal(new IntPtr(TotalLength));
-
-            for (uint i = 0; i < segmentCount; i++)
+            BufferPointer = Marshal.AllocHGlobal(TotalLength);
+            segmentpointer = Marshal.AllocHGlobal(Marshal.SizeOf<RIO_BUFSEGMENT>() * segmentCount);
+            
+            for (int i = 0; i < segmentCount; i++)
             {
-                var b = new RioBufferSegment(this, BufferPointer + (int)(i * SegmentLength), i, SegmentLength, (i * SegmentLength));
+                var b = new RioBufferSegment(this, BufferPointer ,segmentpointer, i, SegmentLength );
                 allSegments[i] = b;
-                _availableSegments.Push(b);
+                _availableSegments.Enqueue(b);
             }
         }
 
@@ -37,12 +36,17 @@ namespace RioSharp
                 allSegments[i].SetBufferId(id);
         }
 
+        public bool TryGetBuffer(out RioBufferSegment buf)
+        {
+            return _availableSegments.TryDequeue(out buf);
+        }
+
         public RioBufferSegment GetBuffer()
         {
             RioBufferSegment buf;
             do
             {
-                if (_availableSegments.TryPop(out buf))
+                if (_availableSegments.TryDequeue(out buf))
                     return buf;
             } while (true);
         }
@@ -52,19 +56,20 @@ namespace RioSharp
             RioBufferSegment buf;
             do
             {
-                if (_availableSegments.TryPop(out buf))
+                if (_availableSegments.TryDequeue(out buf))
                     return buf;
             } while (true);
         }
 
         public void ReleaseBuffer(RioBufferSegment bufferIndex)
         {
-            _availableSegments.Push(bufferIndex);
+            _availableSegments.Enqueue(bufferIndex);
         }
 
         public void Dispose()
         {
             Marshal.FreeHGlobal(BufferPointer);
+            Marshal.FreeHGlobal(segmentpointer);
         }
     }
 }

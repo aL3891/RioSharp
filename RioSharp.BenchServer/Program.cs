@@ -16,7 +16,7 @@ namespace ConsoleApplication1
         static RioFixedBufferPool sendPool, recivePool;
         private static RioTcpListener listener;
         static RioSocketPool socketPool;
-        private static uint pipeLineDeph;
+        private static int pipeLineDeph;
         private static byte[] responseBytes;
 
         public static byte[] GetResponse()
@@ -35,10 +35,10 @@ namespace ConsoleApplication1
         static void UpdateResponse()
         {
             responseBytes = GetResponse();
-            var newSegment = socketPool.PreAllocateWrite(responseBytes);
-            var oldSegment = currentSegment;
-            currentSegment = newSegment;
-            oldSegment.Dispose();
+            //var newSegment = socketPool.PreAllocateWrite(responseBytes);
+            //var oldSegment = currentSegment;
+            //currentSegment = newSegment;
+            //oldSegment.Dispose();
         }
 
 
@@ -46,30 +46,32 @@ namespace ConsoleApplication1
 
         static void Main(string[] args)
         {
-            pipeLineDeph = uint.Parse(args.FirstOrDefault(f => f.StartsWith("-p"))?.Substring(2) ?? "1");
-            uint connections = uint.Parse(args.FirstOrDefault(f => f.StartsWith("-c"))?.Substring(2) ?? "128");
+            pipeLineDeph = int.Parse(args.FirstOrDefault(f => f.StartsWith("-p"))?.Substring(2) ?? "16");
+            int connections = int.Parse(args.FirstOrDefault(f => f.StartsWith("-c"))?.Substring(2) ?? "512");
 
-            sendPool = new RioFixedBufferPool(1000, 140 * pipeLineDeph);
-            recivePool = new RioFixedBufferPool(1000, 64 * pipeLineDeph);
+            sendPool = new RioFixedBufferPool(10*connections, 140 * pipeLineDeph);
+            recivePool = new RioFixedBufferPool(10*connections, 128 * pipeLineDeph);
 
             socketPool = new RioSocketPool(sendPool, recivePool);
             listener = new RioTcpListener(socketPool);
             currentSegment = socketPool.PreAllocateWrite(GetResponse());
-            Task.Run(async () =>
-            {
-                while (true)
-                {
-                    UpdateResponse();
-                    await Task.Delay(1000);
-                }
-            });
+            responseBytes = GetResponse();
+            //Task.Run(async () =>
+            //{
+            //    while (true)
+            //    {
+            //        UpdateResponse();
+            //        await Task.Delay(60000);
+            //    }
+            //});
 
             listener.Bind(new IPEndPoint(new IPAddress(new byte[] { 0, 0, 0, 0 }), 5000));
             listener.Listen(1024 * (int)connections);
             while (true)
             {
                 var socket = listener.Accept();
-                Task.Run(() => Servebuff(socket));
+                ThreadPool.QueueUserWorkItem(o => Servebuff((RioSocket)o),socket);
+                
             }
         }
 
@@ -77,7 +79,7 @@ namespace ConsoleApplication1
         {
             try
             {
-                var buffer = new byte[64 * pipeLineDeph];
+                var buffer = new byte[128 * pipeLineDeph];
                 var leftoverLength = 0;
                 var oldleftoverLength = 0;
                 uint endOfRequest = 0x0a0d0a0d;
@@ -124,7 +126,7 @@ namespace ConsoleApplication1
                         current += buffer[i];
                         current = current << 4;
                     }
-                    stream.Flush(false);
+                    stream.Flush();
                 }
             }
             catch (Exception ex)
@@ -141,7 +143,7 @@ namespace ConsoleApplication1
         {
             try
             {
-                var buffer = new byte[64 * pipeLineDeph];
+                var buffer = new byte[128 * pipeLineDeph];
                 var leftoverLength = 0;
                 var oldleftoverLength = 0;
                 uint endOfRequest = 0x0a0d0a0d;
@@ -160,7 +162,9 @@ namespace ConsoleApplication1
                         current += buffer[i];
                         current = current << 8;
                         if (current == endOfRequest)
+                        {
                             stream.Write(responseBytes, 0, responseBytes.Length);
+                        }
                     }
 
                     leftoverLength = r % 4;
@@ -176,11 +180,14 @@ namespace ConsoleApplication1
                             for (; start <= end; start++)
                             {
                                 if (*(uint*)start == endOfRequest)
+                                {
                                     stream.Write(responseBytes, 0, responseBytes.Length);
+                                }
                             }
                         }
                     }
 
+                    stream.Flush();
                     oldleftoverLength = leftoverLength;
 
                     for (int i = r - leftoverLength; i < r; i++)
@@ -188,7 +195,6 @@ namespace ConsoleApplication1
                         current += buffer[i];
                         current = current << 4;
                     }
-                    stream.Flush();
                 }
             }
             catch (Exception ex)

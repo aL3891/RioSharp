@@ -44,11 +44,11 @@ namespace RioSharp
                 Imports.ThrowLastError();
 
 
-            _sendBufferId = RioStatic.RegisterBuffer(SendBufferPool.BufferPointer, SendBufferPool.TotalLength);
+            _sendBufferId = RioStatic.RegisterBuffer(SendBufferPool.BufferPointer, (uint)SendBufferPool.TotalLength);
             Imports.ThrowLastWSAError();
             SendBufferPool.SetBufferId(_sendBufferId);
 
-            _reciveBufferId = RioStatic.RegisterBuffer(ReciveBufferPool.BufferPointer, ReciveBufferPool.TotalLength);
+            _reciveBufferId = RioStatic.RegisterBuffer(ReciveBufferPool.BufferPointer, (uint)ReciveBufferPool.TotalLength);
             Imports.ThrowLastWSAError();
             ReciveBufferPool.SetBufferId(_reciveBufferId);
 
@@ -63,7 +63,7 @@ namespace RioSharp
                 }
             };
 
-            if ((SendCompletionQueue = RioStatic.CreateCompletionQueue((uint)MaxOutsandingCompletions, sendCompletionMethod)) == IntPtr.Zero)
+            if ((SendCompletionQueue = RioStatic.CreateCompletionQueue(MaxOutsandingCompletions, sendCompletionMethod)) == IntPtr.Zero)
                 Imports.ThrowLastWSAError();
 
             var receiveCompletionMethod = new RIO_NOTIFICATION_COMPLETION()
@@ -77,7 +77,7 @@ namespace RioSharp
                 }
             };
 
-            if ((ReceiveCompletionQueue = RioStatic.CreateCompletionQueue((uint)MaxOutsandingCompletions, receiveCompletionMethod)) == IntPtr.Zero)
+            if ((ReceiveCompletionQueue = RioStatic.CreateCompletionQueue(MaxOutsandingCompletions, receiveCompletionMethod)) == IntPtr.Zero)
                 Imports.ThrowLastWSAError();
 
 
@@ -94,8 +94,10 @@ namespace RioSharp
             var currentSegment = SendBufferPool.GetBuffer();
             fixed (byte* p = &buffer[0])
             {
-                Buffer.MemoryCopy(p, (byte*)currentSegment.Pointer.ToPointer(), SendBufferPool.SegmentLength, buffer.Length);
+                Buffer.MemoryCopy(p, currentSegment.rawPointer, SendBufferPool.SegmentLength, buffer.Length);
             }
+            
+            currentSegment.segmentPointer->Length = buffer.Length; 
             currentSegment.AutoFree = false;
             return currentSegment;
         }
@@ -128,12 +130,12 @@ namespace RioSharp
                             buf = ReciveBufferPool.allSegments[result.RequestCorrelation];
                             if (connections.TryGetValue(result.ConnectionCorrelation, out connection))
                             {
-                                buf.CurrentLength = result.BytesTransferred;
-                                connection.incommingSegments.Enqueue(buf);
-                                connection.ReciveInternal();
+                                buf.segmentPointer->Length = (int)result.BytesTransferred; //use currentLength instead?
+                                connection.incommingSegments.Set(buf);
                             }
                             else
                                 buf.Dispose();
+                           
                         }
 
                     } while (count > 0);
@@ -193,7 +195,6 @@ namespace RioSharp
             ReciveBufferPool.Dispose();
         }
 
-
         public unsafe RioSocket Connect(Uri adress)
         {
             IntPtr sock;
@@ -236,7 +237,6 @@ namespace RioSharp
             return connection;
         }
 
-
         public RioSocket BindUdpSocket()
         {
             IntPtr sock;
@@ -247,6 +247,5 @@ namespace RioSharp
             res.ReciveInternal();
             return res;
         }
-
     }
 }

@@ -30,6 +30,18 @@ namespace RioShpart.Aspnet.TestSite
         }
 
         // Entry point for the application.
-        public static void Main(string[] args) => WebApplication.Run<Startup>(args);
+        public static void Main(string[] args) {
+            var application = new WebApplicationBuilder()
+               .UseConfiguration(WebApplicationConfiguration.GetDefault(args))
+               .UseStartup<Startup>()
+               .Build();
+
+            // The following section should be used to demo sockets
+            //var addresses = application.GetAddresses();
+            //addresses.Clear();
+            //addresses.Add("http://unix:/tmp/kestrel-test.sock");
+
+            application.Run();
+        }
     }
 }

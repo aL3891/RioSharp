@@ -15,6 +15,7 @@ namespace RioSharp
     {
         internal IntPtr _listenerSocket;
         private RioSocketPool _pool;
+        internal IntPtr AcceptCompletionPort;
 
         public unsafe RioTcpListener(RioSocketPool pool)
         {
@@ -30,6 +31,22 @@ namespace RioSharp
             Imports.WSAIoctlGeneral(_listenerSocket, Imports.SIO_LOOPBACK_FAST_PATH,
                                 &True, 4, null, 0,
                                 out dwBytes, IntPtr.Zero, IntPtr.Zero);
+
+
+            if ((AcceptCompletionPort = Imports.CreateIoCompletionPort((IntPtr)(-1), IntPtr.Zero, 0, 1)) == IntPtr.Zero)
+                Imports.ThrowLastError();
+
+            if ((Imports.CreateIoCompletionPort(_listenerSocket, AcceptCompletionPort, 0, 0)) == IntPtr.Zero)
+                Imports.ThrowLastError();
+
+        }
+
+        public void AcceptEx() {
+            if ((AcceptCompletionPort = Imports.CreateIoCompletionPort((IntPtr)(-1), IntPtr.Zero, 0, 1)) == IntPtr.Zero)
+                Imports.ThrowLastError();
+
+            if ((Imports.CreateIoCompletionPort(_listenerSocket, AcceptCompletionPort, 0, 0)) == IntPtr.Zero)
+                Imports.ThrowLastError();
 
         }
 

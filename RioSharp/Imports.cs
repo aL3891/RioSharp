@@ -50,6 +50,9 @@ namespace RioSharp
         public static Imports.RIODeregisterBuffer DeregisterBuffer;
         public static Imports.RIOResizeCompletionQueue ResizeCompletionQueue;
         public static Imports.RIOResizeRequestQueue ResizeRequestQueue;
+        public static Imports.AcceptEx AcceptEx;
+        public static Imports.ConnectEx ConnectEx;
+        public static Imports.DisconnectEx DisconnectEx;
 
         public unsafe static void Initalize()
         {
@@ -58,7 +61,80 @@ namespace RioSharp
             tempSocket = Imports.WSASocket(ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_STREAM, PROTOCOL.IPPROTO_TCP, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.WSA_FLAG_OVERLAPPED);
             Imports.ThrowLastWSAError();
 
-            UInt32 dwBytes = 0;
+            uint dwBytes = 0;
+
+            Guid AcceptExId = new Guid("B5367DF1-CBAC-11CF-95CA-00805F48A192");
+            var acceptExptr = IntPtr.Zero;
+
+            if (Imports.WSAIoctl2(tempSocket,
+                Imports.SIO_GET_EXTENSION_FUNCTION_POINTER,
+                ref AcceptExId,
+                16,
+                ref acceptExptr,
+                IntPtr.Size,
+                out dwBytes,
+                IntPtr.Zero,
+                IntPtr.Zero) != 0)
+            {
+                Imports.ThrowLastWSAError();
+            }
+            else
+            {
+                AcceptEx = Marshal.GetDelegateForFunctionPointer<Imports.AcceptEx>(acceptExptr);
+            }
+
+
+            Guid ConnectExId = new Guid("25A207B9-DDF3-4660-8EE9-76E58C74063E");
+            var ConnectExptr = IntPtr.Zero;
+
+            if (Imports.WSAIoctl2(tempSocket,
+                Imports.SIO_GET_EXTENSION_FUNCTION_POINTER,
+                ref ConnectExId,
+                16,
+                ref ConnectExptr,
+                IntPtr.Size,
+                out dwBytes,
+                IntPtr.Zero,
+                IntPtr.Zero) != 0)
+            {
+                Imports.ThrowLastWSAError();
+            }
+            else
+            {
+                ConnectEx = Marshal.GetDelegateForFunctionPointer<Imports.ConnectEx>(acceptExptr);
+            }
+
+
+            Guid DisconnectExId = new Guid("7FDA2E11-8630-436F-A031-F536A6EEC157");
+            var DisconnectExptr = IntPtr.Zero;
+
+            if (Imports.WSAIoctl2(tempSocket,
+                Imports.SIO_GET_EXTENSION_FUNCTION_POINTER,
+                ref DisconnectExId,
+                16,
+                ref DisconnectExptr,
+                IntPtr.Size,
+                out dwBytes,
+                IntPtr.Zero,
+                IntPtr.Zero) != 0)
+            {
+                Imports.ThrowLastWSAError();
+            }
+            else
+            {
+                DisconnectEx = Marshal.GetDelegateForFunctionPointer<Imports.DisconnectEx>(acceptExptr);
+            }
+
+
+
+
+
+
+
+
+
+
+
             var rio = new RIO_EXTENSION_FUNCTION_TABLE();
             Guid RioFunctionsTableId = new Guid("8509e081-96dd-4005-b165-9e2ee8c79e3f");
 
@@ -124,7 +200,7 @@ namespace RioSharp
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct RIO_EXTENSION_FUNCTION_TABLE
     {
-        public UInt32 cbSize;
+        public uint cbSize;
 
         public IntPtr RIOReceive;
         public IntPtr RIOReceiveEx;
@@ -179,18 +255,18 @@ namespace RioSharp
 
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
-        public delegate IntPtr RIORegisterBuffer([In] IntPtr DataBuffer, [In] UInt32 DataLength);
+        public delegate IntPtr RIORegisterBuffer([In] IntPtr DataBuffer, [In] uint DataLength);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         public delegate void RIODeregisterBuffer([In] IntPtr BufferId);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = false)]
         [SuppressUnmanagedCodeSecurity]
-        public unsafe delegate bool RIOSend([In] IntPtr SocketQueue, RIO_BUFSEGMENT* RioBuffer, [In] UInt32 DataBufferCount, [In] RIO_SEND_FLAGS Flags, [In] long RequestCorrelation);
+        public unsafe delegate bool RIOSend([In] IntPtr SocketQueue, RIO_BUFSEGMENT* RioBuffer, [In] uint DataBufferCount, [In] RIO_SEND_FLAGS Flags, [In] long RequestCorrelation);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = false)]
         [SuppressUnmanagedCodeSecurity]
-        public unsafe delegate bool RIOReceive([In] IntPtr SocketQueue, RIO_BUFSEGMENT* RioBuffer, [In] UInt32 DataBufferCount, [In] RIO_RECEIVE_FLAGS Flags, [In] long RequestCorrelation);
+        public unsafe delegate bool RIOReceive([In] IntPtr SocketQueue, RIO_BUFSEGMENT* RioBuffer, [In] uint DataBufferCount, [In] RIO_RECEIVE_FLAGS Flags, [In] long RequestCorrelation);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         public delegate IntPtr RIOCreateCompletionQueue([In] uint QueueSize, [In] RIO_NOTIFICATION_COMPLETION NotificationCompletion);
@@ -201,10 +277,10 @@ namespace RioSharp
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         public delegate IntPtr RIOCreateRequestQueue(
                                       [In] IntPtr Socket,
-                                      [In] UInt32 MaxOutstandingReceive,
-                                      [In] UInt32 MaxReceiveDataBuffers,
-                                      [In] UInt32 MaxOutstandingSend,
-                                      [In] UInt32 MaxSendDataBuffers,
+                                      [In] uint MaxOutstandingReceive,
+                                      [In] uint MaxReceiveDataBuffers,
+                                      [In] uint MaxOutstandingSend,
+                                      [In] uint MaxSendDataBuffers,
                                       [In] IntPtr ReceiveCQ,
                                       [In] IntPtr SendCQ,
                                       [In] long ConnectionCorrelation
@@ -219,13 +295,13 @@ namespace RioSharp
         public delegate Int32 RIONotify([In] IntPtr CQ);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
-        public delegate bool RIOResizeCompletionQueue([In] IntPtr CQ, [In] UInt32 QueueSize);
+        public delegate bool RIOResizeCompletionQueue([In] IntPtr CQ, [In] uint QueueSize);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
-        public delegate bool RIOResizeRequestQueue([In] IntPtr RQ, [In] UInt32 MaxOutstandingReceive, [In] UInt32 MaxOutstandingSend);
+        public delegate bool RIOResizeRequestQueue([In] IntPtr RQ, [In] uint MaxOutstandingReceive, [In] uint MaxOutstandingSend);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
-        public delegate bool DisconnectEx([In] IntPtr hSocket, [In] IntPtr lpOverlapped, [In] UInt32 dwFlags, [In] UInt32 reserved);
+        public delegate bool DisconnectEx([In] IntPtr hSocket, [In] IntPtr lpOverlapped, [In] uint dwFlags, [In] uint reserved);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         public delegate bool ConnectEx([In] IntPtr s, [In] sockaddr_in name, [In] int namelen, [In] IntPtr lpSendBuffer, [In] uint dwSendDataLength, [Out] uint lpdwBytesSent, [In] IntPtr lpOverlapped);
@@ -240,6 +316,7 @@ namespace RioSharp
         public const uint IOC_INOUT = IOC_IN | IOC_OUT;
         public const uint IOC_WS2 = 0x08000000;
         public const uint IOC_VENDOR = 0x18000000;
+        public const uint SIO_GET_EXTENSION_FUNCTION_POINTER = IOC_INOUT | IOC_WS2 | 6;
         public const uint SIO_GET_MULTIPLE_EXTENSION_FUNCTION_POINTER = IOC_INOUT | IOC_WS2 | 36;
         public const int SIO_LOOPBACK_FAST_PATH = -1744830448;// IOC_IN | IOC_WS2 | 16;
         public const int TCP_NODELAY = 0x0001;
@@ -247,7 +324,7 @@ namespace RioSharp
 
         public unsafe static RIO Initalize(IntPtr socket)
         {
-            UInt32 dwBytes = 0;
+            uint dwBytes = 0;
             RIO_EXTENSION_FUNCTION_TABLE rio = new RIO_EXTENSION_FUNCTION_TABLE();
             Guid RioFunctionsTableId = new Guid("8509e081-96dd-4005-b165-9e2ee8c79e3f");
 
@@ -328,6 +405,19 @@ namespace RioSharp
           [In] int* lpvInBuffer,
           [In] uint cbInBuffer,
           [In] int* lpvOutBuffer,
+          [In] int cbOutBuffer,
+          [Out] out uint lpcbBytesReturned,
+          [In] IntPtr lpOverlapped,
+          [In] IntPtr lpCompletionRoutine
+        );
+
+        [DllImport(WS2_32, SetLastError = true, EntryPoint = "WSAIoctl")]
+        public unsafe static extern int WSAIoctl2(
+          [In] IntPtr socket,
+          [In] uint dwIoControlCode,
+          [In] ref Guid lpvInBuffer,
+          [In] uint cbInBuffer,
+          [In, Out] ref IntPtr lpvOutBuffer,
           [In] int cbOutBuffer,
           [Out] out uint lpcbBytesReturned,
           [In] IntPtr lpOverlapped,
@@ -471,7 +561,7 @@ namespace RioSharp
         IPPROTO_RESERVED_MAX = 261
     }
 
-    public enum SOCKET_FLAGS : UInt32
+    public enum SOCKET_FLAGS : uint
     {
         WSA_FLAG_OVERLAPPED = 0x01,
         WSA_FLAG_MULTIPOINT_C_ROOT = 0x02,
@@ -483,7 +573,7 @@ namespace RioSharp
         REGISTERED_IO = 0x100
     }
 
-    public enum RIO_SEND_FLAGS : UInt32
+    public enum RIO_SEND_FLAGS : uint
     {
         NONE = 0x00000000,
         DONT_NOTIFY = 0x00000001,
@@ -491,7 +581,7 @@ namespace RioSharp
         COMMIT_ONLY = 0x00000008
     }
 
-    public enum RIO_RECEIVE_FLAGS : UInt32
+    public enum RIO_RECEIVE_FLAGS : uint
     {
         NONE = 0x00000000,
         DONT_NOTIFY = 0x00000001,
@@ -671,7 +761,7 @@ namespace RioSharp
         internal short iMaxUdpDg;
         internal IntPtr lpVendorInfo;
     }
-    
+
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct sockaddr_in
     {
@@ -693,7 +783,7 @@ namespace RioSharp
         [FieldOffset(3)]
         public byte s_b4;
     }
-    
+
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct RIO_BUFSEGMENT
     {

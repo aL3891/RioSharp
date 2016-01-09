@@ -465,6 +465,16 @@ namespace RioSharp
         [DllImport(WS2_32, SetLastError = true)]
         public static extern int closesocket(IntPtr s);
 
+        [DllImport(Kernel_32, SetLastError = true)]
+        public static extern IntPtr CreateEvent([In, Optional]IntPtr lpEventAttributes, [In]bool bManualReset, [In]bool bInitialState, [In, Optional]string lpName);
+
+        [DllImport(Kernel_32, SetLastError = true)]
+        public static extern IntPtr ResetEvent([In]IntPtr handle);
+
+        [DllImport(Kernel_32, SetLastError = true)]
+        public static extern IntPtr CloseHandle([In]IntPtr handle);
+
+
         public const int SOCKET_ERROR = -1;
         public const int INVALID_SOCKET = -1;
     }

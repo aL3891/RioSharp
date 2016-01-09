@@ -16,6 +16,7 @@ namespace RioSharp
         internal IntPtr _listenerSocket;
         private RioSocketPool _pool;
         internal IntPtr AcceptCompletionPort;
+        IntPtr acceptOverlapped;
 
         public unsafe RioTcpListener(RioSocketPool pool)
         {
@@ -39,14 +40,40 @@ namespace RioSharp
             if ((Imports.CreateIoCompletionPort(_listenerSocket, AcceptCompletionPort, 0, 0)) == IntPtr.Zero)
                 Imports.ThrowLastError();
 
+
+
         }
 
-        public void AcceptEx() {
-            if ((AcceptCompletionPort = Imports.CreateIoCompletionPort((IntPtr)(-1), IntPtr.Zero, 0, 1)) == IntPtr.Zero)
+        public unsafe void AcceptEx()
+        {
+
+            var ao = stackalloc NativeOverlapped[1];
+
+            IntPtr acceptSocket;
+
+            if ((acceptSocket = Imports.WSASocket(ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_STREAM, PROTOCOL.IPPROTO_TCP, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.WSA_FLAG_OVERLAPPED)) == IntPtr.Zero)
+                Imports.ThrowLastWSAError();
+
+            if ((AcceptCompletionPort = Imports.CreateIoCompletionPort(acceptSocket, IntPtr.Zero, 0, 1)) == IntPtr.Zero)
                 Imports.ThrowLastError();
 
-            if ((Imports.CreateIoCompletionPort(_listenerSocket, AcceptCompletionPort, 0, 0)) == IntPtr.Zero)
-                Imports.ThrowLastError();
+            ao->InternalHigh = IntPtr.Zero;
+            ao->InternalLow = IntPtr.Zero;
+            ao->OffsetHigh = 0;
+            ao->OffsetLow = 0;
+
+            ao->EventHandle = Imports.CreateEvent(IntPtr.Zero, false, false, null);
+
+            int recived = 0;
+
+            RioStatic.AcceptEx(_listenerSocket, acceptSocket, IntPtr.Zero, 0, sizeof(sockaddr_in), sizeof(sockaddr_in), ref recived, new IntPtr((void*)ao));
+
+            uint lpNumberOfBytes;
+            uint lpCompletionKey;
+            NativeOverlapped* lpOverlapped;
+            
+            Imports.GetQueuedCompletionStatus(AcceptCompletionPort, out lpNumberOfBytes, out lpCompletionKey, out lpOverlapped, -1);
+
 
         }
 

@@ -13,7 +13,7 @@ namespace RioSharp.Aspnet.Host
 
         public int Connections { get; set; }
 
-        public uint PipeLineDepth { get; set; }
+        public int PipeLineDepth { get; set; }
 
         public void Initialize(IConfiguration configuration)
         {

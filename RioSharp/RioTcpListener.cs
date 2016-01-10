@@ -37,25 +37,39 @@ namespace RioSharp
             if ((AcceptCompletionPort = Imports.CreateIoCompletionPort((IntPtr)(-1), IntPtr.Zero, 0, 1)) == IntPtr.Zero)
                 Imports.ThrowLastError();
 
-            if ((Imports.CreateIoCompletionPort(_listenerSocket, AcceptCompletionPort, 0, 0)) == IntPtr.Zero)
+            if ((Imports.CreateIoCompletionPort(_listenerSocket, AcceptCompletionPort, 0, 1)) == IntPtr.Zero)
                 Imports.ThrowLastError();
 
 
 
         }
 
-        public unsafe void AcceptEx()
+        public unsafe RioSocket AcceptEx()
         {
 
             var ao = stackalloc NativeOverlapped[1];
+            IntPtr a = Marshal.AllocHGlobal((sizeof(sockaddr_in)+16) * 2);
+
+            Imports.MemSet(a, 0, sizeof(sockaddr_in) * 2);
+
+            sockaddr_in* sock = (sockaddr_in*)a.ToPointer();
+
+            sock->sin_family = ADDRESS_FAMILIES.AF_INET;
+            sock->sin_port = Imports.htons(5000);
+            //Imports.ThrowLastWSAError();
+            sock->sin_addr.s_b1 = 0;
+            sock->sin_addr.s_b2 = 0;
+            sock->sin_addr.s_b3 = 0;
+            sock->sin_addr.s_b4 = 0;
+
 
             IntPtr acceptSocket;
 
             if ((acceptSocket = Imports.WSASocket(ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_STREAM, PROTOCOL.IPPROTO_TCP, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.WSA_FLAG_OVERLAPPED)) == IntPtr.Zero)
                 Imports.ThrowLastWSAError();
 
-            if ((AcceptCompletionPort = Imports.CreateIoCompletionPort(acceptSocket, IntPtr.Zero, 0, 1)) == IntPtr.Zero)
-                Imports.ThrowLastError();
+            //if ((AcceptCompletionPort = Imports.CreateIoCompletionPort(_listenerSocket, IntPtr.Zero, 0, 1)) == IntPtr.Zero)
+            //    Imports.ThrowLastError();
 
             ao->InternalHigh = IntPtr.Zero;
             ao->InternalLow = IntPtr.Zero;
@@ -66,15 +80,26 @@ namespace RioSharp
 
             int recived = 0;
 
-            RioStatic.AcceptEx(_listenerSocket, acceptSocket, IntPtr.Zero, 0, sizeof(sockaddr_in), sizeof(sockaddr_in), ref recived, new IntPtr((void*)ao));
+            if (!RioStatic.AcceptEx(_listenerSocket, acceptSocket, a, 0, sizeof(sockaddr_in)+16, sizeof(sockaddr_in)+16, ref recived, ao))
+            {
+                if (Imports.WSAGetLastError() != 997)
+                    Imports.ThrowLastWSAError();
+            }
+            IntPtr lpNumberOfBytes;
+            IntPtr lpCompletionKey;
+            NativeOverlapped* lpOverlapped = stackalloc NativeOverlapped[1];
+            int tt;
 
-            uint lpNumberOfBytes;
-            uint lpCompletionKey;
-            NativeOverlapped* lpOverlapped;
+            if ((tt = Imports.GetQueuedCompletionStatus(AcceptCompletionPort, out lpNumberOfBytes, out lpCompletionKey, out lpOverlapped, -1)) == 0)
+                Imports.ThrowLastError();
             
-            Imports.GetQueuedCompletionStatus(AcceptCompletionPort, out lpNumberOfBytes, out lpCompletionKey, out lpOverlapped, -1);
 
+            int lpcbTransfer;
+            int lpdwFlags;
 
+            Imports.WSAGetOverlappedResult(_listenerSocket, lpOverlapped, out lpcbTransfer, false, out lpdwFlags);
+
+            return new RioSocket(acceptSocket, null);
         }
 
         public void Bind(IPEndPoint localEP)

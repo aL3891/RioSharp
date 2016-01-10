@@ -235,8 +235,11 @@ namespace RioSharp
         [DllImport(Kernel_32, SetLastError = true)]
         public unsafe static extern IntPtr CreateIoCompletionPort(IntPtr handle, IntPtr hExistingCompletionPort, int puiCompletionKey, uint uiNumberOfConcurrentThreads);
 
-        [DllImport(Kernel_32, SetLastError = false)]
-        public static extern unsafe bool GetQueuedCompletionStatus(IntPtr CompletionPort, out uint lpNumberOfBytes, out uint lpCompletionKey, out NativeOverlapped* lpOverlapped, int dwMilliseconds);
+        [DllImport(Kernel_32, SetLastError = true)]
+        public static extern unsafe int GetQueuedCompletionStatus(IntPtr CompletionPort, out IntPtr lpNumberOfBytes, out IntPtr lpCompletionKey, out NativeOverlapped* lpOverlapped, int dwMilliseconds);
+
+        [DllImport(WS2_32, SetLastError = true)]
+        public static extern unsafe bool WSAGetOverlappedResult(IntPtr socket, [In] NativeOverlapped* lpOverlapped, out int lpcbTransfer, bool fWait, out int lpdwFlags);
 
 
         public static int ThrowLastError()
@@ -307,7 +310,7 @@ namespace RioSharp
         public delegate bool ConnectEx([In] IntPtr s, [In] sockaddr_in name, [In] int namelen, [In] IntPtr lpSendBuffer, [In] uint dwSendDataLength, [Out] uint lpdwBytesSent, [In] IntPtr lpOverlapped);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
-        public delegate bool AcceptEx([In] IntPtr sListenSocket, [In] IntPtr sAcceptSocket, [In] IntPtr lpOutputBuffer, [In] int dwReceiveDataLength, [In] int dwLocalAddressLength, [In] int dwRemoteAddressLength, [In, Out] ref int lpdwBytesReceived, [In] IntPtr lpOverlapped);
+        public unsafe delegate bool AcceptEx([In] IntPtr sListenSocket, [In] IntPtr sAcceptSocket, [In] IntPtr lpOutputBuffer, [In] int dwReceiveDataLength, [In] int dwLocalAddressLength, [In] int dwRemoteAddressLength, [In, Out] ref int lpdwBytesReceived, NativeOverlapped* lpOverlapped);
 
 
 
@@ -474,6 +477,8 @@ namespace RioSharp
         [DllImport(Kernel_32, SetLastError = true)]
         public static extern IntPtr CloseHandle([In]IntPtr handle);
 
+        [DllImport("msvcrt.dll", EntryPoint = "memset", CallingConvention = CallingConvention.Cdecl, SetLastError = false)]
+        public static extern IntPtr MemSet(IntPtr dest, int c, int count);
 
         public const int SOCKET_ERROR = -1;
         public const int INVALID_SOCKET = -1;

@@ -96,8 +96,8 @@ namespace RioSharp
             {
                 Buffer.MemoryCopy(p, currentSegment.rawPointer, currentSegment.TotalLength, buffer.Length);
             }
-            
-            currentSegment.segmentPointer->Length = buffer.Length; 
+
+            currentSegment.segmentPointer->Length = buffer.Length;
             currentSegment.AutoFree = false;
             return currentSegment;
         }
@@ -107,8 +107,9 @@ namespace RioSharp
             const int maxResults = 1024;
             RIO_RESULT* results = stackalloc RIO_RESULT[maxResults];
             RioSocket connection;
-            uint count, key, bytes;
-            NativeOverlapped* overlapped;
+            uint count;
+            IntPtr key, bytes;
+            NativeOverlapped* overlapped = stackalloc NativeOverlapped[1];
             RIO_RESULT result;
             RioBufferSegment buf;
 
@@ -117,7 +118,7 @@ namespace RioSharp
                 RioStatic.Notify(ReceiveCompletionQueue);
                 Imports.ThrowLastWSAError();
 
-                if (Imports.GetQueuedCompletionStatus(ReceiveCompletionPort, out bytes, out key, out overlapped, -1))
+                if (Imports.GetQueuedCompletionStatus(ReceiveCompletionPort, out bytes, out key, out overlapped, -1) != 0)
                 {
                     do
                     {
@@ -148,13 +149,14 @@ namespace RioSharp
         {
             const int maxResults = 1024;
             RIO_RESULT* results = stackalloc RIO_RESULT[maxResults];
-            uint count, key, bytes;
-            NativeOverlapped* overlapped;
+            uint count;
+            IntPtr key, bytes;
+            NativeOverlapped* overlapped = stackalloc NativeOverlapped[1];
 
             while (true)
             {
                 RioStatic.Notify(SendCompletionQueue);
-                if (Imports.GetQueuedCompletionStatus(SendCompletionPort, out bytes, out key, out overlapped, -1))
+                if (Imports.GetQueuedCompletionStatus(SendCompletionPort, out bytes, out key, out overlapped, -1) != 0)
                 {
                     do
                     {

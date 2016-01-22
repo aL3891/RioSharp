@@ -122,18 +122,8 @@ namespace RioSharp
             }
             else
             {
-                DisconnectEx = Marshal.GetDelegateForFunctionPointer<Imports.DisconnectEx>(acceptExptr);
+                DisconnectEx = Marshal.GetDelegateForFunctionPointer<Imports.DisconnectEx>(DisconnectExptr);
             }
-
-
-
-
-
-
-
-
-
-
 
             var rio = new RIO_EXTENSION_FUNCTION_TABLE();
             Guid RioFunctionsTableId = new Guid("8509e081-96dd-4005-b165-9e2ee8c79e3f");
@@ -217,6 +207,21 @@ namespace RioSharp
         public IntPtr RIOResizeRequestQueue;
     }
 
+
+
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RioNativeOverlapped
+    {
+        public IntPtr EventHandle;
+        public IntPtr InternalHigh;
+        public IntPtr InternalLow;
+        public int OffsetHigh;
+        public int OffsetLow;
+        public int SocketIndex;
+        public byte Status;
+    }
+
     public static class Imports
     {
         const string WS2_32 = "WS2_32.dll";
@@ -235,11 +240,15 @@ namespace RioSharp
         [DllImport(Kernel_32, SetLastError = true)]
         public unsafe static extern IntPtr CreateIoCompletionPort(IntPtr handle, IntPtr hExistingCompletionPort, int puiCompletionKey, uint uiNumberOfConcurrentThreads);
 
+        [DllImport(Kernel_32, SetLastError = true, EntryPoint = "GetQueuedCompletionStatus")]
+        public static extern unsafe bool GetQueuedCompletionStatusRio(IntPtr CompletionPort, out IntPtr lpNumberOfBytes, out IntPtr lpCompletionKey, out RioNativeOverlapped* lpOverlapped, int dwMilliseconds);
+
         [DllImport(Kernel_32, SetLastError = true)]
         public static extern unsafe int GetQueuedCompletionStatus(IntPtr CompletionPort, out IntPtr lpNumberOfBytes, out IntPtr lpCompletionKey, out NativeOverlapped* lpOverlapped, int dwMilliseconds);
 
+
         [DllImport(WS2_32, SetLastError = true)]
-        public static extern unsafe bool WSAGetOverlappedResult(IntPtr socket, [In] NativeOverlapped* lpOverlapped, out int lpcbTransfer, bool fWait, out int lpdwFlags);
+        public static extern unsafe bool WSAGetOverlappedResult(IntPtr socket, [In] RioNativeOverlapped* lpOverlapped, out int lpcbTransfer, bool fWait, out int lpdwFlags);
 
 
         public static int ThrowLastError()
@@ -304,13 +313,13 @@ namespace RioSharp
         public delegate bool RIOResizeRequestQueue([In] IntPtr RQ, [In] uint MaxOutstandingReceive, [In] uint MaxOutstandingSend);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
-        public delegate bool DisconnectEx([In] IntPtr hSocket, [In] IntPtr lpOverlapped, [In] uint dwFlags, [In] uint reserved);
+        public unsafe delegate bool DisconnectEx([In] IntPtr hSocket, [In] RioNativeOverlapped* lpOverlapped, [In] uint dwFlags, [In] uint reserved);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         public delegate bool ConnectEx([In] IntPtr s, [In] sockaddr_in name, [In] int namelen, [In] IntPtr lpSendBuffer, [In] uint dwSendDataLength, [Out] uint lpdwBytesSent, [In] IntPtr lpOverlapped);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
-        public unsafe delegate bool AcceptEx([In] IntPtr sListenSocket, [In] IntPtr sAcceptSocket, [In] IntPtr lpOutputBuffer, [In] int dwReceiveDataLength, [In] int dwLocalAddressLength, [In] int dwRemoteAddressLength, [In, Out] ref int lpdwBytesReceived, NativeOverlapped* lpOverlapped);
+        public unsafe delegate bool AcceptEx([In] IntPtr sListenSocket, [In] IntPtr sAcceptSocket, [In] IntPtr lpOutputBuffer, [In] int dwReceiveDataLength, [In] int dwLocalAddressLength, [In] int dwRemoteAddressLength, [Out] out int lpdwBytesReceived, [In]RioNativeOverlapped* lpOverlapped);
 
 
 

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,10 +17,10 @@ namespace RioSharp
         internal IntPtr _sendBufferId, _reciveBufferId;
         internal IntPtr SendCompletionPort, SendCompletionQueue, ReceiveCompletionPort, ReceiveCompletionQueue;
         internal uint MaxOutstandingReceive, MaxOutstandingSend, MaxConnections, MaxOutsandingCompletions;
-
+        internal RioSocket[] allSockets;
         internal ConcurrentDictionary<long, RioSocket> connections = new ConcurrentDictionary<long, RioSocket>();
 
-        public unsafe RioSocketPool(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool, uint maxOutstandingReceive = 1024, uint maxOutstandingSend = 1024, uint maxConnections = 1024)
+        public unsafe RioSocketPool(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool, int socketCount, uint maxOutstandingReceive = 1024, uint maxOutstandingSend = 1024, uint maxConnections = 1024)
         {
             MaxOutstandingReceive = maxOutstandingReceive;
             MaxOutstandingSend = maxOutstandingSend;
@@ -87,6 +88,18 @@ namespace RioSharp
             Thread sendThread = new Thread(ProcessSendCompletes);
             sendThread.IsBackground = true;
             sendThread.Start();
+
+            var adrSize = (sizeof(sockaddr_in) + 16) * 2;
+            var overlapped = Marshal.AllocHGlobal(new IntPtr(socketCount*Marshal.SizeOf<RioNativeOverlapped>()));
+            var adressBuffer = Marshal.AllocHGlobal(new IntPtr(socketCount*adrSize));
+            
+            allSockets = new RioSocket[socketCount];
+
+            for (int i = 0; i < socketCount; i++)
+            {
+                allSockets[i] = new RioSocket(overlapped + (i * Marshal.SizeOf<RioNativeOverlapped>()), adressBuffer + (i * adrSize), this);
+                allSockets[i]._overlapped->SocketIndex = i;
+            }
         }
 
         public unsafe RioBufferSegment PreAllocateWrite(byte[] buffer)
@@ -176,13 +189,13 @@ namespace RioSharp
             }
         }
 
-        internal void Recycle(RioSocket socket)
+        internal unsafe virtual void Recycle(RioSocket socket)
         {
+            RioSocket c;
+            connections.TryRemove(socket.GetHashCode(), out c);
             Imports.closesocket(socket._socket);
             Imports.ThrowLastWSAError();
 
-            RioSocket c;
-            connections.TryRemove(socket.GetHashCode(), out c);
         }
 
         public virtual void Dispose()
@@ -232,10 +245,12 @@ namespace RioSharp
                     Imports.ThrowLastWSAError();
             }
 
-            var connection = new RioSocket(sock, this);
-            connections.TryAdd(connection.GetHashCode(), connection);
-            connection.ReciveInternal();
-            return connection;
+            //var connection = new RioSocket(sock, this);
+            //connections.TryAdd(connection.GetHashCode(), connection);
+            //connection.ReciveInternal();
+            //return connection;
+
+            return null;
         }
 
         public RioSocket BindUdpSocket()
@@ -244,9 +259,10 @@ namespace RioSharp
             if ((sock = Imports.WSASocket(ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_DGRAM, PROTOCOL.IPPROTO_UDP, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.WSA_FLAG_OVERLAPPED)) == IntPtr.Zero)
                 Imports.ThrowLastWSAError();
 
-            var res = new RioSocket(sock, this);
-            res.ReciveInternal();
-            return res;
+            //var res = new RioSocket(sock, this);
+            //res.ReciveInternal();
+            //return res;
+            return null;
         }
     }
 }

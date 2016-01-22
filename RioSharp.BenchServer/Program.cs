@@ -15,7 +15,6 @@ namespace ConsoleApplication1
         static RioBufferSegment currentSegment;
         static RioFixedBufferPool sendPool, recivePool;
         private static RioTcpListener listener;
-        static RioSocketPool socketPool;
         private static int pipeLineDeph;
         private static byte[] responseBytes;
 
@@ -41,20 +40,16 @@ namespace ConsoleApplication1
             //oldSegment.Dispose();
         }
 
-
-
-
         static void Main(string[] args)
         {
             pipeLineDeph = int.Parse(args.FirstOrDefault(f => f.StartsWith("-p"))?.Substring(2) ?? "16");
             int connections = int.Parse(args.FirstOrDefault(f => f.StartsWith("-c"))?.Substring(2) ?? "512");
 
-            sendPool = new RioFixedBufferPool(10*connections, 140 * pipeLineDeph);
-            recivePool = new RioFixedBufferPool(10*connections, 128 * pipeLineDeph);
+            sendPool = new RioFixedBufferPool(10 * connections, 140 * pipeLineDeph);
+            recivePool = new RioFixedBufferPool(10 * connections, 128 * pipeLineDeph);
 
-            socketPool = new RioSocketPool(sendPool, recivePool);
-            listener = new RioTcpListener(socketPool);
-            currentSegment = socketPool.PreAllocateWrite(GetResponse());
+            listener = new RioTcpListener(sendPool, recivePool, 1);
+            currentSegment = listener.PreAllocateWrite(GetResponse());
             responseBytes = GetResponse();
             //Task.Run(async () =>
             //{
@@ -67,12 +62,15 @@ namespace ConsoleApplication1
 
             listener.Bind(new IPEndPoint(new IPAddress(new byte[] { 0, 0, 0, 0 }), 5000));
             listener.Listen(1024 * (int)connections);
-            while (true)
-            {
-                var socket = listener.Accept();
-                ThreadPool.QueueUserWorkItem(o => Servebuff((RioSocket)o),socket);
-                
-            }
+            var a = new Action<RioSocket>(s => ThreadPool.QueueUserWorkItem(o => Servebuff((RioSocket)o), s));
+            listener.OnAccepted = a;
+            listener.StartAccepting();
+            //while (true)
+            //{
+            //    var socket = listener.AcceptEx();
+            //    ThreadPool.QueueUserWorkItem(o => Servebuff((RioSocket)o), socket);
+            //}
+            Console.ReadLine();
         }
 
         static async Task ServeFixed(RioSocket socket)

@@ -46,8 +46,8 @@ namespace RioSharp.Aspnet.Host
 
             sendPool = new RioFixedBufferPool(1000, 140 * information.PipeLineDepth);
             recivePool = new RioFixedBufferPool(1000, 64 * information.PipeLineDepth);
-            socketPool = new RioSocketPool(sendPool, recivePool);
-            listener = new RioTcpListener(socketPool);
+            
+            listener = new RioTcpListener(sendPool, recivePool, 1024);
 
             listener.Bind(new IPEndPoint(new IPAddress(new byte[] { 0, 0, 0, 0 }), 5000));
             listener.Listen(1024 * information.Connections);

@@ -71,8 +71,17 @@
     <Compile Include="..\RioSharp\RioStream.cs">
       <Link>RioStream.cs</Link>
     </Compile>
+    <Compile Include="..\RioSharp\RioTcpClient.cs">
+      <Link>RioTcpClient.cs</Link>
+    </Compile>
     <Compile Include="..\RioSharp\RioTcpListener.cs">
       <Link>RioTcpListener.cs</Link>
+    </Compile>
+    <Compile Include="..\RioSharp\RioTcpSocketPool.cs">
+      <Link>RioTcpSocketPool.cs</Link>
+    </Compile>
+    <Compile Include="..\RioSharp\RioUdpClient.cs">
+      <Link>RioUdpClient.cs</Link>
     </Compile>
     <Compile Include="..\RioSharp\SuppressUnmanagedCodeSecurityAttribute.cs">
       <Link>SuppressUnmanagedCodeSecurityAttribute.cs</Link>

@@ -65,6 +65,9 @@
     <Compile Include="..\RioSharp\RioSocket.cs">
       <Link>RioSocket.cs</Link>
     </Compile>
+    <Compile Include="..\RioSharp\RioSocketBase.cs">
+      <Link>RioSocketBase.cs</Link>
+    </Compile>
     <Compile Include="..\RioSharp\RioSocketPool.cs">
       <Link>RioSocketPool.cs</Link>
     </Compile>

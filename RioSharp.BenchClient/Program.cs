@@ -17,7 +17,7 @@ namespace ConsoleApplication2
             "\r\n";
 
         static byte[] _requestBytes = Encoding.UTF8.GetBytes(responseStr);
-        private static RioSocketPool clientPool;
+        private static RioTcpClient clientPool;
         private static Uri uri;
         private static bool keepAlive;
         private static int pipeLineDeph;
@@ -28,7 +28,7 @@ namespace ConsoleApplication2
         static void Main(string[] args)
         {
             pipeLineDeph = int.Parse(args.FirstOrDefault(f => f.StartsWith("-p"))?.Substring(2) ?? "1");
-            clientPool = new RioSocketPool(new RioFixedBufferPool(1000, (64 * pipeLineDeph)), new RioFixedBufferPool(1000, (140 * pipeLineDeph)), 1024);
+            clientPool = new RioTcpClient(new RioFixedBufferPool(1000, (64 * pipeLineDeph)), new RioFixedBufferPool(1000, (140 * pipeLineDeph)), 1024);
             int connections = int.Parse(args.FirstOrDefault(f => f.StartsWith("-c"))?.Substring(2) ?? "1");
             timer = new Stopwatch();
             span = TimeSpan.FromSeconds(int.Parse(args.FirstOrDefault(f => f.StartsWith("-d"))?.Substring(2) ?? "10"));

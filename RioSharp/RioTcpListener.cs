@@ -6,14 +6,13 @@ using System.Threading;
 
 namespace RioSharp
 {
-    public class RioTcpListener : RioSocketPool
+    public class RioTcpListener : RioTcpSocketPool
     {
         internal IntPtr _listenerSocket;
-        internal IntPtr AcceptCompletionPort, DisconnectCompletionPort;
+        internal IntPtr AcceptCompletionPort;
         IntPtr acceptOverlapped;
 
-        public Action<RioSocket> OnAccepted;
-
+        
         public unsafe RioTcpListener(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool, int socketCount,
             uint maxOutstandingReceive = 1024, uint maxOutstandingSend = 1024, uint maxConnections = 1024)
             : base(sendPool, revicePool, socketCount, maxOutstandingReceive, maxOutstandingSend, maxConnections)
@@ -34,26 +33,17 @@ namespace RioSharp
             if ((AcceptCompletionPort = Imports.CreateIoCompletionPort((IntPtr)(-1), IntPtr.Zero, 0, 1)) == IntPtr.Zero)
                 Imports.ThrowLastError();
 
-            if ((DisconnectCompletionPort = Imports.CreateIoCompletionPort((IntPtr)(-1), IntPtr.Zero, 0, 1)) == IntPtr.Zero)
-                Imports.ThrowLastError();
 
             if ((Imports.CreateIoCompletionPort(_listenerSocket, AcceptCompletionPort, 0, 1)) == IntPtr.Zero)
                 Imports.ThrowLastError();
 
-            foreach (var s in allSockets)
-            {
-                if ((Imports.CreateIoCompletionPort(s._socket, DisconnectCompletionPort, 0, 1)) == IntPtr.Zero)
-                    Imports.ThrowLastError();
-            }
+            
 
             Thread sendThread = new Thread(CompleteConnect);
             sendThread.IsBackground = true;
             sendThread.Start();
 
-            Thread DisThread = new Thread(CompleteDisConnect);
-            DisThread.IsBackground = true;
-            DisThread.Start();
-
+            
         }
 
         public void StartAccepting()
@@ -77,21 +67,6 @@ namespace RioSharp
                 OnAccepted(acceptSocket);
         }
 
-        public unsafe void CompleteDisConnect(object o)
-        {
-            IntPtr lpNumberOfBytes;
-            IntPtr lpCompletionKey;
-            RioNativeOverlapped* lpOverlapped = stackalloc RioNativeOverlapped[1];
-
-            while (true)
-            {
-                if (Imports.GetQueuedCompletionStatusRio(DisconnectCompletionPort, out lpNumberOfBytes, out lpCompletionKey, out lpOverlapped, -1))
-                    AcceptEx(allSockets[lpOverlapped->SocketIndex]);
-                else
-                    Imports.ThrowLastError();
-            }
-
-        }
 
         public unsafe void CompleteConnect(object o)
         {
@@ -126,19 +101,6 @@ namespace RioSharp
             }
         }
 
-        internal unsafe override void Recycle(RioSocket socket)
-        {
-            RioSocket c;
-            connections.TryRemove(socket.GetHashCode(), out c);
-            socket.ResetOverlapped();
-
-
-            if (!RioStatic.DisconnectEx(socket._socket, socket._overlapped, 0x02, 0)) //TF_REUSE_SOCKET
-                if (Imports.WSAGetLastError() != 997) // error_io_pending
-                    Imports.ThrowLastWSAError();
-            //else
-            //    AcceptEx(socket);
-        }
 
         public void Bind(IPEndPoint localEP)
         {
@@ -158,6 +120,23 @@ namespace RioSharp
             {
                 if (Imports.bind(_listenerSocket, ref sa, sizeof(sockaddr_in)) == Imports.SOCKET_ERROR)
                     Imports.ThrowLastWSAError();
+            }
+        }
+
+
+
+        public override unsafe void CompleteDisConnect(object o)
+        {
+            IntPtr lpNumberOfBytes;
+            IntPtr lpCompletionKey;
+            RioNativeOverlapped* lpOverlapped = stackalloc RioNativeOverlapped[1];
+
+            while (true)
+            {
+                if (Imports.GetQueuedCompletionStatusRio(DisconnectCompletionPort, out lpNumberOfBytes, out lpCompletionKey, out lpOverlapped, -1))
+                    AcceptEx(allSockets[lpOverlapped->SocketIndex]);
+                else
+                    Imports.ThrowLastError();
             }
         }
 

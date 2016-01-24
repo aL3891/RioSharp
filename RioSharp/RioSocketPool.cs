@@ -11,22 +11,20 @@ using System.Threading.Tasks;
 
 namespace RioSharp
 {
-    public class RioSocketPool : IDisposable
+    public abstract class RioSocketPool : IDisposable
     {
         internal RioFixedBufferPool SendBufferPool, ReciveBufferPool;
         internal IntPtr _sendBufferId, _reciveBufferId;
         internal IntPtr SendCompletionPort, SendCompletionQueue, ReceiveCompletionPort, ReceiveCompletionQueue;
-        internal uint MaxOutstandingReceive, MaxOutstandingSend, MaxConnections, MaxOutsandingCompletions;
-        internal RioSocket[] allSockets;
+        internal uint MaxOutstandingReceive, MaxOutstandingSend, MaxOutsandingCompletions;
         internal ConcurrentDictionary<long, RioSocket> connections = new ConcurrentDictionary<long, RioSocket>();
 
-        public unsafe RioSocketPool(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool, int socketCount, uint maxOutstandingReceive = 1024, uint maxOutstandingSend = 1024, uint maxConnections = 1024)
+        public unsafe RioSocketPool(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool,
+            uint maxOutstandingReceive = 1024, uint maxOutstandingSend = 1024, uint maxOutsandingCompletions = 2048)
         {
             MaxOutstandingReceive = maxOutstandingReceive;
             MaxOutstandingSend = maxOutstandingSend;
-            MaxConnections = maxConnections;
-            MaxOutsandingCompletions = (MaxOutstandingReceive + MaxOutstandingSend) * MaxConnections;
-
+            MaxOutsandingCompletions = maxOutsandingCompletions;
             SendBufferPool = sendPool;
             ReciveBufferPool = revicePool;
 
@@ -89,17 +87,6 @@ namespace RioSharp
             sendThread.IsBackground = true;
             sendThread.Start();
 
-            var adrSize = (sizeof(sockaddr_in) + 16) * 2;
-            var overlapped = Marshal.AllocHGlobal(new IntPtr(socketCount*Marshal.SizeOf<RioNativeOverlapped>()));
-            var adressBuffer = Marshal.AllocHGlobal(new IntPtr(socketCount*adrSize));
-            
-            allSockets = new RioSocket[socketCount];
-
-            for (int i = 0; i < socketCount; i++)
-            {
-                allSockets[i] = new RioSocket(overlapped + (i * Marshal.SizeOf<RioNativeOverlapped>()), adressBuffer + (i * adrSize), this);
-                allSockets[i]._overlapped->SocketIndex = i;
-            }
         }
 
         public unsafe RioBufferSegment PreAllocateWrite(byte[] buffer)
@@ -188,16 +175,7 @@ namespace RioSharp
                     Imports.ThrowLastError();
             }
         }
-
-        internal unsafe virtual void Recycle(RioSocket socket)
-        {
-            RioSocket c;
-            connections.TryRemove(socket.GetHashCode(), out c);
-            Imports.closesocket(socket._socket);
-            Imports.ThrowLastWSAError();
-
-        }
-
+        
         public virtual void Dispose()
         {
             RioStatic.DeregisterBuffer(_sendBufferId);
@@ -207,62 +185,6 @@ namespace RioSharp
 
             SendBufferPool.Dispose();
             ReciveBufferPool.Dispose();
-        }
-
-        public unsafe RioSocket Connect(Uri adress)
-        {
-            IntPtr sock;
-            if ((sock = Imports.WSASocket(ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_STREAM, PROTOCOL.IPPROTO_TCP, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.WSA_FLAG_OVERLAPPED)) == IntPtr.Zero)
-                Imports.ThrowLastWSAError();
-
-            int True = -1;
-            UInt32 dwBytes = 0;
-
-            Imports.setsockopt(sock, Imports.IPPROTO_TCP, Imports.TCP_NODELAY, (char*)&True, 4);
-            Imports.WSAIoctlGeneral(sock, Imports.SIO_LOOPBACK_FAST_PATH,
-                                &True, 4, null, 0,
-                                out dwBytes, IntPtr.Zero, IntPtr.Zero);
-
-
-            var apa = Dns.GetHostAddressesAsync(adress.Host).Result.First(i => i.AddressFamily == AddressFamily.InterNetwork);
-
-            in_addr inAddress = new in_addr();
-            inAddress.s_b1 = apa.GetAddressBytes()[0];
-            inAddress.s_b2 = apa.GetAddressBytes()[1];
-            inAddress.s_b3 = apa.GetAddressBytes()[2];
-            inAddress.s_b4 = apa.GetAddressBytes()[3];
-
-
-            sockaddr_in sa = new sockaddr_in();
-            sa.sin_family = ADDRESS_FAMILIES.AF_INET;
-            sa.sin_port = Imports.htons((ushort)adress.Port);
-            //Imports.ThrowLastWSAError();
-            sa.sin_addr = inAddress;
-
-            unsafe
-            {
-                if (Imports.connect(sock, ref sa, sizeof(sockaddr_in)) == Imports.SOCKET_ERROR)
-                    Imports.ThrowLastWSAError();
-            }
-
-            //var connection = new RioSocket(sock, this);
-            //connections.TryAdd(connection.GetHashCode(), connection);
-            //connection.ReciveInternal();
-            //return connection;
-
-            return null;
-        }
-
-        public RioSocket BindUdpSocket()
-        {
-            IntPtr sock;
-            if ((sock = Imports.WSASocket(ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_DGRAM, PROTOCOL.IPPROTO_UDP, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.WSA_FLAG_OVERLAPPED)) == IntPtr.Zero)
-                Imports.ThrowLastWSAError();
-
-            //var res = new RioSocket(sock, this);
-            //res.ReciveInternal();
-            //return res;
-            return null;
         }
     }
 }

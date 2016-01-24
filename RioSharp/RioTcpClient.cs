@@ -12,7 +12,7 @@ namespace RioSharp
     {
         ConcurrentQueue<RioSocket> freeSockets = new ConcurrentQueue<RioSocket>();
 
-        public RioTcpClient(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool, int socketCount,
+        public RioTcpClient(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool, uint socketCount,
             uint maxOutstandingReceive = 1024, uint maxOutstandingSend = 1024, uint maxConnections = 1024)
             : base(sendPool, revicePool, socketCount, maxOutstandingReceive, maxOutstandingSend, maxConnections)
         {

@@ -13,9 +13,9 @@ namespace RioSharp
         IntPtr acceptOverlapped;
 
         
-        public unsafe RioTcpListener(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool, int socketCount,
-            uint maxOutstandingReceive = 1024, uint maxOutstandingSend = 1024, uint maxConnections = 1024)
-            : base(sendPool, revicePool, socketCount, maxOutstandingReceive, maxOutstandingSend, maxConnections)
+        public unsafe RioTcpListener(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool, uint socketCount,
+            uint maxOutstandingReceive = 1024, uint maxOutstandingSend = 1024)
+            : base(sendPool, revicePool, socketCount, maxOutstandingReceive, maxOutstandingSend, (maxOutstandingReceive+ maxOutstandingSend) * socketCount)
         {
 
             if ((_listenerSocket = Imports.WSASocket(ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_STREAM, PROTOCOL.IPPROTO_TCP, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.WSA_FLAG_OVERLAPPED)) == IntPtr.Zero)

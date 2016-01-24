@@ -13,7 +13,7 @@ namespace RioSharp
         internal IntPtr  DisconnectCompletionPort;
         internal RioSocket[] allSockets;
         
-        public unsafe  RioTcpSocketPool(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool, int socketCount,
+        public unsafe  RioTcpSocketPool(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool, uint socketCount,
             uint maxOutstandingReceive = 1024, uint maxOutstandingSend = 1024, uint maxConnections = 1024)
             : base(sendPool, revicePool,  maxOutstandingReceive, maxOutstandingSend, maxConnections)
         {

@@ -48,7 +48,7 @@ namespace ConsoleApplication1
             sendPool = new RioFixedBufferPool(10 * connections, 140 * pipeLineDeph);
             recivePool = new RioFixedBufferPool(10 * connections, 128 * pipeLineDeph);
 
-            listener = new RioTcpListener(sendPool, recivePool, 1);
+            listener = new RioTcpListener(sendPool, recivePool, 1024);
             currentSegment = listener.PreAllocateWrite(GetResponse());
             responseBytes = GetResponse();
             //Task.Run(async () =>

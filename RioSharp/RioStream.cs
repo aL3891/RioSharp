@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -10,12 +8,13 @@ namespace RioSharp
 {
     public class RioStream : Stream
     {
-        RioSocket _socket;
+        RioTcpSocket _socket;
         RioBufferSegment _currentInputSegment;
         RioBufferSegment _currentOutputSegment;
         int _bytesReadInCurrentSegment = 0;
         int remainingSpaceInOutputSegment = 0, currentContentLength = 0;
         private int OutputSegmentTotalLength;
+        AwaitableQueue2 incommingSegments = new AwaitableQueue2();
 
         TaskCompletionSource<int> readtcs;
         byte[] readBuffer;
@@ -23,12 +22,14 @@ namespace RioSharp
         int readCount;
         Action getNewSegmentDelegate;
 
-        public RioStream(RioSocket socket)
+        public RioStream(RioTcpSocket socket)
         {
             _socket = socket;
             _currentInputSegment = null;
             _currentOutputSegment = _socket.SendBufferPool.GetBuffer();
             getNewSegmentDelegate = GetNewSegment;
+            socket.OnIncommingSegment = s => incommingSegments.Set(s);
+            socket.ReciveInternal();
         }
 
         public void Flush(bool moreData)
@@ -41,7 +42,7 @@ namespace RioSharp
             {
                 unsafe
                 {
-                    _currentOutputSegment.segmentPointer->Length = OutputSegmentTotalLength - remainingSpaceInOutputSegment;
+                    _currentOutputSegment.SegmentPointer->Length = OutputSegmentTotalLength - remainingSpaceInOutputSegment;
                 }
                 _socket.SendInternal(_currentOutputSegment, RIO_SEND_FLAGS.NONE);
 
@@ -64,10 +65,10 @@ namespace RioSharp
         {
             Flush(true);
         }
-        
+
         private void GetNewSegment()
         {
-            _currentInputSegment = _socket.incommingSegments.GetResult();
+            _currentInputSegment = incommingSegments.GetResult();
             if (_currentInputSegment == null)
             {
                 readtcs.SetResult(0);
@@ -100,7 +101,7 @@ namespace RioSharp
             unsafe
             {
                 fixed (byte* p = &readBuffer[readoffset])
-                    Buffer.MemoryCopy(_currentInputSegment.rawPointer + _bytesReadInCurrentSegment, p, readCount, toCopy);
+                    Buffer.MemoryCopy(_currentInputSegment.RawPointer + _bytesReadInCurrentSegment, p, readCount, toCopy);
             }
 
             _bytesReadInCurrentSegment += toCopy;
@@ -113,7 +114,7 @@ namespace RioSharp
 
             readtcs.SetResult(toCopy);
         }
-        
+
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             readtcs = new TaskCompletionSource<int>();
@@ -123,10 +124,10 @@ namespace RioSharp
 
             if (_currentInputSegment == null)
             {
-                if (_socket.incommingSegments.IsCompleted)
+                if (incommingSegments.IsCompleted)
                     GetNewSegment();
                 else
-                    _socket.incommingSegments.OnCompleted(getNewSegmentDelegate);
+                    incommingSegments.OnCompleted(getNewSegmentDelegate);
             }
             else
                 CompleteRead();
@@ -146,7 +147,7 @@ namespace RioSharp
             {
                 if (remainingSpaceInOutputSegment == 0)
                 {
-                    _currentOutputSegment.segmentPointer->Length = OutputSegmentTotalLength;
+                    _currentOutputSegment.SegmentPointer->Length = OutputSegmentTotalLength;
                     _socket.SendInternal(_currentOutputSegment, RIO_SEND_FLAGS.DEFER); //| RIO_SEND_FLAGS.DONT_NOTIFY
                     while (!_socket.SendBufferPool.TryGetBuffer(out _currentOutputSegment))
                         _socket.CommitSend();
@@ -158,10 +159,10 @@ namespace RioSharp
                 var toWrite = count - writtenFromBuffer;
                 if (toWrite > remainingSpaceInOutputSegment)
                     toWrite = remainingSpaceInOutputSegment;
-                
+
                 fixed (byte* p = &buffer[offset])
                 {
-                    Buffer.MemoryCopy(p + writtenFromBuffer, _currentOutputSegment.rawPointer + (OutputSegmentTotalLength - remainingSpaceInOutputSegment), remainingSpaceInOutputSegment, toWrite);
+                    Buffer.MemoryCopy(p + writtenFromBuffer, _currentOutputSegment.RawPointer + (OutputSegmentTotalLength - remainingSpaceInOutputSegment), remainingSpaceInOutputSegment, toWrite);
                 }
 
                 writtenFromBuffer += toWrite;
@@ -178,6 +179,7 @@ namespace RioSharp
                 _currentInputSegment.Dispose();
 
             _currentOutputSegment.Dispose();
+            incommingSegments.Dispose();
         }
 
         public override bool CanRead => true;

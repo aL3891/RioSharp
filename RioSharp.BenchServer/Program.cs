@@ -62,7 +62,7 @@ namespace ConsoleApplication1
 
             listener.Bind(new IPEndPoint(new IPAddress(new byte[] { 0, 0, 0, 0 }), 5000));
             listener.Listen(1024 * (int)connections);
-            var a = new Action<RioSocket>(s => ThreadPool.QueueUserWorkItem(o => Servebuff((RioSocket)o), s));
+            var a = new Action<RioTcpSocket>(s => ThreadPool.QueueUserWorkItem(o => Servebuff((RioTcpSocket)o), s));
             listener.OnAccepted = a;
             listener.StartAccepting();
             //while (true)
@@ -73,7 +73,7 @@ namespace ConsoleApplication1
             Console.ReadLine();
         }
 
-        static async Task ServeFixed(RioSocket socket)
+        static async Task ServeFixed(RioTcpSocket socket)
         {
             try
             {
@@ -137,7 +137,7 @@ namespace ConsoleApplication1
             }
         }
 
-        static async Task Servebuff(RioSocket socket)
+        static async Task Servebuff(RioTcpSocket socket)
         {
             try
             {

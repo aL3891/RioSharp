@@ -47,9 +47,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\RioSharp\AwaitableQueue.cs">
-      <Link>AwaitableQueue.cs</Link>
-    </Compile>
     <Compile Include="..\RioSharp\AwaitableQueue2.cs">
       <Link>AwaitableQueue2.cs</Link>
     </Compile>
@@ -61,9 +58,6 @@
     </Compile>
     <Compile Include="..\RioSharp\RioFixedBufferPool.cs">
       <Link>RioFixedBufferPool.cs</Link>
-    </Compile>
-    <Compile Include="..\RioSharp\RioSocket.cs">
-      <Link>RioSocket.cs</Link>
     </Compile>
     <Compile Include="..\RioSharp\RioSocketBase.cs">
       <Link>RioSocketBase.cs</Link>
@@ -80,14 +74,14 @@
     <Compile Include="..\RioSharp\RioTcpListener.cs">
       <Link>RioTcpListener.cs</Link>
     </Compile>
+    <Compile Include="..\RioSharp\RioTcpSocket.cs">
+      <Link>RioTcpSocket.cs</Link>
+    </Compile>
     <Compile Include="..\RioSharp\RioTcpSocketPool.cs">
       <Link>RioTcpSocketPool.cs</Link>
     </Compile>
     <Compile Include="..\RioSharp\RioUdpClient.cs">
       <Link>RioUdpClient.cs</Link>
-    </Compile>
-    <Compile Include="..\RioSharp\SuppressUnmanagedCodeSecurityAttribute.cs">
-      <Link>SuppressUnmanagedCodeSecurityAttribute.cs</Link>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

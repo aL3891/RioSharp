@@ -31,7 +31,8 @@ namespace ConsoleApplication2
             clientPool = new RioTcpClient(new RioFixedBufferPool(1000, (64 * pipeLineDeph)), new RioFixedBufferPool(1000, (140 * pipeLineDeph)), 1024);
             int connections = int.Parse(args.FirstOrDefault(f => f.StartsWith("-c"))?.Substring(2) ?? "1");
             timer = new Stopwatch();
-            span = TimeSpan.FromSeconds(int.Parse(args.FirstOrDefault(f => f.StartsWith("-d"))?.Substring(2) ?? "10"));
+            span = TimeSpan.FromSeconds
+                (int.Parse(args.FirstOrDefault(f => f.StartsWith("-d"))?.Substring(2) ?? "10"));
             timer.Start();
             uri = new Uri(args.First(a => !a.StartsWith("-")));
             keepAlive = true;
@@ -54,7 +55,7 @@ namespace ConsoleApplication2
                 int responses = 0;
                 int total = 0;
 
-                var connection = clientPool.Connect(uri);
+                var connection = await clientPool.Connect(uri);
                 var stream = new RioStream(connection);
                 while (timer.Elapsed < span)
                 {

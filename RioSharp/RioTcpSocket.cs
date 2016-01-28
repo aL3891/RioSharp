@@ -3,16 +3,17 @@ using System.Threading;
 
 namespace RioSharp
 {
-    public unsafe class RioSocket : RioSocketBase
+    public unsafe class RioTcpSocket : RioSocketBase
     {
-        public AwaitableQueue2 incommingSegments = new AwaitableQueue2();
         internal RioNativeOverlapped* _overlapped;
         internal IntPtr _adressBuffer;
         private IntPtr _eventHandle;
         private RioTcpSocketPool _pool;
 
-        internal RioSocket(IntPtr overlapped, IntPtr adressBuffer, RioTcpSocketPool pool) :
-            base(pool.SendBufferPool, pool.ReciveBufferPool, pool.MaxOutstandingReceive, pool.MaxOutstandingSend, pool.SendCompletionQueue, pool.ReceiveCompletionQueue)
+        internal RioTcpSocket(IntPtr overlapped, IntPtr adressBuffer, RioTcpSocketPool pool) :
+            base(pool.SendBufferPool, pool.ReciveBufferPool, pool.MaxOutstandingReceive, pool.MaxOutstandingSend, 
+                pool.SendCompletionQueue, pool.ReceiveCompletionQueue,
+                ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_STREAM, PROTOCOL.IPPROTO_TCP)
         {
             _overlapped = (RioNativeOverlapped*)overlapped.ToPointer();
             _eventHandle = Imports.CreateEvent(IntPtr.Zero, false, false, null);
@@ -25,7 +26,6 @@ namespace RioSharp
             }
         }
 
-
         internal unsafe void ResetOverlapped()
         {
             _overlapped->InternalHigh = IntPtr.Zero;
@@ -36,8 +36,7 @@ namespace RioSharp
         }
 
         public override void Dispose()
-        {
-            incommingSegments.Dispose();
+        {            
             _pool.Recycle(this);
         }
     }

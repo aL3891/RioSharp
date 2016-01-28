@@ -101,7 +101,7 @@ namespace RioSharp
             }
             else
             {
-                ConnectEx = Marshal.GetDelegateForFunctionPointer<Imports.ConnectEx>(acceptExptr);
+                ConnectEx = Marshal.GetDelegateForFunctionPointer<Imports.ConnectEx>(ConnectExptr);
             }
 
 
@@ -315,8 +315,8 @@ namespace RioSharp
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         public unsafe delegate bool DisconnectEx([In] IntPtr hSocket, [In] RioNativeOverlapped* lpOverlapped, [In] uint dwFlags, [In] uint reserved);
 
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
-        public unsafe delegate bool ConnectEx([In] IntPtr s, [In] sockaddr_in name, [In] int namelen, [In] IntPtr lpSendBuffer, [In] uint dwSendDataLength, [Out] uint lpdwBytesSent, [In] RioNativeOverlapped* lpOverlapped);
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = false)]
+        public unsafe delegate bool ConnectEx([In] IntPtr s, [In] sockaddr_in name, [In] int namelen, [In] IntPtr lpSendBuffer, [In] uint dwSendDataLength, [Out] out uint lpdwBytesSent, [In] RioNativeOverlapped* lpOverlapped);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         public unsafe delegate bool AcceptEx([In] IntPtr sListenSocket, [In] IntPtr sAcceptSocket, [In] IntPtr lpOutputBuffer, [In] int dwReceiveDataLength, [In] int dwLocalAddressLength, [In] int dwRemoteAddressLength, [Out] out int lpdwBytesReceived, [In]RioNativeOverlapped* lpOverlapped);

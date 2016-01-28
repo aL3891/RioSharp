@@ -4,7 +4,7 @@ using System.Threading;
 
 namespace RioSharp
 {
-    public sealed class AwaitableQueue2 : INotifyCompletion, IDisposable //where T : class
+    internal sealed class AwaitableQueue2 : INotifyCompletion, IDisposable
     {
         RioBufferSegment _currentValue;
         Action _continuation = null;

@@ -1,13 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Net.Sockets;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace RioSharp
 {
@@ -17,7 +10,7 @@ namespace RioSharp
         internal IntPtr _sendBufferId, _reciveBufferId;
         internal IntPtr SendCompletionPort, SendCompletionQueue, ReceiveCompletionPort, ReceiveCompletionQueue;
         internal uint MaxOutstandingReceive, MaxOutstandingSend, MaxOutsandingCompletions;
-        internal ConcurrentDictionary<long, RioSocket> connections = new ConcurrentDictionary<long, RioSocket>();
+        internal ConcurrentDictionary<long, RioSocketBase> connections = new ConcurrentDictionary<long, RioSocketBase>();
 
         public unsafe RioSocketPool(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool,
             uint maxOutstandingReceive = 1024, uint maxOutstandingSend = 1024, uint maxOutsandingCompletions = 2048)
@@ -94,10 +87,10 @@ namespace RioSharp
             var currentSegment = SendBufferPool.GetBuffer();
             fixed (byte* p = &buffer[0])
             {
-                Buffer.MemoryCopy(p, currentSegment.rawPointer, currentSegment.TotalLength, buffer.Length);
+                Buffer.MemoryCopy(p, currentSegment.RawPointer, currentSegment.TotalLength, buffer.Length);
             }
 
-            currentSegment.segmentPointer->Length = buffer.Length;
+            currentSegment.SegmentPointer->Length = buffer.Length;
             currentSegment.AutoFree = false;
             return currentSegment;
         }
@@ -106,7 +99,7 @@ namespace RioSharp
         {
             const int maxResults = 1024;
             RIO_RESULT* results = stackalloc RIO_RESULT[maxResults];
-            RioSocket connection;
+            RioSocketBase connection;
             uint count;
             IntPtr key, bytes;
             NativeOverlapped* overlapped = stackalloc NativeOverlapped[1];
@@ -131,8 +124,8 @@ namespace RioSharp
                             buf = ReciveBufferPool.allSegments[result.RequestCorrelation];
                             if (connections.TryGetValue(result.ConnectionCorrelation, out connection))
                             {
-                                buf.segmentPointer->Length = (int)result.BytesTransferred;
-                                connection.incommingSegments.Set(buf);
+                                buf.SegmentPointer->Length = (int)result.BytesTransferred;
+                                connection.OnIncommingSegment(buf);
                             }
                             else
                                 buf.Dispose();
@@ -175,7 +168,9 @@ namespace RioSharp
                     Imports.ThrowLastError();
             }
         }
-        
+
+
+
         public virtual void Dispose()
         {
             RioStatic.DeregisterBuffer(_sendBufferId);

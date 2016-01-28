@@ -9,13 +9,12 @@ namespace RioSharp
     public class RioTcpListener : RioTcpSocketPool
     {
         internal IntPtr _listenerSocket;
-        internal IntPtr AcceptCompletionPort;
+
         IntPtr acceptOverlapped;
 
-        
         public unsafe RioTcpListener(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool, uint socketCount,
             uint maxOutstandingReceive = 1024, uint maxOutstandingSend = 1024)
-            : base(sendPool, revicePool, socketCount, maxOutstandingReceive, maxOutstandingSend, (maxOutstandingReceive+ maxOutstandingSend) * socketCount)
+            : base(sendPool, revicePool, socketCount, maxOutstandingReceive, maxOutstandingSend, (maxOutstandingReceive + maxOutstandingSend) * socketCount)
         {
 
             if ((_listenerSocket = Imports.WSASocket(ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_STREAM, PROTOCOL.IPPROTO_TCP, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.WSA_FLAG_OVERLAPPED)) == IntPtr.Zero)
@@ -30,20 +29,15 @@ namespace RioSharp
                                 out dwBytes, IntPtr.Zero, IntPtr.Zero);
 
 
-            if ((AcceptCompletionPort = Imports.CreateIoCompletionPort((IntPtr)(-1), IntPtr.Zero, 0, 1)) == IntPtr.Zero)
-                Imports.ThrowLastError();
 
 
             if ((Imports.CreateIoCompletionPort(_listenerSocket, AcceptCompletionPort, 0, 1)) == IntPtr.Zero)
                 Imports.ThrowLastError();
 
-            
-
             Thread sendThread = new Thread(CompleteConnect);
             sendThread.IsBackground = true;
             sendThread.Start();
 
-            
         }
 
         public void StartAccepting()
@@ -54,7 +48,7 @@ namespace RioSharp
             }
         }
 
-        public unsafe void AcceptEx(RioSocket acceptSocket)
+        unsafe void AcceptEx(RioTcpSocket acceptSocket)
         {
             int recived = 0;
             acceptSocket.ResetOverlapped();
@@ -67,8 +61,7 @@ namespace RioSharp
                 OnAccepted(acceptSocket);
         }
 
-
-        public unsafe void CompleteConnect(object o)
+        unsafe void CompleteConnect(object o)
         {
             IntPtr lpNumberOfBytes;
             IntPtr lpCompletionKey;
@@ -84,7 +77,6 @@ namespace RioSharp
                     {
                         var res = allSockets[lpOverlapped->SocketIndex];
                         connections.TryAdd(res.GetHashCode(), res);
-                        res.ReciveInternal();
                         OnAccepted(res);
                     }
                     else {
@@ -100,7 +92,6 @@ namespace RioSharp
                 }
             }
         }
-
 
         public void Bind(IPEndPoint localEP)
         {
@@ -123,9 +114,7 @@ namespace RioSharp
             }
         }
 
-
-
-        public override unsafe void CompleteDisConnect(object o)
+        protected override unsafe void CompleteDisConnect(object o)
         {
             IntPtr lpNumberOfBytes;
             IntPtr lpCompletionKey;
@@ -145,23 +134,6 @@ namespace RioSharp
             if (Imports.listen(_listenerSocket, backlog) == Imports.SOCKET_ERROR)
                 Imports.ThrowLastWSAError();
         }
-
-        //public RioSocket Accept()
-        //{
-        //    unsafe
-        //    {
-        //        sockaddr_in sa = new sockaddr_in();
-        //        int len = sizeof(sockaddr_in);
-        //        IntPtr accepted = Imports.accept(_listenerSocket, ref sa, ref len);
-        //        if (accepted == new IntPtr(-1))
-        //            Imports.ThrowLastWSAError();
-
-        //        var res = new RioSocket(accepted, _pool);
-        //        _pool.connections.TryAdd(res.GetHashCode(), res);
-        //        res.ReciveInternal();
-        //        return res;
-        //    }
-        //}
 
         public void Dispose()
         {

@@ -10,11 +10,11 @@ namespace RioSharp
     {
         internal int Index;
         internal int TotalLength;
-        internal int CurrentContentLength => segmentPointer->Length;       
+        internal int CurrentContentLength => SegmentPointer->Length;       
         RioFixedBufferPool pool;
         internal bool AutoFree;
-        internal byte* rawPointer;
-        internal RIO_BUFSEGMENT* segmentPointer;
+        internal byte* RawPointer;
+        internal RIO_BUFSEGMENT* SegmentPointer;
         
         public RioBufferSegment(RioFixedBufferPool pool, IntPtr bufferStartPointer, IntPtr segmentStartPointer, int index, int Length)
         {
@@ -24,24 +24,24 @@ namespace RioSharp
             AutoFree = true;
 
             var offset = index * Length;
-            rawPointer = (byte*)(bufferStartPointer + offset).ToPointer();
-            segmentPointer = (RIO_BUFSEGMENT*)(segmentStartPointer + index * Marshal.SizeOf<RIO_BUFSEGMENT>()).ToPointer();
+            RawPointer = (byte*)(bufferStartPointer + offset).ToPointer();
+            SegmentPointer = (RIO_BUFSEGMENT*)(segmentStartPointer + index * Marshal.SizeOf<RIO_BUFSEGMENT>()).ToPointer();
 
-            segmentPointer->BufferId = IntPtr.Zero;
-            segmentPointer->Offset = offset;
-            segmentPointer->Length = TotalLength;
+            SegmentPointer->BufferId = IntPtr.Zero;
+            SegmentPointer->Offset = offset;
+            SegmentPointer->Length = TotalLength;
             
         }
 
         public void SetBufferId(IntPtr id)
         {
-            segmentPointer->BufferId = id;
+            SegmentPointer->BufferId = id;
         }
 
         public void Dispose()
         {
             AutoFree = true;
-            segmentPointer->Length = TotalLength;
+            SegmentPointer->Length = TotalLength;
             pool.ReleaseBuffer(this);
         }
     }

@@ -14,7 +14,7 @@ namespace RioSharp
 
         }
 
-        public RioSocket BindUdpSocket()
+        public RioTcpSocket BindUdpSocket()
         {
             IntPtr sock;
             if ((sock = Imports.WSASocket(ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_DGRAM, PROTOCOL.IPPROTO_UDP, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.WSA_FLAG_OVERLAPPED)) == IntPtr.Zero)
@@ -26,7 +26,7 @@ namespace RioSharp
             return null;
         }
 
-        internal void Recycle(RioSocket socket)
+        internal void Recycle(RioTcpSocket socket)
         {
             Imports.closesocket(socket._socket);
         }

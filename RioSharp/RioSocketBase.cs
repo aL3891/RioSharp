@@ -8,13 +8,15 @@ namespace RioSharp
         internal IntPtr _socket;
         internal IntPtr _requestQueue;
         internal RioFixedBufferPool SendBufferPool, ReciveBufferPool;
+        internal Action<RioBufferSegment> OnIncommingSegment = s => { };
 
         internal RioSocketBase(RioFixedBufferPool sendBufferPool, RioFixedBufferPool reciveBufferPool,
-            uint maxOutstandingReceive, uint maxOutstandingSend, IntPtr SendCompletionQueue, IntPtr ReceiveCompletionQueue)
+            uint maxOutstandingReceive, uint maxOutstandingSend, IntPtr SendCompletionQueue, IntPtr ReceiveCompletionQueue,
+            ADDRESS_FAMILIES adressFam, SOCKET_TYPE sockType, PROTOCOL protocol)
         {
-            if ((_socket = Imports.WSASocket(ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_STREAM, PROTOCOL.IPPROTO_TCP, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.WSA_FLAG_OVERLAPPED)) == IntPtr.Zero)
+            if ((_socket = Imports.WSASocket(adressFam, sockType, protocol, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.WSA_FLAG_OVERLAPPED)) == IntPtr.Zero)
                 Imports.ThrowLastWSAError();
-            
+
             SendBufferPool = sendBufferPool;
             ReciveBufferPool = reciveBufferPool;
 
@@ -26,7 +28,7 @@ namespace RioSharp
         {
             unsafe
             {
-                if (!RioStatic.Send(_requestQueue, Segment.segmentPointer, 1, RIO_SEND_FLAGS.DEFER, Segment.Index))
+                if (!RioStatic.Send(_requestQueue, Segment.SegmentPointer, 1, RIO_SEND_FLAGS.DEFER, Segment.Index))
                     Imports.ThrowLastWSAError();
             }
         }
@@ -40,7 +42,7 @@ namespace RioSharp
 
         internal unsafe void SendInternal(RioBufferSegment segment, RIO_SEND_FLAGS flags)
         {
-            if (!RioStatic.Send(_requestQueue, segment.segmentPointer, 1, flags, segment.Index))
+            if (!RioStatic.Send(_requestQueue, segment.SegmentPointer, 1, flags, segment.Index))
                 Imports.ThrowLastWSAError();
         }
 
@@ -49,14 +51,14 @@ namespace RioSharp
             RioBufferSegment buf;
             if (ReciveBufferPool.TryGetBuffer(out buf))
             {
-                if (!RioStatic.Receive(_requestQueue, buf.segmentPointer, 1, RIO_RECEIVE_FLAGS.NONE, buf.Index))
+                if (!RioStatic.Receive(_requestQueue, buf.SegmentPointer, 1, RIO_RECEIVE_FLAGS.NONE, buf.Index))
                     Imports.ThrowLastWSAError();
             }
             else
                 ThreadPool.QueueUserWorkItem(o =>
                 {
                     var b = ReciveBufferPool.GetBuffer();
-                    if (!RioStatic.Receive(_requestQueue, ReciveBufferPool.GetBuffer().segmentPointer, 1, RIO_RECEIVE_FLAGS.NONE, b.Index))
+                    if (!RioStatic.Receive(_requestQueue, ReciveBufferPool.GetBuffer().SegmentPointer, 1, RIO_RECEIVE_FLAGS.NONE, b.Index))
                         Imports.ThrowLastWSAError();
                 }, null);
         }
@@ -66,9 +68,9 @@ namespace RioSharp
             var currentSegment = SendBufferPool.GetBuffer();
             fixed (byte* p = &buffer[0])
             {
-                Buffer.MemoryCopy(p, currentSegment.rawPointer, currentSegment.TotalLength, buffer.Length);
+                Buffer.MemoryCopy(p, currentSegment.RawPointer, currentSegment.TotalLength, buffer.Length);
             }
-            currentSegment.segmentPointer->Length = buffer.Length;
+            currentSegment.SegmentPointer->Length = buffer.Length;
             SendInternal(currentSegment, RIO_SEND_FLAGS.NONE);
         }
 

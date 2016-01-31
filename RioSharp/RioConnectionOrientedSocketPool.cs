@@ -7,12 +7,12 @@ using System.Threading.Tasks;
 
 namespace RioSharp
 {
-    public abstract class RioTcpSocketPool : RioSocketPool
+    public abstract class RioConnectionOrientedSocketPool : RioSocketPool
     {
-        internal IntPtr SocketIocp;
-        internal RioTcpSocket[] allSockets;
+        protected IntPtr socketIocp;
+        internal RioConnectionOrientedSocket[] allSockets;
 
-        public unsafe RioTcpSocketPool(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool, uint socketCount,
+        public unsafe RioConnectionOrientedSocketPool(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool, uint socketCount,
             uint maxOutstandingReceive = 1024, uint maxOutstandingSend = 1024, uint maxConnections = 1024)
             : base(sendPool, revicePool, maxOutstandingReceive, maxOutstandingSend, maxConnections)
         {
@@ -20,21 +20,21 @@ namespace RioSharp
             var overlapped = Marshal.AllocHGlobal(new IntPtr(socketCount * Marshal.SizeOf<RioNativeOverlapped>()));
             var adressBuffer = Marshal.AllocHGlobal(new IntPtr(socketCount * adrSize));
 
-            allSockets = new RioTcpSocket[socketCount];
+            allSockets = new RioConnectionOrientedSocket[socketCount];
 
             for (int i = 0; i < socketCount; i++)
             {
-                allSockets[i] = new RioTcpSocket(overlapped + (i * Marshal.SizeOf<RioNativeOverlapped>()), adressBuffer + (i * adrSize), this, SendBufferPool, ReceiveBufferPool, maxOutstandingReceive, maxOutstandingSend, SendCompletionQueue, ReceiveCompletionQueue);
+                allSockets[i] = new RioConnectionOrientedSocket(overlapped + (i * Marshal.SizeOf<RioNativeOverlapped>()), adressBuffer + (i * adrSize), this, SendBufferPool, ReceiveBufferPool, maxOutstandingReceive, maxOutstandingSend, SendCompletionQueue, ReceiveCompletionQueue);
                 allSockets[i]._overlapped->SocketIndex = i;
             }
 
 
-            if ((SocketIocp = Kernel32.CreateIoCompletionPort((IntPtr)(-1), IntPtr.Zero, 0, 1)) == IntPtr.Zero)
+            if ((socketIocp = Kernel32.CreateIoCompletionPort((IntPtr)(-1), IntPtr.Zero, 0, 1)) == IntPtr.Zero)
                 Kernel32.ThrowLastError();
 
             foreach (var s in allSockets)
             {
-                if ((Kernel32.CreateIoCompletionPort(s.Socket, SocketIocp, 0, 1)) == IntPtr.Zero)
+                if ((Kernel32.CreateIoCompletionPort(s.Socket, socketIocp, 0, 1)) == IntPtr.Zero)
                     Kernel32.ThrowLastError();
             }
 
@@ -45,7 +45,7 @@ namespace RioSharp
 
         protected abstract unsafe void SocketIocpComplete(object o);
 
-        internal unsafe virtual void Recycle(RioTcpSocket socket)
+        internal unsafe virtual void Recycle(RioConnectionOrientedSocket socket)
         {
             RioSocketBase c;
             activeSockets.TryRemove(socket.GetHashCode(), out c);
@@ -56,6 +56,15 @@ namespace RioSharp
                     WinSock.ThrowLastWSAError();
             //else
             //    AcceptEx(socket);
+        }
+
+        public override void Dispose()
+        {
+            Kernel32.CloseHandle(socketIocp);
+            for (int i = 0; i < allSockets.Length; i++)
+                allSockets[i].Dispose();
+
+            base.Dispose();
         }
     }
 }

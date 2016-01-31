@@ -8,20 +8,20 @@ namespace RioSharp
 {
     public class RioStream : Stream
     {
-        RioTcpSocket _socket;
+        RioConnectionOrientedSocket _socket;
         RioBufferSegment _currentInputSegment;
         RioBufferSegment _currentOutputSegment;
         int _bytesReadInCurrentSegment = 0;
         int _remainingSpaceInOutputSegment = 0, _currentContentLength = 0;
         int _outputSegmentTotalLength;
-        SegmentAwaiter _incommingSegments = new SegmentAwaiter();
+        RioBufferSegmentAwaiter _incommingSegments = new RioBufferSegmentAwaiter();
         TaskCompletionSource<int> _readtcs;
         byte[] _readBuffer;
         int _readoffset;
         int _readCount;
         Action _getNewSegmentDelegate;
 
-        public RioStream(RioTcpSocket socket)
+        public RioStream(RioConnectionOrientedSocket socket)
         {
             _socket = socket;
             _currentInputSegment = null;

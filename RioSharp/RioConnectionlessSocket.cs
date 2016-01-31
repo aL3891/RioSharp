@@ -5,9 +5,9 @@ using System.Threading.Tasks;
 
 namespace RioSharp
 {
-    public class RioUdpSocket : RioSocketBase
+    public class RioConnectionlessSocket : RioSocketBase
     {
-        public RioUdpSocket(RioTcpSocketPool pool, RioFixedBufferPool sendBufferPool, RioFixedBufferPool receiveBufferPool,
+        internal RioConnectionlessSocket(RioSocketPool pool, RioFixedBufferPool sendBufferPool, RioFixedBufferPool receiveBufferPool,
             uint maxOutstandingReceive, uint maxOutstandingSend, IntPtr SendCompletionQueue, IntPtr ReceiveCompletionQueue) :
             base(sendBufferPool, receiveBufferPool, maxOutstandingReceive, maxOutstandingSend,
                 SendCompletionQueue, ReceiveCompletionQueue,
@@ -15,5 +15,8 @@ namespace RioSharp
         {
 
         }
+
+
+        public bool IsBroadcast { get; set; }
     }
 }

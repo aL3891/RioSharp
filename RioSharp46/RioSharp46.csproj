@@ -47,11 +47,23 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\RioSharp\Imports.cs">
-      <Link>Imports.cs</Link>
+    <Compile Include="..\RioSharp\Kernel32.cs">
+      <Link>Kernel32.cs</Link>
     </Compile>
     <Compile Include="..\RioSharp\RioBufferSegment.cs">
       <Link>RioBufferSegment.cs</Link>
+    </Compile>
+    <Compile Include="..\RioSharp\RioConnectionlessSocket.cs">
+      <Link>RioConnectionlessSocket.cs</Link>
+    </Compile>
+    <Compile Include="..\RioSharp\RioConnectionlessSocketPool.cs">
+      <Link>RioConnectionlessSocketPool.cs</Link>
+    </Compile>
+    <Compile Include="..\RioSharp\RioConnectionOrientedSocket.cs">
+      <Link>RioConnectionOrientedSocket.cs</Link>
+    </Compile>
+    <Compile Include="..\RioSharp\RioConnectionOrientedSocketPool.cs">
+      <Link>RioConnectionOrientedSocketPool.cs</Link>
     </Compile>
     <Compile Include="..\RioSharp\RioFixedBufferPool.cs">
       <Link>RioFixedBufferPool.cs</Link>
@@ -65,20 +77,11 @@
     <Compile Include="..\RioSharp\RioStream.cs">
       <Link>RioStream.cs</Link>
     </Compile>
-    <Compile Include="..\RioSharp\RioTcpClient.cs">
-      <Link>RioTcpClient.cs</Link>
+    <Compile Include="..\RioSharp\RioTcpClientPool.cs">
+      <Link>RioTcpClientPool.cs</Link>
     </Compile>
     <Compile Include="..\RioSharp\RioTcpListener.cs">
       <Link>RioTcpListener.cs</Link>
-    </Compile>
-    <Compile Include="..\RioSharp\RioTcpSocket.cs">
-      <Link>RioTcpSocket.cs</Link>
-    </Compile>
-    <Compile Include="..\RioSharp\RioTcpSocketPool.cs">
-      <Link>RioTcpSocketPool.cs</Link>
-    </Compile>
-    <Compile Include="..\RioSharp\RioUdpClient.cs">
-      <Link>RioUdpClient.cs</Link>
     </Compile>
     <Compile Include="..\RioSharp\SegmentAwaiter.cs">
       <Link>SegmentAwaiter.cs</Link>

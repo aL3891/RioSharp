@@ -4,14 +4,14 @@ using System.Threading;
 
 namespace RioSharp
 {
-    internal sealed class SegmentAwaiter : INotifyCompletion, IDisposable
+    internal sealed class RioBufferSegmentAwaiter : INotifyCompletion, IDisposable
     {
         RioBufferSegment _currentValue;
         Action _continuation = null;
         WaitCallback _continuationWrapperDelegate;
         SpinLock _spinLock = new SpinLock();
 
-        public SegmentAwaiter()
+        public RioBufferSegmentAwaiter()
         {
             _continuationWrapperDelegate = continuationWrapper;
         }
@@ -66,7 +66,7 @@ namespace RioSharp
             return res;
         }
 
-        public SegmentAwaiter GetAwaiter() => this;
+        public RioBufferSegmentAwaiter GetAwaiter() => this;
 
         public void Dispose()
         {

@@ -8,20 +8,7 @@ namespace RioSharp
         IntPtr _requestQueue;
         internal IntPtr Socket;
         internal RioFixedBufferPool SendBufferPool, ReceiveBufferPool;
-        internal Action<RioBufferSegment> _onIncommingSegment = s => { };
-
-
-        internal Action<RioBufferSegment> OnIncommingSegment
-        {
-            get
-            {
-                return _onIncommingSegment;
-            }
-            set
-            {
-                _onIncommingSegment = value;
-            }
-        }
+        internal Action<RioBufferSegment> onIncommingSegment = s => { };
 
         internal RioSocketBase(RioFixedBufferPool sendBufferPool, RioFixedBufferPool receiveBufferPool,
             uint maxOutstandingReceive, uint maxOutstandingSend, IntPtr SendCompletionQueue, IntPtr ReceiveCompletionQueue,
@@ -36,6 +23,20 @@ namespace RioSharp
             _requestQueue = RioStatic.CreateRequestQueue(Socket, maxOutstandingReceive, 1, maxOutstandingSend, 1, ReceiveCompletionQueue, SendCompletionQueue, GetHashCode());
             WinSock.ThrowLastWSAError();
         }
+
+
+        public Action<RioBufferSegment> OnIncommingSegment
+        {
+            get
+            {
+                return onIncommingSegment;
+            }
+            set
+            {
+                onIncommingSegment = value ?? (s => { });
+            }
+        }
+
 
         public void WritePreAllocated(RioBufferSegment Segment)
         {
@@ -89,7 +90,7 @@ namespace RioSharp
 
         public virtual void Dispose()
         {
-
+            WinSock.closesocket(Socket);
         }
     }
 }

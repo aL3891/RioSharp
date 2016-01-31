@@ -6,16 +6,16 @@ using System.Threading;
 
 namespace RioSharp
 {
-    public class RioTcpListener : RioTcpSocketPool
+    public class RioTcpListener : RioConnectionOrientedSocketPool
     {
         internal IntPtr _listenerSocket;
         internal IntPtr _listenIocp = IntPtr.Zero;
-        public Action<RioTcpSocket> OnAccepted;
+        public Action<RioConnectionOrientedSocket> OnAccepted;
 
         public unsafe RioTcpListener(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool, uint socketCount, uint maxOutstandingReceive = 1024, uint maxOutstandingSend = 1024)
             : base(sendPool, revicePool, socketCount, maxOutstandingReceive, maxOutstandingSend, (maxOutstandingReceive + maxOutstandingSend) * socketCount)
         {
-            if ((_listenerSocket = WinSock                .WSASocket(ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_STREAM, PROTOCOL.IPPROTO_TCP, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.WSA_FLAG_OVERLAPPED)) == IntPtr.Zero)
+            if ((_listenerSocket = WinSock.WSASocket(ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_STREAM, PROTOCOL.IPPROTO_TCP, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.WSA_FLAG_OVERLAPPED)) == IntPtr.Zero)
                 WinSock.ThrowLastWSAError();
 
             int True = -1;
@@ -32,7 +32,7 @@ namespace RioSharp
             ListenIocpThread.Start();
         }
 
-        unsafe void BeginAccept(RioTcpSocket acceptSocket)
+        unsafe void BeginAccept(RioConnectionOrientedSocket acceptSocket)
         {
             int recived = 0;
             acceptSocket.ResetOverlapped();
@@ -112,7 +112,7 @@ namespace RioSharp
 
             while (true)
             {
-                if (Kernel32.GetQueuedCompletionStatusRio(SocketIocp, out lpNumberOfBytes, out lpCompletionKey, out lpOverlapped, -1))
+                if (Kernel32.GetQueuedCompletionStatusRio(socketIocp, out lpNumberOfBytes, out lpCompletionKey, out lpOverlapped, -1))
                     BeginAccept(allSockets[lpOverlapped->SocketIndex]);
                 else
                     Kernel32.ThrowLastError();
@@ -121,8 +121,9 @@ namespace RioSharp
 
         public override void Dispose()
         {
-            base.Dispose();
+            Kernel32.CloseHandle(_listenIocp);
             WinSock.closesocket(_listenerSocket);
+            base.Dispose();
         }
     }
 }

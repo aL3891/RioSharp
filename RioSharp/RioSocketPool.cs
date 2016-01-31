@@ -8,8 +8,9 @@ namespace RioSharp
     {
         internal RioFixedBufferPool SendBufferPool, ReceiveBufferPool;
         IntPtr _sendBufferId, _reciveBufferId;
-        protected IntPtr SendCompletionPort, SendCompletionQueue, ReceiveCompletionPort, ReceiveCompletionQueue;
-        uint MaxOutstandingReceive, MaxOutstandingSend, MaxOutsandingCompletions;
+        IntPtr SendCompletionPort, ReceiveCompletionPort;
+        protected IntPtr SendCompletionQueue, ReceiveCompletionQueue;
+        protected uint MaxOutstandingReceive, MaxOutstandingSend, MaxOutsandingCompletions;
         internal ConcurrentDictionary<long, RioSocketBase> activeSockets = new ConcurrentDictionary<long, RioSocketBase>();
 
         public unsafe RioSocketPool(RioFixedBufferPool sendPool, RioFixedBufferPool receivePool,
@@ -125,7 +126,7 @@ namespace RioSharp
                             if (activeSockets.TryGetValue(result.ConnectionCorrelation, out connection))
                             {
                                 buf.SegmentPointer->Length = (int)result.BytesTransferred;
-                                connection._onIncommingSegment(buf);
+                                connection.onIncommingSegment(buf);
                             }
                             else
                                 buf.Dispose();
@@ -169,12 +170,15 @@ namespace RioSharp
             }
         }
 
-
-
         public virtual void Dispose()
         {
             RioStatic.DeregisterBuffer(_sendBufferId);
             RioStatic.DeregisterBuffer(_reciveBufferId);
+
+            Kernel32.CloseHandle(SendCompletionPort);
+            Kernel32.CloseHandle(ReceiveCompletionPort);
+            RioStatic.CloseCompletionQueue(SendCompletionQueue);
+            RioStatic.CloseCompletionQueue(ReceiveCompletionQueue);
 
             WinSock.WSACleanup();
 

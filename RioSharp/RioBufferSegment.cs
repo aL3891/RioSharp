@@ -6,18 +6,25 @@ using System.Threading.Tasks;
 
 namespace RioSharp
 {
-    public sealed  unsafe class RioBufferSegment : IDisposable
+    public sealed unsafe class RioBufferSegment : IDisposable
     {
         RioFixedBufferPool _pool;
         internal int Index;
         internal int TotalLength;
-        internal int CurrentContentLength => SegmentPointer->Length;       
+        public int CurrentContentLength => SegmentPointer->Length;
         internal bool AutoFree;
         internal byte* RawPointer;
         internal RIO_BUFSEGMENT* SegmentPointer;
-        
+        public byte* Datapointer => RawPointer;
 
-        public RioBufferSegment(RioFixedBufferPool pool, IntPtr bufferStartPointer, IntPtr segmentStartPointer, int index, int Length)
+        public int GetData(byte[] data, int offset)
+        {
+            var l = Math.Min((data.Length - offset), CurrentContentLength);
+            Marshal.Copy(new IntPtr(RawPointer), data, offset, l);
+            return l;
+        }
+
+        internal RioBufferSegment(RioFixedBufferPool pool, IntPtr bufferStartPointer, IntPtr segmentStartPointer, int index, int Length)
         {
             Index = index;
             TotalLength = Length;
@@ -30,10 +37,10 @@ namespace RioSharp
 
             SegmentPointer->BufferId = IntPtr.Zero;
             SegmentPointer->Offset = offset;
-            SegmentPointer->Length = TotalLength;  
+            SegmentPointer->Length = TotalLength;
         }
 
-        public void SetBufferId(IntPtr id)
+        internal void SetBufferId(IntPtr id)
         {
             SegmentPointer->BufferId = id;
         }

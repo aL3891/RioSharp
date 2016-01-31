@@ -3,14 +3,14 @@ using System.Threading;
 
 namespace RioSharp
 {
-    public unsafe class RioTcpSocket : RioSocketBase
+    public unsafe class RioConnectionOrientedSocket : RioSocketBase
     {
         internal RioNativeOverlapped* _overlapped;
         internal IntPtr _adressBuffer;
         private IntPtr _eventHandle;
-        private RioTcpSocketPool _pool;
+        private RioConnectionOrientedSocketPool _pool;
 
-        internal RioTcpSocket(IntPtr overlapped, IntPtr adressBuffer, RioTcpSocketPool pool, RioFixedBufferPool sendBufferPool, RioFixedBufferPool receiveBufferPool,
+        internal RioConnectionOrientedSocket(IntPtr overlapped, IntPtr adressBuffer, RioConnectionOrientedSocketPool pool, RioFixedBufferPool sendBufferPool, RioFixedBufferPool receiveBufferPool,
             uint maxOutstandingReceive, uint maxOutstandingSend, IntPtr SendCompletionQueue, IntPtr ReceiveCompletionQueue) :
             base(sendBufferPool, receiveBufferPool, maxOutstandingReceive, maxOutstandingSend, SendCompletionQueue, ReceiveCompletionQueue,
                 ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_STREAM, PROTOCOL.IPPROTO_TCP)

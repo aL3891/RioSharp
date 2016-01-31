@@ -10,10 +10,10 @@ using System.Threading.Tasks;
 
 namespace RioSharp
 {
-    public class RioTcpClientPool : RioTcpSocketPool
+    public class RioTcpClientPool : RioConnectionOrientedSocketPool
     {
-        ConcurrentQueue<RioTcpSocket> _freeSockets = new ConcurrentQueue<RioTcpSocket>();
-        ConcurrentDictionary<RioTcpSocket, TaskCompletionSource<RioTcpSocket>> _ongoingConnections = new ConcurrentDictionary<RioTcpSocket, TaskCompletionSource<RioTcpSocket>>();
+        ConcurrentQueue<RioConnectionOrientedSocket> _freeSockets = new ConcurrentQueue<RioConnectionOrientedSocket>();
+        ConcurrentDictionary<RioConnectionOrientedSocket, TaskCompletionSource<RioConnectionOrientedSocket>> _ongoingConnections = new ConcurrentDictionary<RioConnectionOrientedSocket, TaskCompletionSource<RioConnectionOrientedSocket>>();
 
         public RioTcpClientPool(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool, uint socketCount,
             uint maxOutstandingReceive = 1024, uint maxOutstandingSend = 1024)
@@ -49,14 +49,14 @@ namespace RioSharp
             IntPtr lpNumberOfBytes;
             IntPtr lpCompletionKey;
             RioNativeOverlapped* lpOverlapped = stackalloc RioNativeOverlapped[1];
-            TaskCompletionSource<RioTcpSocket> r;
-            RioTcpSocket res;
+            TaskCompletionSource<RioConnectionOrientedSocket> r;
+            RioConnectionOrientedSocket res;
             int lpcbTransfer;
             int lpdwFlags;
 
             while (true)
             {
-                if (Kernel32.GetQueuedCompletionStatusRio(SocketIocp, out lpNumberOfBytes, out lpCompletionKey, out lpOverlapped, -1))
+                if (Kernel32.GetQueuedCompletionStatusRio(socketIocp, out lpNumberOfBytes, out lpCompletionKey, out lpOverlapped, -1))
                 {
                     if (lpOverlapped->Status == 1)
                     {
@@ -93,7 +93,7 @@ namespace RioSharp
             }
         }
 
-        public unsafe Task<RioTcpSocket> Connect(Uri adress)
+        public unsafe Task<RioConnectionOrientedSocket> Connect(Uri adress)
         {
             var adr = Dns.GetHostAddressesAsync(adress.Host).Result.First(i => i.AddressFamily == AddressFamily.InterNetwork);
 
@@ -109,9 +109,9 @@ namespace RioSharp
             //Imports.ThrowLastWSAError();
             sa.sin_addr = inAddress;
 
-            RioTcpSocket s;
+            RioConnectionOrientedSocket s;
             _freeSockets.TryDequeue(out s);
-            var tcs = new TaskCompletionSource<RioTcpSocket>();
+            var tcs = new TaskCompletionSource<RioConnectionOrientedSocket>();
             _ongoingConnections.TryAdd(s, tcs);
 
             uint gurka;

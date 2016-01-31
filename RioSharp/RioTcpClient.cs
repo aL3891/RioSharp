@@ -37,8 +37,8 @@ namespace RioSharp
 
                 unsafe
                 {
-                    if (Imports.bind(s.Socket, ref sa, sizeof(sockaddr_in)) == Imports.SOCKET_ERROR)
-                        Imports.ThrowLastWSAError();
+                    if (WinSock.bind(s.Socket, ref sa, sizeof(sockaddr_in)) == WinSock.SOCKET_ERROR)
+                        WinSock.ThrowLastWSAError();
                 }
             }
         }
@@ -56,7 +56,7 @@ namespace RioSharp
 
             while (true)
             {
-                if (Imports.GetQueuedCompletionStatusRio(SocketIocp, out lpNumberOfBytes, out lpCompletionKey, out lpOverlapped, -1))
+                if (Kernel32.GetQueuedCompletionStatusRio(SocketIocp, out lpNumberOfBytes, out lpCompletionKey, out lpOverlapped, -1))
                 {
                     if (lpOverlapped->Status == 1)
                     {
@@ -64,7 +64,7 @@ namespace RioSharp
                     }
                     else if (lpOverlapped->Status == 2)
                     {
-                        if (Imports.WSAGetOverlappedResult(allSockets[lpOverlapped->SocketIndex].Socket, lpOverlapped, out lpcbTransfer, false, out lpdwFlags))
+                        if (WinSock.WSAGetOverlappedResult(allSockets[lpOverlapped->SocketIndex].Socket, lpOverlapped, out lpcbTransfer, false, out lpdwFlags))
                         {
                             res = allSockets[lpOverlapped->SocketIndex];
                             activeSockets.TryAdd(res.GetHashCode(), res);
@@ -105,7 +105,7 @@ namespace RioSharp
 
             sockaddr_in sa = new sockaddr_in();
             sa.sin_family = ADDRESS_FAMILIES.AF_INET;
-            sa.sin_port = Imports.htons((ushort)adress.Port);
+            sa.sin_port = WinSock.htons((ushort)adress.Port);
             //Imports.ThrowLastWSAError();
             sa.sin_addr = inAddress;
 
@@ -121,8 +121,8 @@ namespace RioSharp
                 s.ResetOverlapped();
                 s._overlapped->Status = 2;
                 if (!RioStatic.ConnectEx(s.Socket, sa, sizeof(sockaddr_in), IntPtr.Zero, 0, out gurka, s._overlapped))
-                    if (Imports.WSAGetLastError() != 997) // error_io_pending
-                        Imports.ThrowLastWSAError();
+                    if (WinSock.WSAGetLastError() != 997) // error_io_pending
+                        WinSock.ThrowLastWSAError();
             }
 
             return tcs.Task;

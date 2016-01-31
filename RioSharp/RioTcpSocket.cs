@@ -16,7 +16,7 @@ namespace RioSharp
                 ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_STREAM, PROTOCOL.IPPROTO_TCP)
         {
             _overlapped = (RioNativeOverlapped*)overlapped.ToPointer();
-            _eventHandle = Imports.CreateEvent(IntPtr.Zero, false, false, null);
+            _eventHandle = Kernel32.CreateEvent(IntPtr.Zero, false, false, null);
             _adressBuffer = adressBuffer;
             _pool = pool;
             unsafe
@@ -32,7 +32,7 @@ namespace RioSharp
             _overlapped->InternalLow = IntPtr.Zero;
             _overlapped->OffsetHigh = 0;
             _overlapped->OffsetLow = 0;
-            Imports.ResetEvent(_overlapped->EventHandle);
+            Kernel32.ResetEvent(_overlapped->EventHandle);
         }
 
         public override void Dispose()

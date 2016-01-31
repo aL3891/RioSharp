@@ -15,17 +15,17 @@ namespace RioSharp
         public unsafe RioTcpListener(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool, uint socketCount, uint maxOutstandingReceive = 1024, uint maxOutstandingSend = 1024)
             : base(sendPool, revicePool, socketCount, maxOutstandingReceive, maxOutstandingSend, (maxOutstandingReceive + maxOutstandingSend) * socketCount)
         {
-            if ((_listenerSocket = Imports.WSASocket(ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_STREAM, PROTOCOL.IPPROTO_TCP, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.WSA_FLAG_OVERLAPPED)) == IntPtr.Zero)
-                Imports.ThrowLastWSAError();
+            if ((_listenerSocket = WinSock                .WSASocket(ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_STREAM, PROTOCOL.IPPROTO_TCP, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.WSA_FLAG_OVERLAPPED)) == IntPtr.Zero)
+                WinSock.ThrowLastWSAError();
 
             int True = -1;
             UInt32 dwBytes = 0;
 
-            Imports.setsockopt(_listenerSocket, Imports.IPPROTO_TCP, Imports.TCP_NODELAY, (char*)&True, 4);
-            Imports.WSAIoctlGeneral(_listenerSocket, Imports.SIO_LOOPBACK_FAST_PATH, &True, 4, null, 0, out dwBytes, IntPtr.Zero, IntPtr.Zero);
+            WinSock.setsockopt(_listenerSocket, WinSock.IPPROTO_TCP, WinSock.TCP_NODELAY, (char*)&True, 4);
+            WinSock.WSAIoctlGeneral(_listenerSocket, WinSock.SIO_LOOPBACK_FAST_PATH, &True, 4, null, 0, out dwBytes, IntPtr.Zero, IntPtr.Zero);
 
-            if ((Imports.CreateIoCompletionPort(_listenerSocket, _listenIocp, 0, 1)) == IntPtr.Zero)
-                Imports.ThrowLastError();
+            if ((Kernel32.CreateIoCompletionPort(_listenerSocket, _listenIocp, 0, 1)) == IntPtr.Zero)
+                Kernel32.ThrowLastError();
 
             Thread ListenIocpThread = new Thread(AcceptIocpComplete);
             ListenIocpThread.IsBackground = true;
@@ -38,8 +38,8 @@ namespace RioSharp
             acceptSocket.ResetOverlapped();
             if (!RioStatic.AcceptEx(_listenerSocket, acceptSocket.Socket, acceptSocket._adressBuffer, 0, sizeof(sockaddr_in) + 16, sizeof(sockaddr_in) + 16, out recived, acceptSocket._overlapped))
             {
-                if (Imports.WSAGetLastError() != 997) // error_io_pending
-                    Imports.ThrowLastWSAError();
+                if (WinSock.WSAGetLastError() != 997) // error_io_pending
+                    WinSock.ThrowLastWSAError();
             }
             else
                 OnAccepted(acceptSocket);
@@ -55,18 +55,18 @@ namespace RioSharp
 
             sockaddr_in sa = new sockaddr_in();
             sa.sin_family = ADDRESS_FAMILIES.AF_INET;
-            sa.sin_port = Imports.htons((ushort)localEP.Port);
+            sa.sin_port = WinSock.htons((ushort)localEP.Port);
             //Imports.ThrowLastWSAError();
             sa.sin_addr = inAddress;
 
             unsafe
             {
-                if (Imports.bind(_listenerSocket, ref sa, sizeof(sockaddr_in)) == Imports.SOCKET_ERROR)
-                    Imports.ThrowLastWSAError();
+                if (WinSock.bind(_listenerSocket, ref sa, sizeof(sockaddr_in)) == WinSock.SOCKET_ERROR)
+                    WinSock.ThrowLastWSAError();
             }
 
-            if (Imports.listen(_listenerSocket, backlog) == Imports.SOCKET_ERROR)
-                Imports.ThrowLastWSAError();
+            if (WinSock.listen(_listenerSocket, backlog) == WinSock.SOCKET_ERROR)
+                WinSock.ThrowLastWSAError();
 
             foreach (var s in allSockets)
                 BeginAccept(s);
@@ -82,9 +82,9 @@ namespace RioSharp
 
             while (true)
             {
-                if (Imports.GetQueuedCompletionStatusRio(_listenIocp, out lpNumberOfBytes, out lpCompletionKey, out lpOverlapped, -1))
+                if (Kernel32.GetQueuedCompletionStatusRio(_listenIocp, out lpNumberOfBytes, out lpCompletionKey, out lpOverlapped, -1))
                 {
-                    if (Imports.WSAGetOverlappedResult(_listenerSocket, lpOverlapped, out lpcbTransfer, false, out lpdwFlags))
+                    if (WinSock.WSAGetOverlappedResult(_listenerSocket, lpOverlapped, out lpcbTransfer, false, out lpdwFlags))
                     {
                         var res = allSockets[lpOverlapped->SocketIndex];
                         activeSockets.TryAdd(res.GetHashCode(), res);
@@ -112,17 +112,17 @@ namespace RioSharp
 
             while (true)
             {
-                if (Imports.GetQueuedCompletionStatusRio(SocketIocp, out lpNumberOfBytes, out lpCompletionKey, out lpOverlapped, -1))
+                if (Kernel32.GetQueuedCompletionStatusRio(SocketIocp, out lpNumberOfBytes, out lpCompletionKey, out lpOverlapped, -1))
                     BeginAccept(allSockets[lpOverlapped->SocketIndex]);
                 else
-                    Imports.ThrowLastError();
+                    Kernel32.ThrowLastError();
             }
         }
 
         public override void Dispose()
         {
             base.Dispose();
-            Imports.closesocket(_listenerSocket);
+            WinSock.closesocket(_listenerSocket);
         }
     }
 }

@@ -23,25 +23,25 @@ namespace RioSharp
 
             var version = new Version(2, 2);
             WSAData data;
-            var result = Imports.WSAStartup((short)version.Raw, out data);
+            var result = WinSock.WSAStartup((short)version.Raw, out data);
             if (result != 0)
-                Imports.ThrowLastWSAError();
+                WinSock.ThrowLastWSAError();
 
             RioStatic.Initalize();
 
-            if ((ReceiveCompletionPort = Imports.CreateIoCompletionPort((IntPtr)(-1), IntPtr.Zero, 0, 1)) == IntPtr.Zero)
-                Imports.ThrowLastError();
+            if ((ReceiveCompletionPort = Kernel32.CreateIoCompletionPort((IntPtr)(-1), IntPtr.Zero, 0, 1)) == IntPtr.Zero)
+                Kernel32.ThrowLastError();
 
-            if ((SendCompletionPort = Imports.CreateIoCompletionPort((IntPtr)(-1), IntPtr.Zero, 0, 1)) == IntPtr.Zero)
-                Imports.ThrowLastError();
+            if ((SendCompletionPort = Kernel32.CreateIoCompletionPort((IntPtr)(-1), IntPtr.Zero, 0, 1)) == IntPtr.Zero)
+                Kernel32.ThrowLastError();
 
 
             _sendBufferId = RioStatic.RegisterBuffer(SendBufferPool.BufferPointer, (uint)SendBufferPool.TotalLength);
-            Imports.ThrowLastWSAError();
+            WinSock.ThrowLastWSAError();
             SendBufferPool.SetBufferId(_sendBufferId);
 
             _reciveBufferId = RioStatic.RegisterBuffer(ReceiveBufferPool.BufferPointer, (uint)ReceiveBufferPool.TotalLength);
-            Imports.ThrowLastWSAError();
+            WinSock.ThrowLastWSAError();
             ReceiveBufferPool.SetBufferId(_reciveBufferId);
 
             var sendCompletionMethod = new RIO_NOTIFICATION_COMPLETION()
@@ -56,7 +56,7 @@ namespace RioSharp
             };
 
             if ((SendCompletionQueue = RioStatic.CreateCompletionQueue(MaxOutsandingCompletions, sendCompletionMethod)) == IntPtr.Zero)
-                Imports.ThrowLastWSAError();
+                WinSock.ThrowLastWSAError();
 
             var receiveCompletionMethod = new RIO_NOTIFICATION_COMPLETION()
             {
@@ -70,7 +70,7 @@ namespace RioSharp
             };
 
             if ((ReceiveCompletionQueue = RioStatic.CreateCompletionQueue(MaxOutsandingCompletions, receiveCompletionMethod)) == IntPtr.Zero)
-                Imports.ThrowLastWSAError();
+                WinSock.ThrowLastWSAError();
 
 
             Thread receiveThread = new Thread(ProcessReceiveCompletes);
@@ -109,14 +109,14 @@ namespace RioSharp
             while (true)
             {
                 RioStatic.Notify(ReceiveCompletionQueue);
-                Imports.ThrowLastWSAError();
+                WinSock.ThrowLastWSAError();
 
-                if (Imports.GetQueuedCompletionStatus(ReceiveCompletionPort, out bytes, out key, out overlapped, -1) != 0)
+                if (Kernel32.GetQueuedCompletionStatus(ReceiveCompletionPort, out bytes, out key, out overlapped, -1) != 0)
                 {
                     do
                     {
                         count = RioStatic.DequeueCompletion(ReceiveCompletionQueue, (IntPtr)results, maxResults);
-                        Imports.ThrowLastWSAError();
+                        WinSock.ThrowLastWSAError();
 
                         for (var i = 0; i < count; i++)
                         {
@@ -134,7 +134,7 @@ namespace RioSharp
                     } while (count > 0);
                 }
                 else
-                    Imports.ThrowLastError();
+                    Kernel32.ThrowLastError();
             }
         }
 
@@ -149,12 +149,12 @@ namespace RioSharp
             while (true)
             {
                 RioStatic.Notify(SendCompletionQueue);
-                if (Imports.GetQueuedCompletionStatus(SendCompletionPort, out bytes, out key, out overlapped, -1) != 0)
+                if (Kernel32.GetQueuedCompletionStatus(SendCompletionPort, out bytes, out key, out overlapped, -1) != 0)
                 {
                     do
                     {
                         count = RioStatic.DequeueCompletion(SendCompletionQueue, (IntPtr)results, maxResults);
-                        Imports.ThrowLastWSAError();
+                        WinSock.ThrowLastWSAError();
                         for (var i = 0; i < count; i++)
                         {
                             var buf = SendBufferPool.AllSegments[results[i].RequestCorrelation];
@@ -165,7 +165,7 @@ namespace RioSharp
                     } while (count > 0);
                 }
                 else
-                    Imports.ThrowLastError();
+                    Kernel32.ThrowLastError();
             }
         }
 
@@ -176,7 +176,7 @@ namespace RioSharp
             RioStatic.DeregisterBuffer(_sendBufferId);
             RioStatic.DeregisterBuffer(_reciveBufferId);
 
-            Imports.WSACleanup();
+            WinSock.WSACleanup();
 
             SendBufferPool.Dispose();
             ReceiveBufferPool.Dispose();

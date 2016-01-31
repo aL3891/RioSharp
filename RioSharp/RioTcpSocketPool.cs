@@ -29,13 +29,13 @@ namespace RioSharp
             }
 
 
-            if ((SocketIocp = Imports.CreateIoCompletionPort((IntPtr)(-1), IntPtr.Zero, 0, 1)) == IntPtr.Zero)
-                Imports.ThrowLastError();
+            if ((SocketIocp = Kernel32.CreateIoCompletionPort((IntPtr)(-1), IntPtr.Zero, 0, 1)) == IntPtr.Zero)
+                Kernel32.ThrowLastError();
 
             foreach (var s in allSockets)
             {
-                if ((Imports.CreateIoCompletionPort(s.Socket, SocketIocp, 0, 1)) == IntPtr.Zero)
-                    Imports.ThrowLastError();
+                if ((Kernel32.CreateIoCompletionPort(s.Socket, SocketIocp, 0, 1)) == IntPtr.Zero)
+                    Kernel32.ThrowLastError();
             }
 
             Thread SocketIocpThread = new Thread(SocketIocpComplete);
@@ -52,8 +52,8 @@ namespace RioSharp
             socket.ResetOverlapped();
             socket._overlapped->Status = 1;
             if (!RioStatic.DisconnectEx(c.Socket, socket._overlapped, 0x02, 0)) //TF_REUSE_SOCKET
-                if (Imports.WSAGetLastError() != 997) // error_io_pending
-                    Imports.ThrowLastWSAError();
+                if (WinSock.WSAGetLastError() != 997) // error_io_pending
+                    WinSock.ThrowLastWSAError();
             //else
             //    AcceptEx(socket);
         }

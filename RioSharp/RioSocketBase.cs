@@ -27,14 +27,14 @@ namespace RioSharp
             uint maxOutstandingReceive, uint maxOutstandingSend, IntPtr SendCompletionQueue, IntPtr ReceiveCompletionQueue,
             ADDRESS_FAMILIES adressFam, SOCKET_TYPE sockType, PROTOCOL protocol)
         {
-            if ((Socket = Imports.WSASocket(adressFam, sockType, protocol, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.WSA_FLAG_OVERLAPPED)) == IntPtr.Zero)
-                Imports.ThrowLastWSAError();
+            if ((Socket = WinSock.WSASocket(adressFam, sockType, protocol, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.WSA_FLAG_OVERLAPPED)) == IntPtr.Zero)
+                WinSock.ThrowLastWSAError();
 
             SendBufferPool = sendBufferPool;
             ReceiveBufferPool = receiveBufferPool;
 
             _requestQueue = RioStatic.CreateRequestQueue(Socket, maxOutstandingReceive, 1, maxOutstandingSend, 1, ReceiveCompletionQueue, SendCompletionQueue, GetHashCode());
-            Imports.ThrowLastWSAError();
+            WinSock.ThrowLastWSAError();
         }
 
         public void WritePreAllocated(RioBufferSegment Segment)
@@ -42,21 +42,21 @@ namespace RioSharp
             unsafe
             {
                 if (!RioStatic.Send(_requestQueue, Segment.SegmentPointer, 1, RIO_SEND_FLAGS.DEFER, Segment.Index))
-                    Imports.ThrowLastWSAError();
+                    WinSock.ThrowLastWSAError();
             }
         }
 
         internal unsafe void CommitSend()
         {
             if (!RioStatic.Send(_requestQueue, RIO_BUFSEGMENT.NullSegment, 0, RIO_SEND_FLAGS.COMMIT_ONLY, 0))
-                Imports.ThrowLastWSAError();
+                WinSock.ThrowLastWSAError();
         }
 
 
         internal unsafe void SendInternal(RioBufferSegment segment, RIO_SEND_FLAGS flags)
         {
             if (!RioStatic.Send(_requestQueue, segment.SegmentPointer, 1, flags, segment.Index))
-                Imports.ThrowLastWSAError();
+                WinSock.ThrowLastWSAError();
         }
 
         internal unsafe void ReciveInternal()
@@ -65,14 +65,14 @@ namespace RioSharp
             if (ReceiveBufferPool.TryGetBuffer(out buf))
             {
                 if (!RioStatic.Receive(_requestQueue, buf.SegmentPointer, 1, RIO_RECEIVE_FLAGS.NONE, buf.Index))
-                    Imports.ThrowLastWSAError();
+                    WinSock.ThrowLastWSAError();
             }
             else
                 ThreadPool.QueueUserWorkItem(o =>
                 {
                     var b = ReceiveBufferPool.GetBuffer();
                     if (!RioStatic.Receive(_requestQueue, ReceiveBufferPool.GetBuffer().SegmentPointer, 1, RIO_RECEIVE_FLAGS.NONE, b.Index))
-                        Imports.ThrowLastWSAError();
+                        WinSock.ThrowLastWSAError();
                 }, null);
         }
 

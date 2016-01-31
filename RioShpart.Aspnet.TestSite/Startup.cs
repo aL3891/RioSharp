@@ -1,26 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNet.Builder;
-using Microsoft.AspNet.Hosting;
-using Microsoft.AspNet.Http;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.PlatformAbstractions;
+using Microsoft.Extensions.Logging;
 
 namespace RioShpart.Aspnet.TestSite
 {
     public class Startup
     {
-
-        public void ConfigureServices(IServiceCollection services)
+        public void Configure(IApplicationBuilder app, ILoggerFactory loggerFactory, IApplicationEnvironment env)
         {
-
-        }
-
-
-        public void Configure(IApplicationBuilder app)
-        {
-
             app.Run(async (context) =>
             {
                 context.Response.ContentLength = 12;
@@ -29,19 +18,14 @@ namespace RioShpart.Aspnet.TestSite
             });
         }
 
-        // Entry point for the application.
-        public static void Main(string[] args) {
-            var application = new WebApplicationBuilder()
-               .UseConfiguration(WebApplicationConfiguration.GetDefault(args))
-               .UseStartup<Startup>()
-               .Build();
+        public static void Main(string[] args)
+        {
+            var host = new WebHostBuilder()
+                .UseDefaultConfiguration(args)
+                .UseStartup<Startup>()
+                .Build();
 
-            // The following section should be used to demo sockets
-            //var addresses = application.GetAddresses();
-            //addresses.Clear();
-            //addresses.Add("http://unix:/tmp/kestrel-test.sock");
-
-            application.Run();
+            host.Run();
         }
     }
 }

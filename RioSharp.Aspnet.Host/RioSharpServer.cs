@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNet.Hosting;
-using Microsoft.AspNet.Hosting.Server;
-using Microsoft.AspNet.Http;
-using Microsoft.AspNet.Http.Features;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Net;
+using System.Threading;
 
 namespace RioSharp.Aspnet.Host
 {
@@ -20,7 +21,6 @@ namespace RioSharp.Aspnet.Host
         private RioFixedBufferPool sendPool;
         private RioFixedBufferPool recivePool;
         private RioTcpListener listener;
-        private RioSocketPool socketPool;
 
         public RioSharpServer(FeatureCollection features, IApplicationLifetime appLifetime, ILogger logger, IHttpContextFactory httpContextFactory)
         {
@@ -39,19 +39,21 @@ namespace RioSharp.Aspnet.Host
         {
 
         }
-        
+
         public void Start<TContext>(IHttpApplication<TContext> application)
         {
             var information = Features.Get<IRioSharpServerInformation>();
-
             sendPool = new RioFixedBufferPool(1000, 140 * information.PipeLineDepth);
             recivePool = new RioFixedBufferPool(1000, 64 * information.PipeLineDepth);
-            
             listener = new RioTcpListener(sendPool, recivePool, 1024);
 
-            listener.Bind(new IPEndPoint(new IPAddress(new byte[] { 0, 0, 0, 0 }), 5000));
-            listener.Listen(1024 * information.Connections);
+            listener.OnAccepted = new Action<RioConnectionOrientedSocket>(s => ThreadPool.QueueUserWorkItem(o => Servebuff((RioConnectionOrientedSocket)o), s));
+            listener.Listen(new IPEndPoint(new IPAddress(new byte[] { 0, 0, 0, 0 }), 5000), 1024 * information.Connections);
             // do things
+        }
+
+        async Task Servebuff(RioConnectionOrientedSocket socket)
+        {
         }
     }
 }

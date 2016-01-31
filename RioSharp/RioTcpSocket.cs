@@ -10,9 +10,9 @@ namespace RioSharp
         private IntPtr _eventHandle;
         private RioTcpSocketPool _pool;
 
-        internal RioTcpSocket(IntPtr overlapped, IntPtr adressBuffer, RioTcpSocketPool pool) :
-            base(pool.SendBufferPool, pool.ReciveBufferPool, pool.MaxOutstandingReceive, pool.MaxOutstandingSend, 
-                pool.SendCompletionQueue, pool.ReceiveCompletionQueue,
+        internal RioTcpSocket(IntPtr overlapped, IntPtr adressBuffer, RioTcpSocketPool pool, RioFixedBufferPool sendBufferPool, RioFixedBufferPool receiveBufferPool,
+            uint maxOutstandingReceive, uint maxOutstandingSend, IntPtr SendCompletionQueue, IntPtr ReceiveCompletionQueue) :
+            base(sendBufferPool, receiveBufferPool, maxOutstandingReceive, maxOutstandingSend, SendCompletionQueue, ReceiveCompletionQueue,
                 ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_STREAM, PROTOCOL.IPPROTO_TCP)
         {
             _overlapped = (RioNativeOverlapped*)overlapped.ToPointer();
@@ -36,7 +36,7 @@ namespace RioSharp
         }
 
         public override void Dispose()
-        {            
+        {
             _pool.Recycle(this);
         }
     }

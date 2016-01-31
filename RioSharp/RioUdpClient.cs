@@ -28,7 +28,7 @@ namespace RioSharp
 
         internal void Recycle(RioTcpSocket socket)
         {
-            Imports.closesocket(socket._socket);
+            Imports.closesocket(socket.Socket);
         }
     }
 }

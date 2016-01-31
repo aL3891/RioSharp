@@ -60,16 +60,8 @@ namespace ConsoleApplication1
             //    }
             //});
 
-            listener.Bind(new IPEndPoint(new IPAddress(new byte[] { 0, 0, 0, 0 }), 5000));
-            listener.Listen(1024 * (int)connections);
-            var a = new Action<RioTcpSocket>(s => ThreadPool.QueueUserWorkItem(o => Servebuff((RioTcpSocket)o), s));
-            listener.OnAccepted = a;
-            listener.StartAccepting();
-            //while (true)
-            //{
-            //    var socket = listener.AcceptEx();
-            //    ThreadPool.QueueUserWorkItem(o => Servebuff((RioSocket)o), socket);
-            //}
+            listener.OnAccepted = new Action<RioTcpSocket>(s => ThreadPool.QueueUserWorkItem(o => Servebuff((RioTcpSocket)o), s));
+            listener.Listen(new IPEndPoint(new IPAddress(new byte[] { 0, 0, 0, 0 }), 5000), 1024 * connections);
             Console.ReadLine();
         }
 

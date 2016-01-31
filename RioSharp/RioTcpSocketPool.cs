@@ -9,9 +9,7 @@ namespace RioSharp
 {
     public abstract class RioTcpSocketPool : RioSocketPool
     {
-        public Action<RioTcpSocket> OnAccepted;
-        internal IntPtr DisconnectCompletionPort;
-        internal IntPtr AcceptCompletionPort;
+        internal IntPtr SocketIocp;
         internal RioTcpSocket[] allSockets;
 
         public unsafe RioTcpSocketPool(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool, uint socketCount,
@@ -26,40 +24,34 @@ namespace RioSharp
 
             for (int i = 0; i < socketCount; i++)
             {
-                allSockets[i] = new RioTcpSocket(overlapped + (i * Marshal.SizeOf<RioNativeOverlapped>()), adressBuffer + (i * adrSize), this);
+                allSockets[i] = new RioTcpSocket(overlapped + (i * Marshal.SizeOf<RioNativeOverlapped>()), adressBuffer + (i * adrSize), this, SendBufferPool, ReceiveBufferPool, maxOutstandingReceive, maxOutstandingSend, SendCompletionQueue, ReceiveCompletionQueue);
                 allSockets[i]._overlapped->SocketIndex = i;
             }
 
 
-            if ((DisconnectCompletionPort = Imports.CreateIoCompletionPort((IntPtr)(-1), IntPtr.Zero, 0, 1)) == IntPtr.Zero)
+            if ((SocketIocp = Imports.CreateIoCompletionPort((IntPtr)(-1), IntPtr.Zero, 0, 1)) == IntPtr.Zero)
                 Imports.ThrowLastError();
 
             foreach (var s in allSockets)
             {
-                if ((Imports.CreateIoCompletionPort(s._socket, DisconnectCompletionPort, 0, 1)) == IntPtr.Zero)
+                if ((Imports.CreateIoCompletionPort(s.Socket, SocketIocp, 0, 1)) == IntPtr.Zero)
                     Imports.ThrowLastError();
             }
 
-
-            if ((AcceptCompletionPort = Imports.CreateIoCompletionPort((IntPtr)(-1), IntPtr.Zero, 0, 1)) == IntPtr.Zero)
-                Imports.ThrowLastError();
-
-
-            Thread DisThread = new Thread(CompleteDisConnect);
-            DisThread.IsBackground = true;
-            DisThread.Start();
-
+            Thread SocketIocpThread = new Thread(SocketIocpComplete);
+            SocketIocpThread.IsBackground = true;
+            SocketIocpThread.Start();
         }
 
-        protected abstract unsafe void CompleteDisConnect(object o);
+        protected abstract unsafe void SocketIocpComplete(object o);
 
         internal unsafe virtual void Recycle(RioTcpSocket socket)
         {
             RioSocketBase c;
-            connections.TryRemove(socket.GetHashCode(), out c);
+            activeSockets.TryRemove(socket.GetHashCode(), out c);
             socket.ResetOverlapped();
             socket._overlapped->Status = 1;
-            if (!RioStatic.DisconnectEx(c._socket, socket._overlapped, 0x02, 0)) //TF_REUSE_SOCKET
+            if (!RioStatic.DisconnectEx(c.Socket, socket._overlapped, 0x02, 0)) //TF_REUSE_SOCKET
                 if (Imports.WSAGetLastError() != 997) // error_io_pending
                     Imports.ThrowLastWSAError();
             //else

@@ -4,16 +4,16 @@ using System.Threading;
 
 namespace RioSharp
 {
-    internal sealed class AwaitableQueue2 : INotifyCompletion, IDisposable
+    internal sealed class SegmentAwaiter : INotifyCompletion, IDisposable
     {
         RioBufferSegment _currentValue;
         Action _continuation = null;
-        WaitCallback continuationWrapperDelegate;
-        SpinLock s = new SpinLock();
+        WaitCallback _continuationWrapperDelegate;
+        SpinLock _spinLock = new SpinLock();
 
-        public AwaitableQueue2()
+        public SegmentAwaiter()
         {
-            continuationWrapperDelegate = continuationWrapper;
+            _continuationWrapperDelegate = continuationWrapper;
         }
 
         private void continuationWrapper(object o)
@@ -28,10 +28,10 @@ namespace RioSharp
             get
             {
                 bool taken = false;
-                s.Enter(ref taken);
+                _spinLock.Enter(ref taken);
                 var res = _currentValue != null;
                 if (res)
-                    s.Exit();
+                    _spinLock.Exit();
                 return res;
             }
         }
@@ -39,13 +39,13 @@ namespace RioSharp
         public void OnCompleted(Action continuation)
         {
            _continuation = continuation;
-            s.Exit();
+            _spinLock.Exit();
         }
 
         public void Set(RioBufferSegment item)
         {
             bool taken = false;
-            s.Enter(ref taken);
+            _spinLock.Enter(ref taken);
             //if (!taken)
             //    throw new ArgumentException("fuu");
 
@@ -53,10 +53,10 @@ namespace RioSharp
             //    throw new ArgumentException("fuu");
             
             _currentValue = item;
-            s.Exit();
+            _spinLock.Exit();
 
             if (_continuation != null)
-                ThreadPool.QueueUserWorkItem(continuationWrapperDelegate, null);
+                ThreadPool.QueueUserWorkItem(_continuationWrapperDelegate, null);
         }
 
         public RioBufferSegment GetResult()
@@ -66,7 +66,7 @@ namespace RioSharp
             return res;
         }
 
-        public AwaitableQueue2 GetAwaiter() => this;
+        public SegmentAwaiter GetAwaiter() => this;
 
         public void Dispose()
         {

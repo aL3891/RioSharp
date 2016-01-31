@@ -7,30 +7,32 @@ namespace RioSharp
 {
     public class RioFixedBufferPool : IDisposable
     {
-        internal IntPtr BufferPointer, segmentpointer;
-        internal int TotalLength;
         ConcurrentQueue<RioBufferSegment> _availableSegments = new ConcurrentQueue<RioBufferSegment>();
-        internal RioBufferSegment[] allSegments;
+        IntPtr _segmentpointer;
+
+        internal IntPtr BufferPointer { get; set; }
+        internal int TotalLength { get; set; }
+        internal RioBufferSegment[] AllSegments;
 
         public RioFixedBufferPool(int segmentCount, int segmentLength)
         {
-            allSegments = new RioBufferSegment[segmentCount];
+            AllSegments = new RioBufferSegment[segmentCount];
             TotalLength = segmentCount * segmentLength;
             BufferPointer = Marshal.AllocHGlobal(TotalLength);
-            segmentpointer = Marshal.AllocHGlobal(Marshal.SizeOf<RIO_BUFSEGMENT>() * segmentCount);
+            _segmentpointer = Marshal.AllocHGlobal(Marshal.SizeOf<RIO_BUFSEGMENT>() * segmentCount);
             
             for (int i = 0; i < segmentCount; i++)
             {
-                var b = new RioBufferSegment(this, BufferPointer ,segmentpointer, i, segmentLength );
-                allSegments[i] = b;
+                var b = new RioBufferSegment(this, BufferPointer ,_segmentpointer, i, segmentLength );
+                AllSegments[i] = b;
                 _availableSegments.Enqueue(b);
             }
         }
 
         public void SetBufferId(IntPtr id)
         {
-            for (int i = 0; i < allSegments.Length; i++)
-                allSegments[i].SetBufferId(id);
+            for (int i = 0; i < AllSegments.Length; i++)
+                AllSegments[i].SetBufferId(id);
         }
 
         public bool TryGetBuffer(out RioBufferSegment buf)
@@ -66,7 +68,7 @@ namespace RioSharp
         public void Dispose()
         {
             Marshal.FreeHGlobal(BufferPointer);
-            Marshal.FreeHGlobal(segmentpointer);
+            Marshal.FreeHGlobal(_segmentpointer);
         }
     }
 }

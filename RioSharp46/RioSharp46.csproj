@@ -47,9 +47,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\RioSharp\AwaitableQueue2.cs">
-      <Link>AwaitableQueue2.cs</Link>
-    </Compile>
     <Compile Include="..\RioSharp\Imports.cs">
       <Link>Imports.cs</Link>
     </Compile>
@@ -82,6 +79,9 @@
     </Compile>
     <Compile Include="..\RioSharp\RioUdpClient.cs">
       <Link>RioUdpClient.cs</Link>
+    </Compile>
+    <Compile Include="..\RioSharp\SegmentAwaiter.cs">
+      <Link>SegmentAwaiter.cs</Link>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

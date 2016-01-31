@@ -6,20 +6,20 @@ namespace RioSharp
 {
     public abstract class RioSocketPool : IDisposable
     {
-        internal RioFixedBufferPool SendBufferPool, ReciveBufferPool;
-        internal IntPtr _sendBufferId, _reciveBufferId;
-        internal IntPtr SendCompletionPort, SendCompletionQueue, ReceiveCompletionPort, ReceiveCompletionQueue;
-        internal uint MaxOutstandingReceive, MaxOutstandingSend, MaxOutsandingCompletions;
-        internal ConcurrentDictionary<long, RioSocketBase> connections = new ConcurrentDictionary<long, RioSocketBase>();
+        internal RioFixedBufferPool SendBufferPool, ReceiveBufferPool;
+        IntPtr _sendBufferId, _reciveBufferId;
+        protected IntPtr SendCompletionPort, SendCompletionQueue, ReceiveCompletionPort, ReceiveCompletionQueue;
+        uint MaxOutstandingReceive, MaxOutstandingSend, MaxOutsandingCompletions;
+        internal ConcurrentDictionary<long, RioSocketBase> activeSockets = new ConcurrentDictionary<long, RioSocketBase>();
 
-        public unsafe RioSocketPool(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool,
+        public unsafe RioSocketPool(RioFixedBufferPool sendPool, RioFixedBufferPool receivePool,
             uint maxOutstandingReceive = 1024, uint maxOutstandingSend = 1024, uint maxOutsandingCompletions = 2048)
         {
             MaxOutstandingReceive = maxOutstandingReceive;
             MaxOutstandingSend = maxOutstandingSend;
             MaxOutsandingCompletions = maxOutsandingCompletions;
             SendBufferPool = sendPool;
-            ReciveBufferPool = revicePool;
+            ReceiveBufferPool = receivePool;
 
             var version = new Version(2, 2);
             WSAData data;
@@ -40,9 +40,9 @@ namespace RioSharp
             Imports.ThrowLastWSAError();
             SendBufferPool.SetBufferId(_sendBufferId);
 
-            _reciveBufferId = RioStatic.RegisterBuffer(ReciveBufferPool.BufferPointer, (uint)ReciveBufferPool.TotalLength);
+            _reciveBufferId = RioStatic.RegisterBuffer(ReceiveBufferPool.BufferPointer, (uint)ReceiveBufferPool.TotalLength);
             Imports.ThrowLastWSAError();
-            ReciveBufferPool.SetBufferId(_reciveBufferId);
+            ReceiveBufferPool.SetBufferId(_reciveBufferId);
 
             var sendCompletionMethod = new RIO_NOTIFICATION_COMPLETION()
             {
@@ -73,9 +73,9 @@ namespace RioSharp
                 Imports.ThrowLastWSAError();
 
 
-            Thread reciveThread = new Thread(ProcessReceiveCompletes);
-            reciveThread.IsBackground = true;
-            reciveThread.Start();
+            Thread receiveThread = new Thread(ProcessReceiveCompletes);
+            receiveThread.IsBackground = true;
+            receiveThread.Start();
             Thread sendThread = new Thread(ProcessSendCompletes);
             sendThread.IsBackground = true;
             sendThread.Start();
@@ -121,11 +121,11 @@ namespace RioSharp
                         for (var i = 0; i < count; i++)
                         {
                             result = results[i];
-                            buf = ReciveBufferPool.allSegments[result.RequestCorrelation];
-                            if (connections.TryGetValue(result.ConnectionCorrelation, out connection))
+                            buf = ReceiveBufferPool.AllSegments[result.RequestCorrelation];
+                            if (activeSockets.TryGetValue(result.ConnectionCorrelation, out connection))
                             {
                                 buf.SegmentPointer->Length = (int)result.BytesTransferred;
-                                connection.OnIncommingSegment(buf);
+                                connection._onIncommingSegment(buf);
                             }
                             else
                                 buf.Dispose();
@@ -157,7 +157,7 @@ namespace RioSharp
                         Imports.ThrowLastWSAError();
                         for (var i = 0; i < count; i++)
                         {
-                            var buf = SendBufferPool.allSegments[results[i].RequestCorrelation];
+                            var buf = SendBufferPool.AllSegments[results[i].RequestCorrelation];
                             if (buf.AutoFree)
                                 buf.Dispose();
                         }
@@ -179,7 +179,7 @@ namespace RioSharp
             Imports.WSACleanup();
 
             SendBufferPool.Dispose();
-            ReciveBufferPool.Dispose();
+            ReceiveBufferPool.Dispose();
         }
     }
 }

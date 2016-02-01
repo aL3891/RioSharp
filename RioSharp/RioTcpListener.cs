@@ -9,7 +9,7 @@ namespace RioSharp
     public class RioTcpListener : RioConnectionOrientedSocketPool
     {
         internal IntPtr _listenerSocket;
-        internal IntPtr _listenIocp = IntPtr.Zero;
+        internal IntPtr _listenIocp;
         public Action<RioConnectionOrientedSocket> OnAccepted;
 
         public unsafe RioTcpListener(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool, uint socketCount, uint maxOutstandingReceive = 1024, uint maxOutstandingSend = 1024)
@@ -24,10 +24,10 @@ namespace RioSharp
             WinSock.setsockopt(_listenerSocket, WinSock.IPPROTO_TCP, WinSock.TCP_NODELAY, (char*)&True, 4);
             WinSock.WSAIoctlGeneral(_listenerSocket, WinSock.SIO_LOOPBACK_FAST_PATH, &True, 4, null, 0, out dwBytes, IntPtr.Zero, IntPtr.Zero);
 
-            if ((Kernel32.CreateIoCompletionPort(_listenerSocket, _listenIocp, 0, 1)) == IntPtr.Zero)
+            if ((_listenIocp = Kernel32.CreateIoCompletionPort(_listenerSocket, _listenIocp, 0, 1)) == IntPtr.Zero)
                 Kernel32.ThrowLastError();
 
-            Thread ListenIocpThread = new Thread(AcceptIocpComplete);
+            Thread ListenIocpThread = new Thread(ListenIocpComplete);
             ListenIocpThread.IsBackground = true;
             ListenIocpThread.Start();
         }
@@ -72,7 +72,7 @@ namespace RioSharp
                 BeginAccept(s);
         }
 
-        unsafe void AcceptIocpComplete(object o)
+        unsafe void ListenIocpComplete(object o)
         {
             IntPtr lpNumberOfBytes;
             IntPtr lpCompletionKey;

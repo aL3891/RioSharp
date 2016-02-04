@@ -99,7 +99,6 @@ namespace RioSharp
 
                     if (error != 0 && error != 64) //connection no longer available
                         throw new Win32Exception(error);
-
                 }
             }
         }
@@ -114,8 +113,11 @@ namespace RioSharp
             {
                 if (Kernel32.GetQueuedCompletionStatusRio(socketIocp, out lpNumberOfBytes, out lpCompletionKey, out lpOverlapped, -1))
                     BeginAccept(allSockets[lpOverlapped->SocketIndex]);
-                else
-                    Kernel32.ThrowLastError();
+                else {
+                    var error = Marshal.GetLastWin32Error();
+                    if (error != 0 && error != 64) //connection no longer available
+                        throw new Win32Exception(error);
+                }
             }
         }
 

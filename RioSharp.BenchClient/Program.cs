@@ -29,12 +29,12 @@ namespace ConsoleApplication2
         {
             pipeLineDeph = int.Parse(args.FirstOrDefault(f => f.StartsWith("-p"))?.Substring(2) ?? "16");
             clientPool = new RioTcpClientPool(new RioFixedBufferPool(1000, (64 * pipeLineDeph)), new RioFixedBufferPool(1000, (140 * pipeLineDeph)), 1024);
-            int connections = int.Parse(args.FirstOrDefault(f => f.StartsWith("-c"))?.Substring(2) ?? "1024");
+            int connections = int.Parse(args.FirstOrDefault(f => f.StartsWith("-c"))?.Substring(2) ?? "512");
             timer = new Stopwatch();
             span = TimeSpan.FromSeconds
                 (int.Parse(args.FirstOrDefault(f => f.StartsWith("-d"))?.Substring(2) ?? "10"));
             timer.Start();
-            uri = new Uri(args.First(a => !a.StartsWith("-")));
+            uri = new Uri(args.FirstOrDefault(a => !a.StartsWith("-"))?? "http://localhost:5000");
             keepAlive = true;
 
             rb = Enumerable.Repeat(_requestBytes, pipeLineDeph).SelectMany(b => b).ToArray();
@@ -55,7 +55,8 @@ namespace ConsoleApplication2
                 int responses = 0;
                 int total = 0;
 
-                var connection = await clientPool.Connect(uri);
+                RioConnectionOrientedSocket connection;
+                connection = await clientPool.Connect(uri);
                 var stream = new RioStream(connection);
                 while (timer.Elapsed < span)
                 {

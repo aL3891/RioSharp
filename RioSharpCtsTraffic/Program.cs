@@ -41,9 +41,10 @@ namespace RioSharpCtsTraffic
             RioTcpListener l = new RioTcpListener(new RioFixedBufferPool(Connections, Transfer), new RioFixedBufferPool(Connections, Transfer), (uint)Connections);
             l.OnAccepted = s =>
             {
+                int apa = 0;
                 if (Pattern == "PushPull")
                 {
-                    int apa = 0;
+                    
                     s.OnIncommingSegment = seg =>
                     {
                         apa += seg.CurrentContentLength;
@@ -51,13 +52,77 @@ namespace RioSharpCtsTraffic
                             s.WriteFixed(new byte[Transfer]);
                     };
                 }
-                else if(Pattern == "Push")
+                else if (Pattern == "Push")
                     s.WriteFixed(new byte[Transfer]);
                 else if (Pattern == "Pull")
-                    s.WriteFixed(new byte[Transfer]);
+                {
+                    s.OnIncommingSegment = seg =>
+                    {
+                        apa += seg.CurrentContentLength;
+                        if (apa >= Transfer)
+                            s.WriteFixed(new byte[Transfer]);
+                    };
+                }
                 else if (Pattern == "Duplex")
-                    s.WriteFixed(new byte[Transfer/2]);
+                {
+                    s.WriteFixed(new byte[Transfer / 2]);
+                    s.OnIncommingSegment = seg =>
+                    {
+                        apa += seg.CurrentContentLength;
+                        //if (apa >= Transfer / 2)
+                        //    tcs.SetResult(null);
+                    };
+                }
             };
+        }
+
+        public async Task ClientTcp()
+        {
+            RioTcpClientPool l = new RioTcpClientPool(new RioFixedBufferPool(Connections, Transfer), new RioFixedBufferPool(Connections, Transfer), (uint)Connections);
+            int apa = 0;
+            TaskCompletionSource<object> tcs;
+
+            for (int i = 0; i < Iterations; i++)
+            {
+                var s = await l.Connect(new Uri(Target));
+
+                if (Pattern == "PushPull")
+                {
+                    tcs = new TaskCompletionSource<object>();
+                    s.WriteFixed(new byte[Transfer]);
+                    s.OnIncommingSegment = seg =>
+                    {
+                        apa += seg.CurrentContentLength;
+                        if (apa >= Transfer)
+                            tcs.SetResult(null);
+                    };
+                    await tcs.Task;
+                }
+                else if (Pattern == "Push")
+                    s.WriteFixed(new byte[Transfer]);
+                else if (Pattern == "Pull")
+                {
+                    tcs = new TaskCompletionSource<object>();
+
+                    s.OnIncommingSegment = seg =>
+                    {
+                        apa += seg.CurrentContentLength;
+                        if (apa >= Transfer)
+                            tcs.SetResult(null);
+                    };
+                }
+                else if (Pattern == "Duplex")
+                {
+                    tcs = new TaskCompletionSource<object>();
+                    s.WriteFixed(new byte[Transfer / 2]);
+                    s.OnIncommingSegment = seg =>
+                    {
+                        apa += seg.CurrentContentLength;
+                        if (apa >= Transfer / 2)
+                            tcs.SetResult(null);
+                    };
+                }
+            }
 
         }
 

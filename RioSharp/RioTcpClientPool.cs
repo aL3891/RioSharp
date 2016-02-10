@@ -13,7 +13,7 @@ namespace RioSharp
     public class RioTcpClientPool : RioConnectionOrientedSocketPool
     {
         ConcurrentQueue<RioConnectionOrientedSocket> _freeSockets = new ConcurrentQueue<RioConnectionOrientedSocket>();
-        ConcurrentDictionary<RioConnectionOrientedSocket, TaskCompletionSource<RioConnectionOrientedSocket>> _ongoingConnections = new ConcurrentDictionary<RioConnectionOrientedSocket, TaskCompletionSource<RioConnectionOrientedSocket>>();
+        ConcurrentDictionary<RioConnectionOrientedSocket, TaskCompletionSource<RioSocketBase>> _ongoingConnections = new ConcurrentDictionary<RioConnectionOrientedSocket, TaskCompletionSource<RioSocketBase>>();
 
         public RioTcpClientPool(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool, uint socketCount,
             uint maxOutstandingReceive = 1024, uint maxOutstandingSend = 1024)
@@ -49,7 +49,7 @@ namespace RioSharp
             IntPtr lpNumberOfBytes;
             IntPtr lpCompletionKey;
             RioNativeOverlapped* lpOverlapped = stackalloc RioNativeOverlapped[1];
-            TaskCompletionSource<RioConnectionOrientedSocket> r;
+            TaskCompletionSource<RioSocketBase> r;
             RioConnectionOrientedSocket res;
             int lpcbTransfer;
             int lpdwFlags;
@@ -93,7 +93,7 @@ namespace RioSharp
             }
         }
 
-        public unsafe Task<RioConnectionOrientedSocket> Connect(Uri adress)
+        public unsafe Task<RioSocketBase> Connect(Uri adress)
         {
             var adr = Dns.GetHostAddressesAsync(adress.Host).Result.First(i => i.AddressFamily == AddressFamily.InterNetwork);
 
@@ -111,7 +111,7 @@ namespace RioSharp
 
             RioConnectionOrientedSocket s;
             _freeSockets.TryDequeue(out s);
-            var tcs = new TaskCompletionSource<RioConnectionOrientedSocket>();
+            var tcs = new TaskCompletionSource<RioSocketBase>();
             _ongoingConnections.TryAdd(s, tcs);
 
             uint gurka;

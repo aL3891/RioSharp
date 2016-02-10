@@ -8,7 +8,9 @@ namespace RioSharp
         IntPtr _requestQueue;
         internal IntPtr Socket;
         internal RioFixedBufferPool SendBufferPool, ReceiveBufferPool;
-        internal Action<RioBufferSegment> onIncommingSegment = s => { };
+        internal Action<RioSocketBase, RioBufferSegment> onIncommingSegment = (socket, segment) => { };
+        internal Action<RioSocketBase, RioBufferSegment> onIncommingSegmentWrapper;
+        internal Action<RioBufferSegment> onIncommingSegmentSafe = s => { };
 
         internal RioSocketBase(RioFixedBufferPool sendBufferPool, RioFixedBufferPool receiveBufferPool,
             uint maxOutstandingReceive, uint maxOutstandingSend, IntPtr SendCompletionQueue, IntPtr ReceiveCompletionQueue,
@@ -22,10 +24,16 @@ namespace RioSharp
 
             _requestQueue = RioStatic.CreateRequestQueue(Socket, maxOutstandingReceive, 1, maxOutstandingSend, 1, ReceiveCompletionQueue, SendCompletionQueue, GetHashCode());
             WinSock.ThrowLastWSAError();
+
+            onIncommingSegmentWrapper = (socket, segment) => {
+                using (segment)
+                    onIncommingSegmentSafe(segment);
+                socket.BeginRecive();
+            };
         }
 
 
-        public Action<RioBufferSegment> OnIncommingSegment
+        public Action<RioSocketBase, RioBufferSegment> OnIncommingSegmentUnsafe
         {
             get
             {
@@ -33,10 +41,22 @@ namespace RioSharp
             }
             set
             {
-                onIncommingSegment = value ?? (s => { });
+                onIncommingSegment = value ?? ((socket, segment) => { });
             }
         }
 
+        public Action<RioBufferSegment> OnIncommingSegment
+        {
+            get
+            {
+                return onIncommingSegmentSafe;
+            }
+            set
+            {
+                onIncommingSegment = onIncommingSegmentWrapper;
+                onIncommingSegmentSafe = value ?? (segment => { });
+            }
+        }
 
         public void WritePreAllocated(RioBufferSegment Segment)
         {
@@ -53,14 +73,13 @@ namespace RioSharp
                 WinSock.ThrowLastWSAError();
         }
 
-
         internal unsafe void SendInternal(RioBufferSegment segment, RIO_SEND_FLAGS flags)
         {
             if (!RioStatic.Send(_requestQueue, segment.SegmentPointer, 1, flags, segment.Index))
                 WinSock.ThrowLastWSAError();
         }
 
-        internal unsafe void ReciveInternal()
+        public unsafe void BeginRecive()
         {
             RioBufferSegment buf;
             if (ReceiveBufferPool.TryGetBuffer(out buf))

@@ -8,7 +8,7 @@ namespace RioSharp
 {
     public class RioStream : Stream
     {
-        RioConnectionOrientedSocket _socket;
+        RioSocketBase _socket;
         RioBufferSegment _currentInputSegment;
         RioBufferSegment _currentOutputSegment;
         int _bytesReadInCurrentSegment = 0;
@@ -21,14 +21,14 @@ namespace RioSharp
         int _readCount;
         Action _getNewSegmentDelegate;
 
-        public RioStream(RioConnectionOrientedSocket socket)
+        public RioStream(RioSocketBase socket)
         {
             _socket = socket;
             _currentInputSegment = null;
             _currentOutputSegment = _socket.SendBufferPool.GetBuffer();
             _getNewSegmentDelegate = GetNewSegment;
             socket.OnIncommingSegment = s => _incommingSegments.Set(s);
-            socket.ReciveInternal();
+            socket.BeginRecive();
         }
 
         public void Flush(bool moreData)
@@ -86,7 +86,7 @@ namespace RioSharp
             }
             else
             {
-                _socket.ReciveInternal();
+                _socket.BeginRecive();
                 CompleteRead();
             }
         }

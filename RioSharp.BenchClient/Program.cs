@@ -55,7 +55,7 @@ namespace ConsoleApplication2
                 int responses = 0;
                 int total = 0;
 
-                RioConnectionOrientedSocket connection;
+                RioSocketBase connection;
                 connection = await clientPool.Connect(uri);
                 var stream = new RioStream(connection);
                 while (timer.Elapsed < span)

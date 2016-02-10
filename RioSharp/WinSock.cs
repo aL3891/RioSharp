@@ -768,7 +768,7 @@ namespace RioSharp
         {
             var error = WinSock.WSAGetLastError();
 
-            if (error != 0)
+            if (error != 0 && error != 997)
                 throw new Win32Exception(error);
             else
                 return error;

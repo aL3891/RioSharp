@@ -10,7 +10,7 @@ namespace RioSharp
     {
         internal IntPtr _listenerSocket;
         internal IntPtr _listenIocp;
-        public Action<RioConnectionOrientedSocket> OnAccepted;
+        public Action<RioSocketBase> OnAccepted;
 
         public unsafe RioTcpListener(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool, uint socketCount, uint maxOutstandingReceive = 1024, uint maxOutstandingSend = 1024)
             : base(sendPool, revicePool, socketCount, maxOutstandingReceive, maxOutstandingSend, (maxOutstandingReceive + maxOutstandingSend) * socketCount)

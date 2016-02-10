@@ -60,12 +60,12 @@ namespace ConsoleApplication1
             //    }
             //});
 
-            listener.OnAccepted = new Action<RioConnectionOrientedSocket>(s => ThreadPool.QueueUserWorkItem(o => Servebuff((RioConnectionOrientedSocket)o), s));
+            listener.OnAccepted = new Action<RioSocketBase>(s => ThreadPool.QueueUserWorkItem(o => Servebuff((RioSocketBase)o), s));
             listener.Listen(new IPEndPoint(new IPAddress(new byte[] { 0, 0, 0, 0 }), 5000), 1024 * connections);
             Console.ReadLine();
         }
 
-        static async Task ServeFixed(RioConnectionOrientedSocket socket)
+        static async Task ServeFixed(RioSocketBase socket)
         {
             try
             {
@@ -129,7 +129,7 @@ namespace ConsoleApplication1
             }
         }
 
-        static async Task Servebuff(RioConnectionOrientedSocket socket)
+        static async Task Servebuff(RioSocketBase socket)
         {
             try
             {

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace RioSharp
 {
-    public class RioConnectionlessSocket : RioSocketBase
+    internal class RioConnectionlessSocket : RioSocketBase
     {
         internal RioConnectionlessSocket(RioSocketPool pool, RioFixedBufferPool sendBufferPool, RioFixedBufferPool receiveBufferPool,
             uint maxOutstandingReceive, uint maxOutstandingSend, IntPtr SendCompletionQueue, IntPtr ReceiveCompletionQueue) :
@@ -17,6 +17,5 @@ namespace RioSharp
         }
 
 
-        public bool IsBroadcast { get; set; }
     }
 }

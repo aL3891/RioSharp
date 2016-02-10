@@ -47,12 +47,12 @@ namespace RioSharp.Aspnet.Host
             recivePool = new RioFixedBufferPool(1000, 64 * information.PipeLineDepth);
             listener = new RioTcpListener(sendPool, recivePool, 1024);
 
-            listener.OnAccepted = new Action<RioConnectionOrientedSocket>(s => ThreadPool.QueueUserWorkItem(o => Servebuff((RioConnectionOrientedSocket)o), s));
+            listener.OnAccepted = new Action<RioSocketBase>(s => ThreadPool.QueueUserWorkItem(o => Servebuff((RioSocketBase)o), s));
             listener.Listen(new IPEndPoint(new IPAddress(new byte[] { 0, 0, 0, 0 }), 5000), 1024 * information.Connections);
             // do things
         }
 
-        async Task Servebuff(RioConnectionOrientedSocket socket)
+        async Task Servebuff(RioSocketBase socket)
         {
         }
     }

@@ -3,7 +3,7 @@ using System.Threading;
 
 namespace RioSharp
 {
-    public unsafe class RioConnectionOrientedSocket : RioSocketBase
+    internal unsafe class RioConnectionOrientedSocket : RioSocketBase
     {
         internal RioNativeOverlapped* _overlapped;
         internal IntPtr _adressBuffer;

@@ -126,7 +126,7 @@ namespace RioSharp
                             if (activeSockets.TryGetValue(result.ConnectionCorrelation, out connection))
                             {
                                 buf.SegmentPointer->Length = (int)result.BytesTransferred;
-                                connection.onIncommingSegment(buf);
+                                connection.onIncommingSegment(connection, buf);
                             }
                             else
                                 buf.Dispose();

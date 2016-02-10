@@ -14,7 +14,7 @@ namespace RioSharp
 
         }
 
-        public RioConnectionlessSocket BindUdpSocket()
+        public RioSocketBase BindUdpSocket()
         {
             return new RioConnectionlessSocket(this,SendBufferPool,ReceiveBufferPool,MaxOutstandingReceive,MaxOutstandingSend,SendCompletionQueue,ReceiveCompletionQueue);           
         }

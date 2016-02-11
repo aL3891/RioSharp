@@ -28,7 +28,7 @@ namespace RioSharp
             _currentOutputSegment = _socket.SendBufferPool.GetBuffer();
             _getNewSegmentDelegate = GetNewSegment;
             socket.OnIncommingSegment = s => _incommingSegments.Set(s);
-            socket.BeginRecive();
+            socket.BeginReceive();
         }
 
         public void Flush(bool moreData)
@@ -86,7 +86,7 @@ namespace RioSharp
             }
             else
             {
-                _socket.BeginRecive();
+                _socket.BeginReceive();
                 CompleteRead();
             }
         }

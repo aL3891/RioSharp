@@ -615,7 +615,7 @@ namespace RioSharp
                                       [In] long ConnectionCorrelation
                                     );
 
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = false)]
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         [SuppressUnmanagedCodeSecurity]
         internal delegate uint RIODequeueCompletion([In] IntPtr CQ, [In] IntPtr ResultArray, [In] uint ResultArrayLength);
 
@@ -637,7 +637,7 @@ namespace RioSharp
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         internal unsafe delegate bool AcceptEx([In] IntPtr sListenSocket, [In] IntPtr sAcceptSocket, [In] IntPtr lpOutputBuffer, [In] int dwReceiveDataLength, [In] int dwLocalAddressLength, [In] int dwRemoteAddressLength, [Out] out int lpdwBytesReceived, [In]RioNativeOverlapped* lpOverlapped);
-        
+
         internal unsafe static RIO Initalize(IntPtr socket)
         {
             uint dwBytes = 0;
@@ -763,17 +763,20 @@ namespace RioSharp
 
         [DllImport(WS2_32)]
         internal static extern Int32 WSAGetLastError();
-        
+
         internal static int ThrowLastWSAError()
         {
             var error = WinSock.WSAGetLastError();
-
+        
             if (error != 0 && error != 997)
+            {
+                Console.WriteLine("Got wsa error " + error);
                 throw new Win32Exception(error);
+            }
             else
                 return error;
         }
-        
+
         [DllImport(WS2_32, SetLastError = true)]
         internal static extern Int32 WSACleanup();
 

@@ -53,41 +53,37 @@ namespace RioSharpCtsTraffic
 
         public static void ListenTcp()
         {
-            RioTcpListener l = new RioTcpListener(new RioFixedBufferPool(512, 65536), new RioFixedBufferPool(512, 65536), (uint)Connections);
+            RioTcpListener l = new RioTcpListener(new RioFixedBufferPool(16000, 65536), new RioFixedBufferPool(16000, 65536), (uint)Connections*2,16000,16000);
             l.OnAccepted = s =>
             {
+                RioStream r = new RioStream(s);
                 int totalRecived = 0;
+                int currentRecived = 0;
+                var pb = new byte[PullBytes];
                 if (Pattern == "PushPull")
                 {
-
                     s.OnIncommingSegment = seg =>
                     {
                         totalRecived += seg.CurrentContentLength;
-                        if (totalRecived < Transfer)
-                            s.WriteFixed(new byte[PullBytes]);
-
-                        if (seg.CurrentContentLength > 0)
-                            s.BeginRecive();
-                        else
-                            s.Dispose();
-                        seg.Dispose();
+                        currentRecived += seg.CurrentContentLength;
+                        if (currentRecived >= PushBytes)
+                        {
+                            r.Write(pb, 0, pb.Length);
+                            //s.WriteFixed(pb);
+                            currentRecived = 0;
+                        }
                     };
                 }
                 else if (Pattern == "Pull")
-                    s.WriteFixed(new byte[Transfer]);
+                    r.Write(new byte[Transfer], 0, Transfer);
+                //s.WriteFixed(new byte[Transfer]);
                 else if (Pattern == "Push")
                 {
                     s.OnIncommingSegment = seg =>
                     {
                         totalRecived += seg.CurrentContentLength;
-                        if (seg.CurrentContentLength > 0)
-                            s.BeginRecive();
-                        else
-                            s.Dispose();
-                        seg.Dispose();
-
                     };
-                    s.BeginRecive();
+                    s.BeginReceive();
                 }
                 else if (Pattern == "Duplex")
                 {
@@ -107,6 +103,7 @@ namespace RioSharpCtsTraffic
         {
             RioTcpClientPool l = new RioTcpClientPool(new RioFixedBufferPool(Connections, Transfer), new RioFixedBufferPool(Connections, Transfer), (uint)Connections);
             int totalBytesRecived = 0;
+            int currentRecived = 0;
             TaskCompletionSource<object> tcs;
 
             for (int i = 0; i < Iterations; i++)
@@ -115,15 +112,19 @@ namespace RioSharpCtsTraffic
 
                 if (Pattern == "PushPull")
                 {
-                    tcs = new TaskCompletionSource<object>();
-                    s.WriteFixed(new byte[PushBytes]);
-                    s.OnIncommingSegment = seg =>
+                    while (totalBytesRecived < Transfer)
                     {
-                        totalBytesRecived += seg.CurrentContentLength;
-                        if (totalBytesRecived >= Transfer)
-                            tcs.SetResult(null);
-                    };
-                    await tcs.Task;
+                        tcs = new TaskCompletionSource<object>();
+                        s.WriteFixed(new byte[PushBytes]);
+                        s.OnIncommingSegment = seg =>
+                        {
+                            totalBytesRecived += seg.CurrentContentLength;
+                            currentRecived += seg.CurrentContentLength;
+                            if (currentRecived >= PullBytes)
+                                tcs.SetResult(null);
+                        };
+                        await tcs.Task;
+                    }
                 }
                 else if (Pattern == "Push")
                     s.WriteFixed(new byte[Transfer]);
@@ -137,6 +138,7 @@ namespace RioSharpCtsTraffic
                         if (totalBytesRecived >= Transfer)
                             tcs.SetResult(null);
                     };
+                    await tcs.Task;
                 }
                 else if (Pattern == "Duplex")
                 {

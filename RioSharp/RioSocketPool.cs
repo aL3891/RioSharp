@@ -98,8 +98,8 @@ namespace RioSharp
 
         unsafe void ProcessReceiveCompletes(object o)
         {
-            const int maxResults = 1024;
-            RIO_RESULT* results = stackalloc RIO_RESULT[maxResults];
+            uint maxResults = Math.Min(MaxOutstandingReceive, int.MaxValue);
+            RIO_RESULT* results = stackalloc RIO_RESULT[(int)maxResults];
             RioSocketBase connection;
             uint count;
             IntPtr key, bytes;
@@ -141,8 +141,8 @@ namespace RioSharp
 
         unsafe void ProcessSendCompletes(object o)
         {
-            const int maxResults = 1024;
-            RIO_RESULT* results = stackalloc RIO_RESULT[maxResults];
+            uint maxResults = Math.Min(MaxOutstandingSend, int.MaxValue);
+            RIO_RESULT* results = stackalloc RIO_RESULT[(int)maxResults];
             uint count;
             IntPtr key, bytes;
             NativeOverlapped* overlapped = stackalloc NativeOverlapped[1];

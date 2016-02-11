@@ -25,10 +25,14 @@ namespace RioSharp
             _requestQueue = RioStatic.CreateRequestQueue(Socket, maxOutstandingReceive, 1, maxOutstandingSend, 1, ReceiveCompletionQueue, SendCompletionQueue, GetHashCode());
             WinSock.ThrowLastWSAError();
 
-            onIncommingSegmentWrapper = (socket, segment) => {
-                using (segment)
-                    onIncommingSegmentSafe(segment);
-                socket.BeginRecive();
+            onIncommingSegmentWrapper = (socket, segment) =>
+            {
+                onIncommingSegmentSafe(segment);
+                if (segment.CurrentContentLength > 0)
+                    socket.BeginReceive();
+                else
+                    socket.Dispose();
+                segment.Dispose();
             };
         }
 
@@ -79,7 +83,7 @@ namespace RioSharp
                 WinSock.ThrowLastWSAError();
         }
 
-        public unsafe void BeginRecive()
+        public unsafe void BeginReceive()
         {
             RioBufferSegment buf;
             if (ReceiveBufferPool.TryGetBuffer(out buf))

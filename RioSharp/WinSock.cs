@@ -584,9 +584,11 @@ namespace RioSharp
         internal static extern unsafe bool WSAGetOverlappedResult(IntPtr socket, [In] RioNativeOverlapped* lpOverlapped, out int lpcbTransfer, bool fWait, out int lpdwFlags);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
+        [SuppressUnmanagedCodeSecurity]
         internal delegate IntPtr RIORegisterBuffer([In] IntPtr DataBuffer, [In] uint DataLength);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
+        [SuppressUnmanagedCodeSecurity]
         internal delegate void RIODeregisterBuffer([In] IntPtr BufferId);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = false)]
@@ -598,12 +600,15 @@ namespace RioSharp
         internal unsafe delegate bool RIOReceive([In] IntPtr SocketQueue, RIO_BUFSEGMENT* RioBuffer, [In] uint DataBufferCount, [In] RIO_RECEIVE_FLAGS Flags, [In] long RequestCorrelation);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
+        [SuppressUnmanagedCodeSecurity]
         internal delegate IntPtr RIOCreateCompletionQueue([In] uint QueueSize, [In] RIO_NOTIFICATION_COMPLETION NotificationCompletion);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
+        [SuppressUnmanagedCodeSecurity]
         internal delegate void RIOCloseCompletionQueue([In] IntPtr CQ);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
+        [SuppressUnmanagedCodeSecurity]
         internal delegate IntPtr RIOCreateRequestQueue(
                                       [In] IntPtr Socket,
                                       [In] uint MaxOutstandingReceive,
@@ -624,18 +629,23 @@ namespace RioSharp
         internal delegate Int32 RIONotify([In] IntPtr CQ);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
+        [SuppressUnmanagedCodeSecurity]
         internal delegate bool RIOResizeCompletionQueue([In] IntPtr CQ, [In] uint QueueSize);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
+        [SuppressUnmanagedCodeSecurity]
         internal delegate bool RIOResizeRequestQueue([In] IntPtr RQ, [In] uint MaxOutstandingReceive, [In] uint MaxOutstandingSend);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = false)]
+        [SuppressUnmanagedCodeSecurity]
         internal unsafe delegate bool DisconnectEx([In] IntPtr hSocket, [In] RioNativeOverlapped* lpOverlapped, [In] uint dwFlags, [In] uint reserved);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = false)]
+        [SuppressUnmanagedCodeSecurity]
         internal unsafe delegate bool ConnectEx([In] IntPtr s, [In] sockaddr_in name, [In] int namelen, [In] IntPtr lpSendBuffer, [In] uint dwSendDataLength, [Out] out uint lpdwBytesSent, [In] RioNativeOverlapped* lpOverlapped);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = false)]
+        [SuppressUnmanagedCodeSecurity]
         internal unsafe delegate bool AcceptEx([In] IntPtr sListenSocket, [In] IntPtr sAcceptSocket, [In] IntPtr lpOutputBuffer, [In] int dwReceiveDataLength, [In] int dwLocalAddressLength, [In] int dwRemoteAddressLength, [Out] out int lpdwBytesReceived, [In]RioNativeOverlapped* lpOverlapped);
 
         internal unsafe static RIO Initalize(IntPtr socket)

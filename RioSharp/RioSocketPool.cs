@@ -125,7 +125,8 @@ namespace RioSharp
                     do
                     {
                         count = RioStatic.DequeueCompletion(ReceiveCompletionQueue, (IntPtr)results, maxResults);
-                        WinSock.ThrowLastWSAError();
+                        if (count == 0xFFFFFFFF)
+                            WinSock.ThrowLastWSAError();
 
                         for (var i = 0; i < count; i++)
                         {
@@ -163,7 +164,8 @@ namespace RioSharp
                     do
                     {
                         count = RioStatic.DequeueCompletion(SendCompletionQueue, (IntPtr)results, maxResults);
-                        WinSock.ThrowLastWSAError();
+                        if (count == 0xFFFFFFFF)
+                            WinSock.ThrowLastWSAError();
                         for (var i = 0; i < count; i++)
                         {
                             var buf = SendBufferPool.AllSegments[results[i].RequestCorrelation];

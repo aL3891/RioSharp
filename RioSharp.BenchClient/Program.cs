@@ -28,7 +28,7 @@ namespace ConsoleApplication2
         static void Main(string[] args)
         {
             pipeLineDeph = int.Parse(args.FirstOrDefault(f => f.StartsWith("-p"))?.Substring(2) ?? "16");
-            clientPool = new RioTcpClientPool(new RioFixedBufferPool(1000, (64 * pipeLineDeph)), new RioFixedBufferPool(1000, (140 * pipeLineDeph)), 1024);
+            clientPool = new RioTcpClientPool(new RioFixedBufferPool(1000, (256 * pipeLineDeph)), new RioFixedBufferPool(1000, (256 * pipeLineDeph)), 1024);
             int connections = int.Parse(args.FirstOrDefault(f => f.StartsWith("-c"))?.Substring(2) ?? "512");
             timer = new Stopwatch();
             span = TimeSpan.FromSeconds

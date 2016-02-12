@@ -45,8 +45,8 @@ namespace ConsoleApplication1
             pipeLineDeph = int.Parse(args.FirstOrDefault(f => f.StartsWith("-p"))?.Substring(2) ?? "16");
             int connections = int.Parse(args.FirstOrDefault(f => f.StartsWith("-c"))?.Substring(2) ?? "512");
 
-            sendPool = new RioFixedBufferPool(10 * connections, 140 * pipeLineDeph);
-            recivePool = new RioFixedBufferPool(10 * connections, 128 * pipeLineDeph);
+            sendPool = new RioFixedBufferPool(10 * connections, 256 * pipeLineDeph);
+            recivePool = new RioFixedBufferPool(10 * connections, 256 * pipeLineDeph);
 
             listener = new RioTcpListener(sendPool, recivePool, 1024);
             currentSegment = listener.PreAllocateWrite(GetResponse());

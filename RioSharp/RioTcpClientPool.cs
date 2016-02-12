@@ -13,11 +13,11 @@ namespace RioSharp
     public class RioTcpClientPool : RioConnectionOrientedSocketPool
     {
         ConcurrentQueue<RioConnectionOrientedSocket> _freeSockets = new ConcurrentQueue<RioConnectionOrientedSocket>();
-        ConcurrentDictionary<RioConnectionOrientedSocket, TaskCompletionSource<RioSocketBase>> _ongoingConnections = new ConcurrentDictionary<RioConnectionOrientedSocket, TaskCompletionSource<RioSocketBase>>();
+        ConcurrentDictionary<RioConnectionOrientedSocket, TaskCompletionSource<RioSocket>> _ongoingConnections = new ConcurrentDictionary<RioConnectionOrientedSocket, TaskCompletionSource<RioSocket>>();
 
         public RioTcpClientPool(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool, uint socketCount,
             uint maxOutstandingReceive = 1024, uint maxOutstandingSend = 1024)
-            : base(sendPool, revicePool, socketCount, maxOutstandingReceive, maxOutstandingSend, (maxOutstandingReceive + maxOutstandingSend) * socketCount)
+            : base(sendPool, revicePool, socketCount, ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_STREAM, PROTOCOL.IPPROTO_TCP, maxOutstandingReceive, maxOutstandingSend, (maxOutstandingReceive + maxOutstandingSend) * socketCount)
         {
             foreach (var s in allSockets)
             {
@@ -30,7 +30,7 @@ namespace RioSharp
                 inAddress.s_b4 = 0;
 
                 sockaddr_in sa = new sockaddr_in();
-                sa.sin_family = ADDRESS_FAMILIES.AF_INET;
+                sa.sin_family = adressFam;
                 sa.sin_port = 0;
                 //Imports.ThrowLastWSAError();
                 sa.sin_addr = inAddress;
@@ -49,7 +49,7 @@ namespace RioSharp
             IntPtr lpNumberOfBytes;
             IntPtr lpCompletionKey;
             RioNativeOverlapped* lpOverlapped = stackalloc RioNativeOverlapped[1];
-            TaskCompletionSource<RioSocketBase> r;
+            TaskCompletionSource<RioSocket> r;
             RioConnectionOrientedSocket res;
             int lpcbTransfer;
             int lpdwFlags;
@@ -93,7 +93,7 @@ namespace RioSharp
             }
         }
 
-        public unsafe Task<RioSocketBase> Connect(Uri adress)
+        public unsafe Task<RioSocket> Connect(Uri adress)
         {
             var adr = Dns.GetHostAddressesAsync(adress.Host).Result.First(i => i.AddressFamily == AddressFamily.InterNetwork);
 
@@ -104,14 +104,14 @@ namespace RioSharp
             inAddress.s_b4 = adr.GetAddressBytes()[3];
 
             sockaddr_in sa = new sockaddr_in();
-            sa.sin_family = ADDRESS_FAMILIES.AF_INET;
+            sa.sin_family = adressFam;
             sa.sin_port = WinSock.htons((ushort)adress.Port);
             //Imports.ThrowLastWSAError();
             sa.sin_addr = inAddress;
 
             RioConnectionOrientedSocket s;
             _freeSockets.TryDequeue(out s);
-            var tcs = new TaskCompletionSource<RioSocketBase>();
+            var tcs = new TaskCompletionSource<RioSocket>();
             _ongoingConnections.TryAdd(s, tcs);
 
             uint gurka;

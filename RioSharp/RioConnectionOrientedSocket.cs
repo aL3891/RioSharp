@@ -3,7 +3,7 @@ using System.Threading;
 
 namespace RioSharp
 {
-    internal unsafe class RioConnectionOrientedSocket : RioSocketBase
+    internal unsafe class RioConnectionOrientedSocket : RioSocket
     {
         internal RioNativeOverlapped* _overlapped;
         internal IntPtr _adressBuffer;
@@ -11,9 +11,10 @@ namespace RioSharp
         private RioConnectionOrientedSocketPool _pool;
 
         internal RioConnectionOrientedSocket(IntPtr overlapped, IntPtr adressBuffer, RioConnectionOrientedSocketPool pool, RioFixedBufferPool sendBufferPool, RioFixedBufferPool receiveBufferPool,
-            uint maxOutstandingReceive, uint maxOutstandingSend, IntPtr SendCompletionQueue, IntPtr ReceiveCompletionQueue) :
+            uint maxOutstandingReceive, uint maxOutstandingSend, IntPtr SendCompletionQueue, IntPtr ReceiveCompletionQueue,
+            ADDRESS_FAMILIES adressFam, SOCKET_TYPE sockType, PROTOCOL protocol) :
             base(sendBufferPool, receiveBufferPool, maxOutstandingReceive, maxOutstandingSend, SendCompletionQueue, ReceiveCompletionQueue,
-                ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_STREAM, PROTOCOL.IPPROTO_TCP)
+                adressFam, sockType, protocol) //ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_STREAM, PROTOCOL.IPPROTO_TCP
         {
             _overlapped = (RioNativeOverlapped*)overlapped.ToPointer();
             _eventHandle = Kernel32.CreateEvent(IntPtr.Zero, false, false, null);

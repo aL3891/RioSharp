@@ -32,7 +32,7 @@ namespace ConsoleApplication2
             int connections = int.Parse(args.FirstOrDefault(f => f.StartsWith("-c"))?.Substring(2) ?? "512");
             timer = new Stopwatch();
             span = TimeSpan.FromSeconds
-                (int.Parse(args.FirstOrDefault(f => f.StartsWith("-d"))?.Substring(2) ?? "10"));
+                (int.Parse(args.FirstOrDefault(f => f.StartsWith("-d"))?.Substring(2) ?? "30"));
             timer.Start();
             uri = new Uri(args.FirstOrDefault(a => !a.StartsWith("-"))?? "http://localhost:5000");
             keepAlive = true;
@@ -55,7 +55,7 @@ namespace ConsoleApplication2
                 int responses = 0;
                 int total = 0;
 
-                RioSocketBase connection;
+                RioSocket connection;
                 connection = await clientPool.Connect(uri);
                 var stream = new RioStream(connection);
                 while (timer.Elapsed < span)

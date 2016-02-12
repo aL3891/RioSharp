@@ -7,16 +7,16 @@ namespace RioSharp
 {
     public class RioConnectionlessSocketPool : RioSocketPool
     {
-        public RioConnectionlessSocketPool(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool, int socketCount,
+        public RioConnectionlessSocketPool(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool, ADDRESS_FAMILIES adressFam, SOCKET_TYPE sockType, PROTOCOL protocol,
             uint maxOutstandingReceive = 1024, uint maxOutstandingSend = 1024, uint maxOutsandingCompletions = 1024)
-            : base(sendPool, revicePool, maxOutstandingReceive, maxOutstandingSend, maxOutsandingCompletions)
+            : base(sendPool, revicePool, adressFam, sockType, protocol, maxOutstandingReceive, maxOutstandingSend, maxOutsandingCompletions)
         {
 
         }
 
-        public RioSocketBase BindUdpSocket()
+        public RioSocket BindUdpSocket()
         {
-            return new RioConnectionlessSocket(this,SendBufferPool,ReceiveBufferPool,MaxOutstandingReceive,MaxOutstandingSend,SendCompletionQueue,ReceiveCompletionQueue);           
+            return new RioConnectionlessSocket(this,SendBufferPool,ReceiveBufferPool,MaxOutstandingReceive,MaxOutstandingSend,SendCompletionQueue,ReceiveCompletionQueue, adressFam, sockType, protocol);           
         }
     }
 }

@@ -11,9 +11,13 @@ namespace RioSharp
         IntPtr SendCompletionPort, ReceiveCompletionPort;
         protected IntPtr SendCompletionQueue, ReceiveCompletionQueue;
         protected uint MaxOutstandingReceive, MaxOutstandingSend, MaxOutsandingCompletions;
-        internal ConcurrentDictionary<long, RioSocketBase> activeSockets = new ConcurrentDictionary<long, RioSocketBase>();
+        internal ConcurrentDictionary<long, RioSocket> activeSockets = new ConcurrentDictionary<long, RioSocket>();
+        protected ADDRESS_FAMILIES adressFam;
+        protected SOCKET_TYPE sockType;
+        protected PROTOCOL protocol;
 
-        public unsafe RioSocketPool(RioFixedBufferPool sendPool, RioFixedBufferPool receivePool,
+
+        public unsafe RioSocketPool(RioFixedBufferPool sendPool, RioFixedBufferPool receivePool, ADDRESS_FAMILIES adressFam, SOCKET_TYPE sockType, PROTOCOL protocol,
             uint maxOutstandingReceive = 1024, uint maxOutstandingSend = 1024, uint maxOutsandingCompletions = 2048)
         {
             MaxOutstandingReceive = maxOutstandingReceive;
@@ -21,6 +25,10 @@ namespace RioSharp
             MaxOutsandingCompletions = maxOutsandingCompletions;
             SendBufferPool = sendPool;
             ReceiveBufferPool = receivePool;
+
+            this.adressFam = adressFam;
+            this.sockType = sockType;
+            this.protocol = protocol;
 
             var version = new Version(2, 2);
             WSAData data;
@@ -100,7 +108,7 @@ namespace RioSharp
         {
             uint maxResults = Math.Min(MaxOutstandingReceive, int.MaxValue);
             RIO_RESULT* results = stackalloc RIO_RESULT[(int)maxResults];
-            RioSocketBase connection;
+            RioSocket connection;
             uint count;
             IntPtr key, bytes;
             NativeOverlapped* overlapped = stackalloc NativeOverlapped[1];

@@ -3,16 +3,16 @@ using System.Threading;
 
 namespace RioSharp
 {
-    public unsafe class RioSocketBase : IDisposable
+    public unsafe class RioSocket : IDisposable
     {
         IntPtr _requestQueue;
         internal IntPtr Socket;
         internal RioFixedBufferPool SendBufferPool, ReceiveBufferPool;
-        internal Action<RioSocketBase, RioBufferSegment> onIncommingSegment = (socket, segment) => { };
-        internal Action<RioSocketBase, RioBufferSegment> onIncommingSegmentWrapper;
+        internal Action<RioSocket, RioBufferSegment> onIncommingSegment = (socket, segment) => { };
+        internal Action<RioSocket, RioBufferSegment> onIncommingSegmentWrapper;
         internal Action<RioBufferSegment> onIncommingSegmentSafe = s => { };
 
-        internal RioSocketBase(RioFixedBufferPool sendBufferPool, RioFixedBufferPool receiveBufferPool,
+        internal RioSocket(RioFixedBufferPool sendBufferPool, RioFixedBufferPool receiveBufferPool,
             uint maxOutstandingReceive, uint maxOutstandingSend, IntPtr SendCompletionQueue, IntPtr ReceiveCompletionQueue,
             ADDRESS_FAMILIES adressFam, SOCKET_TYPE sockType, PROTOCOL protocol)
         {
@@ -36,8 +36,7 @@ namespace RioSharp
             };
         }
 
-
-        public Action<RioSocketBase, RioBufferSegment> OnIncommingSegmentUnsafe
+        public Action<RioSocket, RioBufferSegment> OnIncommingSegmentUnsafe
         {
             get
             {
@@ -114,6 +113,58 @@ namespace RioSharp
         public virtual void Dispose()
         {
             WinSock.closesocket(Socket);
+        }
+
+
+        public int SetSocketOption(IPPROTO_IP_SocketOptions option, IntPtr value, int valueLength)
+        {
+            return WinSock.setsockopt(Socket, WinSock.IPPROTO_IP, (int)option, (char*)value.ToPointer(), valueLength);
+        }
+
+        public int SetSocketOption(IPPROTO_IPV6_SocketOptions option, IntPtr value, int valueLength)
+        {
+            return WinSock.setsockopt(Socket, WinSock.IPPROTO_IPV6, (int)option, (char*)value.ToPointer(), valueLength);
+        }
+
+        public int SetSocketOption(IPPROTO_TCP_SocketOptions option, IntPtr value, int valueLength)
+        {
+            return WinSock.setsockopt(Socket, WinSock.IPPROTO_TCP, (int)option, (char*)value.ToPointer(), valueLength);
+        }
+
+        public int SetSocketOption(IPPROTO_UDP_SocketOptions option, IntPtr value, int valueLength)
+        {
+            return WinSock.setsockopt(Socket, WinSock.IPPROTO_UDP, (int)option, (char*)value.ToPointer(), valueLength);
+        }
+
+        public int SetSocketOption(SOL_SOCKET_SocketOptions option, IntPtr value, int valueLength)
+        {
+            return WinSock.setsockopt(Socket, WinSock.SOL_SOCKET, (int)option, (char*)value.ToPointer(), valueLength);
+        }
+
+
+        public int GetSocketOption(IPPROTO_IP_SocketOptions option, IntPtr value, int valueLength)
+        {
+            return WinSock.getsockopt(Socket, WinSock.IPPROTO_IP, (int)option, (char*)value.ToPointer(), &valueLength);
+        }
+
+        public int GetSocketOption(IPPROTO_IPV6_SocketOptions option, IntPtr value, int valueLength)
+        {
+            return WinSock.getsockopt(Socket, WinSock.IPPROTO_IPV6, (int)option, (char*)value.ToPointer(), &valueLength);
+        }
+
+        public int GetSocketOption(IPPROTO_TCP_SocketOptions option, IntPtr value, int valueLength)
+        {
+            return WinSock.getsockopt(Socket, WinSock.IPPROTO_TCP, (int)option, (char*)value.ToPointer(), &valueLength);
+        }
+
+        public int GetSocketOption(IPPROTO_UDP_SocketOptions option, IntPtr value, int valueLength)
+        {
+            return WinSock.getsockopt(Socket, WinSock.IPPROTO_UDP, (int)option, (char*)value.ToPointer(), &valueLength);
+        }
+
+        public int GetSocketOption(SOL_SOCKET_SocketOptions option, IntPtr value, int valueLength)
+        {
+            return WinSock.getsockopt(Socket, WinSock.SOL_SOCKET, (int)option, (char*)value.ToPointer(), &valueLength);
         }
     }
 }

@@ -18,9 +18,7 @@ namespace RioSharp
 
         private void continuationWrapper(object o)
         {
-            var res = _continuation;
-            _continuation = null;
-            res();
+            ((Action)o)();
         }
 
         public bool IsCompleted
@@ -38,7 +36,7 @@ namespace RioSharp
 
         public void OnCompleted(Action continuation)
         {
-           _continuation = continuation;
+            _continuation = continuation;
             _spinLock.Exit();
         }
 
@@ -51,12 +49,16 @@ namespace RioSharp
 
             //if (_currentValue != null)
             //    throw new ArgumentException("fuu");
-            
+
             _currentValue = item;
             _spinLock.Exit();
 
             if (_continuation != null)
-                ThreadPool.QueueUserWorkItem(_continuationWrapperDelegate, null);
+            {
+                var res = _continuation;
+                _continuation = null;
+                ThreadPool.QueueUserWorkItem(_continuationWrapperDelegate, res);
+            }
         }
 
         public RioBufferSegment GetResult()

@@ -23,31 +23,30 @@ namespace ConsoleApplication2
         private static int pipeLineDeph;
         private static Stopwatch timer;
         private static TimeSpan span;
-        private static byte[] rb;
+        private static byte[] requestBytes;
 
         static void Main(string[] args)
         {
             pipeLineDeph = int.Parse(args.FirstOrDefault(f => f.StartsWith("-p"))?.Substring(2) ?? "16");
-            clientPool = new RioTcpClientPool(new RioFixedBufferPool(1000, (256 * pipeLineDeph)), new RioFixedBufferPool(1000, (256 * pipeLineDeph)), 1024);
             int connections = int.Parse(args.FirstOrDefault(f => f.StartsWith("-c"))?.Substring(2) ?? "512");
+            clientPool = new RioTcpClientPool(new RioFixedBufferPool(1000, (256 * pipeLineDeph)), new RioFixedBufferPool(1000, (256 * pipeLineDeph)), (uint)connections);
             timer = new Stopwatch();
-            span = TimeSpan.FromSeconds
-                (int.Parse(args.FirstOrDefault(f => f.StartsWith("-d"))?.Substring(2) ?? "30"));
-            timer.Start();
-            uri = new Uri(args.FirstOrDefault(a => !a.StartsWith("-"))?? "http://localhost:5000");
+            span = TimeSpan.FromSeconds(int.Parse(args.FirstOrDefault(f => f.StartsWith("-d"))?.Substring(2) ?? "30"));
+            uri = new Uri(args.FirstOrDefault(a => !a.StartsWith("-")) ?? "http://localhost:5000");
             keepAlive = true;
 
-            rb = Enumerable.Repeat(_requestBytes, pipeLineDeph).SelectMany(b => b).ToArray();
+            timer.Start();
+            requestBytes = Enumerable.Repeat(_requestBytes, pipeLineDeph).SelectMany(b => b).ToArray();
             var tasks = Enumerable.Range(0, connections).Select(t => Task.Run(doit));
 
-            var ss = tasks.Sum(t => t.Result);
-            Console.WriteLine(ss / span.TotalSeconds);
+            var totalRequests = tasks.Sum(t => t.Result);
+            Console.WriteLine($"Made {totalRequests / span.TotalSeconds} in {span.TotalSeconds} seconds");
         }
 
         public async static Task<int> doit()
         {
             {
-                var buffer = new byte[140 * pipeLineDeph];
+                var buffer = new byte[256 * pipeLineDeph];
                 var leftoverLength = 0;
                 var oldleftoverLength = 0;
                 uint endOfRequest = 0x0a0d0a0d;
@@ -55,18 +54,32 @@ namespace ConsoleApplication2
                 int responses = 0;
                 int total = 0;
 
-                RioSocket connection;
-                connection = await clientPool.Connect(uri);
-                var stream = new RioStream(connection);
+                RioSocket connection = null;
+                RioStream stream = null;
+
+
                 while (timer.Elapsed < span)
                 {
+                    if (connection == null)
+                    {
+                        try
+                        {
+                            connection = await clientPool.Connect(uri);
+                            stream = new RioStream(connection);
+                        }
+                        catch (Exception e)
+                        {
+                            continue;
+                        }
+                    }
+
                     //check if connection is valid?                
-                    connection.WriteFixed(rb);
+                    connection.WriteFixed(requestBytes);
 
                     while (responses < pipeLineDeph)
                     {
-                        int r = await stream.ReadAsync(buffer, 0, buffer.Length);
-                        if (r == 0)
+                        int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+                        if (bytesRead == 0)
                             break;
 
                         for (int i = 0; leftoverLength != 0 && i < 4 - leftoverLength; i++)
@@ -77,15 +90,15 @@ namespace ConsoleApplication2
                                 responses++;
                         }
 
-                        leftoverLength = r % 4;
-                        var length = r - leftoverLength;
+                        leftoverLength = bytesRead % 4;
+                        var length = bytesRead - leftoverLength;
 
                         unsafe
                         {
-                            fixed (byte* apa = &buffer[oldleftoverLength])
+                            fixed (byte* data = &buffer[oldleftoverLength])
                             {
-                                var start = apa;
-                                var end = apa + length;
+                                var start = data;
+                                var end = data + length;
 
                                 for (; start <= end; start++)
                                 {
@@ -97,7 +110,7 @@ namespace ConsoleApplication2
 
                         oldleftoverLength = leftoverLength;
 
-                        for (int i = r - leftoverLength; i < r; i++)
+                        for (int i = bytesRead - leftoverLength; i < bytesRead; i++)
                         {
                             current += buffer[i];
                             current = current << 4;
@@ -108,8 +121,13 @@ namespace ConsoleApplication2
                     responses = 0;
 
                     if (!keepAlive)
+                    {
+                        stream.Dispose();
                         connection.Dispose();
+                        connection = null;
+                    }
                 }
+
                 connection.Dispose();
                 return total;
             }

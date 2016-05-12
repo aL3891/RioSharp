@@ -82,7 +82,7 @@ namespace RioSharp
                 WinSock.ThrowLastWSAError();
         }
 
-        public unsafe void BeginReceive()
+        public unsafe RioBufferSegment BeginReceive()
         {
             RioBufferSegment buf;
             if (ReceiveBufferPool.TryGetBuffer(out buf))
@@ -97,9 +97,11 @@ namespace RioSharp
                     if (!RioStatic.Receive(_requestQueue, ReceiveBufferPool.GetBuffer().SegmentPointer, 1, RIO_RECEIVE_FLAGS.NONE, b.Index))
                         WinSock.ThrowLastWSAError();
                 }, null);
+
+            return buf;
         }
 
-        public unsafe void WriteFixed(byte[] buffer)
+        public unsafe RioBufferSegment WriteFixed(byte[] buffer)
         {
             var currentSegment = SendBufferPool.GetBuffer();
             fixed (byte* p = &buffer[0])
@@ -108,6 +110,7 @@ namespace RioSharp
             }
             currentSegment.SegmentPointer->Length = buffer.Length;
             SendInternal(currentSegment, RIO_SEND_FLAGS.NONE);
+            return currentSegment;
         }
 
         public virtual void Dispose()

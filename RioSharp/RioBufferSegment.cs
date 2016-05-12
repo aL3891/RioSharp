@@ -15,6 +15,10 @@ namespace RioSharp
         internal bool AutoFree;
         internal byte* RawPointer;
         internal RIO_BUFSEGMENT* SegmentPointer;
+        private bool complete;
+        private Action _continuation;
+        internal bool trackCompletion;
+
         public byte* Datapointer => RawPointer;
 
         public int GetData(byte[] data, int offset)
@@ -48,8 +52,41 @@ namespace RioSharp
         public void Dispose()
         {
             AutoFree = true;
+            _continuation = null;
+            complete = false;
+            trackCompletion = false;
+
+
             SegmentPointer->Length = TotalLength;
             _pool.ReleaseBuffer(this);
         }
+
+
+
+        public bool IsCompleted
+        {
+            get
+            {
+                return complete;
+            }
+        }
+
+        public void Set(RioBufferSegment item)
+        {
+            _continuation?.Invoke();
+        }
+
+        public void OnCompleted(Action continuation)
+        {
+            _continuation = continuation;
+        }
+        
+        public RioBufferSegment GetResult()
+        {
+            return this;
+        }
+
+        public RioBufferSegment GetAwaiter() => this;
+
     }
 }

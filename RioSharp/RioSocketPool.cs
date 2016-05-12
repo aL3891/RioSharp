@@ -172,7 +172,6 @@ namespace RioSharp
                             if (buf.AutoFree)
                                 buf.Dispose();
                         }
-
                     } while (count > 0);
                 }
                 else

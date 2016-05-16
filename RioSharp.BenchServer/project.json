@@ -1,28 +1,21 @@
-﻿{
+{
+  "title": "RioSharp.BenchClient",
   "version": "1.0.0-*",
-  "description": "RioSharp.BenchServer Console Application",
-  "authors": [ "aL3891" ],
-  "tags": [ "" ],
-  "projectUrl": "https://github.com/aL3891/RioSharp",
-  "licenseUrl": "",
-  "commands": {
-    "RioSharp.BenchServer": "RioSharp.BenchServer"
+  "buildOptions": {
+    "emitEntryPoint": true, "allowUnsafe": true
   },
-  "compilationOptions": {
-    "allowUnsafe": true,
-    "optimize": true
-  },
-  "frameworks": {
-    "dnx46": {
 
-    },
-    "dnxcore50": {
-      "dependencies": {
-        "System.Console": "4.0.0-*"
-      }
-    }
-  },
   "dependencies": {
-    "RioSharp": "0.0.4-*"
+    "Microsoft.NETCore.App": {
+      "type": "platform",
+      "version": "1.0.0-rc2-3002702"
+    },
+    "RioSharp": "0.0.5-alpha"
+  },
+
+  "frameworks": {
+    "netcoreapp1.0": {
+      "imports": "dnxcore50"
+    }
   }
 }

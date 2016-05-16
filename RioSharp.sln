@@ -3,28 +3,24 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "RioSharp", "RioSharp\RioSharp.xproj", "{36DDDB67-1DA4-4670-9D20-605AA2EAF1D3}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "RioSharp.BenchClient", "RioSharp.BenchClient\RioSharp.BenchClient.xproj", "{6BCF6E4B-425E-4EA1-92EA-5CCB1D9FB48A}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "RioSharp.BenchServer", "RioSharp.BenchServer\RioSharp.BenchServer.xproj", "{5D1F5B53-A2FB-4EB2-968B-001E1381DE5F}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{0FF9D9FE-4834-4274-B8CA-B5F22D758E86}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{30F29216-EED7-44CB-BF5B-16D5017A00A1}"
 	ProjectSection(SolutionItems) = preProject
 		global.json = global.json
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RioSharp46", "RioSharp46\RioSharp46.csproj", "{EE898441-8293-41CA-B9D9-E4B45BCEAD44}"
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "RioSharp", "RioSharp\RioSharp.xproj", "{36DDDB67-1DA4-4670-9D20-605AA2EAF1D3}"
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "RioSharp.BenchClient", "RioSharp.BenchClient\RioSharp.BenchClient.xproj", "{438C1AD6-5537-4156-BC5B-BCAC72B71FDF}"
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "RioSharp.BenchServer", "RioSharp.BenchServer\RioSharp.BenchServer.xproj", "{D1D9B300-0369-4E0E-A3FC-8C4ACDD294A4}"
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "RioSharpCtsTraffic", "RioSharpCtsTraffic\RioSharpCtsTraffic.xproj", "{67365BAE-4F1B-43B3-AD57-86551B330889}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RioSharp.BenchClient46", "RioSharp.BenchClient46\RioSharp.BenchClient46.csproj", "{D3344BC8-690E-4225-AB5D-5E4B76DEFE6E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RioSharp.BenchServer46", "RioSharp.BenchServer46\RioSharp.BenchServer46.csproj", "{4C3356B2-F358-43B2-8709-8FEBD913F856}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RioSharpCtsTraffic", "RioSharpCtsTraffic\RioSharpCtsTraffic.csproj", "{CF863EF5-EAE3-450D-97CB-09FB80F8AE96}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "RioSharp.Aspnet.Host", "RioSharp.Aspnet.Host\RioSharp.Aspnet.Host.xproj", "{13D92C81-2BBB-454E-B28E-6E4648B32077}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "RioShpart.Aspnet.TestSite", "RioShpart.Aspnet.TestSite\RioShpart.Aspnet.TestSite.xproj", "{6A67A9E0-6439-44D7-BC39-36D670D4DE6C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RioSharp46", "RioSharp46\RioSharp46.csproj", "{EE898441-8293-41CA-B9D9-E4B45BCEAD44}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -36,18 +32,18 @@ Global
 		{36DDDB67-1DA4-4670-9D20-605AA2EAF1D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{36DDDB67-1DA4-4670-9D20-605AA2EAF1D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{36DDDB67-1DA4-4670-9D20-605AA2EAF1D3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6BCF6E4B-425E-4EA1-92EA-5CCB1D9FB48A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6BCF6E4B-425E-4EA1-92EA-5CCB1D9FB48A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6BCF6E4B-425E-4EA1-92EA-5CCB1D9FB48A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6BCF6E4B-425E-4EA1-92EA-5CCB1D9FB48A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5D1F5B53-A2FB-4EB2-968B-001E1381DE5F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5D1F5B53-A2FB-4EB2-968B-001E1381DE5F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5D1F5B53-A2FB-4EB2-968B-001E1381DE5F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5D1F5B53-A2FB-4EB2-968B-001E1381DE5F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{EE898441-8293-41CA-B9D9-E4B45BCEAD44}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{EE898441-8293-41CA-B9D9-E4B45BCEAD44}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{EE898441-8293-41CA-B9D9-E4B45BCEAD44}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{EE898441-8293-41CA-B9D9-E4B45BCEAD44}.Release|Any CPU.Build.0 = Release|Any CPU
+		{438C1AD6-5537-4156-BC5B-BCAC72B71FDF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{438C1AD6-5537-4156-BC5B-BCAC72B71FDF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{438C1AD6-5537-4156-BC5B-BCAC72B71FDF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{438C1AD6-5537-4156-BC5B-BCAC72B71FDF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D1D9B300-0369-4E0E-A3FC-8C4ACDD294A4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D1D9B300-0369-4E0E-A3FC-8C4ACDD294A4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D1D9B300-0369-4E0E-A3FC-8C4ACDD294A4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D1D9B300-0369-4E0E-A3FC-8C4ACDD294A4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{67365BAE-4F1B-43B3-AD57-86551B330889}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{67365BAE-4F1B-43B3-AD57-86551B330889}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{67365BAE-4F1B-43B3-AD57-86551B330889}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{67365BAE-4F1B-43B3-AD57-86551B330889}.Release|Any CPU.Build.0 = Release|Any CPU
 		{D3344BC8-690E-4225-AB5D-5E4B76DEFE6E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{D3344BC8-690E-4225-AB5D-5E4B76DEFE6E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D3344BC8-690E-4225-AB5D-5E4B76DEFE6E}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -56,18 +52,10 @@ Global
 		{4C3356B2-F358-43B2-8709-8FEBD913F856}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4C3356B2-F358-43B2-8709-8FEBD913F856}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4C3356B2-F358-43B2-8709-8FEBD913F856}.Release|Any CPU.Build.0 = Release|Any CPU
-		{CF863EF5-EAE3-450D-97CB-09FB80F8AE96}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CF863EF5-EAE3-450D-97CB-09FB80F8AE96}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CF863EF5-EAE3-450D-97CB-09FB80F8AE96}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CF863EF5-EAE3-450D-97CB-09FB80F8AE96}.Release|Any CPU.Build.0 = Release|Any CPU
-		{13D92C81-2BBB-454E-B28E-6E4648B32077}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{13D92C81-2BBB-454E-B28E-6E4648B32077}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{13D92C81-2BBB-454E-B28E-6E4648B32077}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{13D92C81-2BBB-454E-B28E-6E4648B32077}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6A67A9E0-6439-44D7-BC39-36D670D4DE6C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6A67A9E0-6439-44D7-BC39-36D670D4DE6C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6A67A9E0-6439-44D7-BC39-36D670D4DE6C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6A67A9E0-6439-44D7-BC39-36D670D4DE6C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EE898441-8293-41CA-B9D9-E4B45BCEAD44}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE898441-8293-41CA-B9D9-E4B45BCEAD44}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE898441-8293-41CA-B9D9-E4B45BCEAD44}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE898441-8293-41CA-B9D9-E4B45BCEAD44}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

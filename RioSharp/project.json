@@ -1,55 +1,21 @@
-{
-  "version": "0.0.4-*",
-  "description": "RioSharp",
-  "authors": [ "aL3891" ],
-  "tags": [ "" ],
-  "projectUrl": "https://github.com/aL3891/RioSharp",
-  "licenseUrl": "",
-  "compilationOptions": {
-    "allowUnsafe": true,
-    "optimize": true
+﻿{
+  "version": "0.0.5-alpha",
+
+  "buildOptions": {
+    "allowUnsafe": true
   },
+
+  "dependencies": {
+    "NETStandard.Library": "1.5.0-rc2-24027",
+    "System.Net.NameResolution": "4.0.0-rc2-24027",
+    "System.Threading.Overlapped": "4.0.1-rc2-24027",
+    "System.Threading.Thread": "4.0.0-rc2-24027",
+    "System.Threading.ThreadPool": "4.0.10-rc2-24027"
+  },
+
   "frameworks": {
-    "dnx46": {
-      "dependencies": {
-
-      },
-      "frameworkAssemblies": {
-        "System": "4.0.0.0",
-        "Microsoft.CSharp": "4.0.0.0",
-        "System.Core": "4.0.0.0",
-        "System.Net.Http": "4.0.0.0",
-        "System.Net": "4.0.0.0",
-        "System.Net.Primitives": "4.0.10.0",
-        "System.Runtime": "4.0.20.0",
-        "System.Runtime.InteropServices": "4.0.20.0",
-        "System.Threading.Tasks": "4.0.10.0"
-      }
-    },
-    "dotnet5.4": {
-      "dependencies": {
-        "System.Collections": "4.0.11-*",
-        "System.Diagnostics.Debug": "4.0.11-*",
-        "System.Globalization": "4.0.11-*",
-        "System.IO": "4.0.11-*",
-        "System.Linq": "4.0.1-*",
-        "System.Net.Primitives": "4.0.11-*",
-        "System.Runtime.Extensions": "4.0.11-*",
-        "System.Runtime.InteropServices": "4.0.21-*",
-        "System.Text.Encoding": "4.0.11-*",
-        "System.Threading": "4.0.11-*",
-        "System.Threading.Tasks": "4.0.11-*",
-        
-        "System.Threading.Thread": "4.0.0-*",
-        "System.Threading.ThreadPool": "4.0.10-*",
-        "System.Threading.Timer": "4.0.1-*",
-
-
-        "System.Collections.Concurrent": "4.0.11-*",
-        "System.Threading.Overlapped": "4.0.1-*",
-        "Microsoft.Win32.Primitives": "4.0.1-*",
-        "System.Net.NameResolution": "4.0.0-*"
-      }
+    "netstandard1.5": {
+      "imports": "dnxcore50"
     }
   }
 }

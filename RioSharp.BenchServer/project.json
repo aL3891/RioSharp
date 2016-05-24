@@ -1,8 +1,8 @@
 {
-  "title": "RioSharp.BenchClient",
   "version": "1.0.0-*",
   "buildOptions": {
-    "emitEntryPoint": true, "allowUnsafe": true
+    "emitEntryPoint": true,
+    "allowUnsafe": true
   },
 
   "dependencies": {

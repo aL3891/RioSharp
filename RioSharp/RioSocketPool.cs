@@ -100,7 +100,6 @@ namespace RioSharp
             }
 
             currentSegment.SegmentPointer->Length = buffer.Length;
-            currentSegment.AutoFree = false;
             return currentSegment;
         }
 
@@ -108,7 +107,6 @@ namespace RioSharp
         {
             uint maxResults = Math.Min(MaxOutstandingReceive, int.MaxValue);
             RIO_RESULT* results = stackalloc RIO_RESULT[(int)maxResults];
-            RioSocket connection;
             uint count;
             IntPtr key, bytes;
             NativeOverlapped* overlapped = stackalloc NativeOverlapped[1];
@@ -132,13 +130,8 @@ namespace RioSharp
                         {
                             result = results[i];
                             buf = ReceiveBufferPool.AllSegments[result.RequestCorrelation];
-                            if (activeSockets.TryGetValue(result.ConnectionCorrelation, out connection))
-                            {
-                                buf.SegmentPointer->Length = (int)result.BytesTransferred;
-                                connection.onIncommingSegment(connection, buf);
-                            }
-                            else
-                                buf.Dispose();
+                            buf.SegmentPointer->Length = (int)result.BytesTransferred;
+                            buf.Set();
                         }
 
                     } while (count > 0);
@@ -169,8 +162,7 @@ namespace RioSharp
                         for (var i = 0; i < count; i++)
                         {
                             var buf = SendBufferPool.AllSegments[results[i].RequestCorrelation];
-                            if (buf.AutoFree)
-                                buf.Dispose();
+                            buf.Set();
                         }
                     } while (count > 0);
                 }

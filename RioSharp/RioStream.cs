@@ -10,25 +10,30 @@ namespace RioSharp
     {
         RioSocket _socket;
         RioBufferSegment _currentInputSegment;
+        RioBufferSegment _nextInputSegment = null;
         RioBufferSegment _currentOutputSegment;
         int _bytesReadInCurrentSegment = 0;
         int _remainingSpaceInOutputSegment = 0, _currentContentLength = 0;
         int _outputSegmentTotalLength;
-        RioBufferSegmentAwaiter _incommingSegments = new RioBufferSegmentAwaiter();
         TaskCompletionSource<int> _readtcs;
         byte[] _readBuffer;
         int _readoffset;
         int _readCount;
         Func<int> _getNewSegmentDelegate;
+        private Action _getNewSegmentDelegateDelegate;
 
         public RioStream(RioSocket socket)
         {
             _socket = socket;
-            _currentInputSegment = null;
+            _currentInputSegment = _socket.ReceiveBufferPool.GetBuffer();
             _currentOutputSegment = _socket.SendBufferPool.GetBuffer();
+            _nextInputSegment = _socket.ReceiveBufferPool.GetBuffer();
             _getNewSegmentDelegate = GetNewSegment;
-            socket.OnIncommingSegmentUnsafe = (sock, s) => _incommingSegments.Set(s);
-            socket.BeginReceive();
+            _getNewSegmentDelegateDelegate = GetNewSegmentDelegateWrapper;
+
+            _outputSegmentTotalLength = _currentOutputSegment.TotalLength;
+            _remainingSpaceInOutputSegment = _outputSegmentTotalLength;
+            socket.BeginReceive(_nextInputSegment);
         }
 
         public void Flush(bool moreData)
@@ -44,7 +49,7 @@ namespace RioSharp
                     _currentOutputSegment.SegmentPointer->Length = _outputSegmentTotalLength - _remainingSpaceInOutputSegment;
                 }
                 _socket.SendInternal(_currentOutputSegment, RIO_SEND_FLAGS.NONE);
-
+                _currentOutputSegment.DisposeWhenComplete();
                 if (moreData)
                 {
                     _currentOutputSegment = _socket.SendBufferPool.GetBuffer();
@@ -56,7 +61,6 @@ namespace RioSharp
                     _remainingSpaceInOutputSegment = 0;
                     _outputSegmentTotalLength = 0;
                 }
-
             }
         }
 
@@ -67,12 +71,8 @@ namespace RioSharp
 
         private int GetNewSegment()
         {
-            _currentInputSegment = _incommingSegments.GetResult();
-            if (_currentInputSegment == null)
-            {
-                _readtcs.SetResult(0);
-                return 0;
-            }
+            var tmp = _currentInputSegment;
+            _currentInputSegment = _nextInputSegment.GetResult();
 
             _bytesReadInCurrentSegment = 0;
             _currentContentLength = _currentInputSegment.CurrentContentLength;
@@ -80,13 +80,13 @@ namespace RioSharp
             if (_currentContentLength == 0)
             {
                 _currentInputSegment.Dispose();
-                _currentInputSegment = null;
-                _readtcs.SetResult(0);
+                tmp.Dispose();
                 return 0;
             }
             else
             {
-                _socket.BeginReceive();
+                _nextInputSegment = tmp;
+                _socket.BeginReceive(_nextInputSegment);
                 return CompleteRead();
             }
         }
@@ -105,35 +105,29 @@ namespace RioSharp
 
             _bytesReadInCurrentSegment += toCopy;
 
-            if (_currentContentLength == _bytesReadInCurrentSegment)
-            {
-                _currentInputSegment.Dispose();
-                _currentInputSegment = null;
-            }
+            //if (_currentContentLength == _bytesReadInCurrentSegment)
+            //{
+            //    _currentInputSegment.Dispose();
+            //    _currentInputSegment = null;
+            //}
 
-            _readtcs.SetResult(toCopy);
-            return 0;
+            return toCopy;
         }
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            _readtcs = new TaskCompletionSource<int>();
             _readBuffer = buffer;
             _readoffset = offset;
             _readCount = count;
 
-            if (_currentInputSegment == null)
+            if (_currentContentLength == _bytesReadInCurrentSegment)
             {
-                if (_incommingSegments.IsCompleted)
+                if (_nextInputSegment.IsCompleted)
                     return Task.FromResult(GetNewSegment());
                 else
                 {
-                    _incommingSegments.OnCompleted(() =>
-                    {
-                        _readtcs = new TaskCompletionSource<int>();
-                        _readtcs.SetResult(_getNewSegmentDelegate());
-
-                    });
+                    _readtcs = new TaskCompletionSource<int>();
+                    _nextInputSegment.OnCompleted(_getNewSegmentDelegateDelegate);
                     return _readtcs.Task;
                 }
             }
@@ -142,10 +136,12 @@ namespace RioSharp
 
         }
 
-        public override int Read(byte[] buffer, int offset, int count)
+        private void GetNewSegmentDelegateWrapper()
         {
-            return ReadAsync(buffer, offset, count, CancellationToken.None).Result;
+            _readtcs.SetResult(_getNewSegmentDelegate());
         }
+
+        public override int Read(byte[] buffer, int offset, int count) => ReadAsync(buffer, offset, count, CancellationToken.None).Result;
 
         public override unsafe void Write(byte[] buffer, int offset, int count)
         {
@@ -156,6 +152,7 @@ namespace RioSharp
                 {
                     _currentOutputSegment.SegmentPointer->Length = _outputSegmentTotalLength;
                     _socket.SendInternal(_currentOutputSegment, RIO_SEND_FLAGS.DEFER); // | RIO_SEND_FLAGS.DONT_NOTIFY
+                    _currentOutputSegment.DisposeWhenComplete();
                     while (!_socket.SendBufferPool.TryGetBuffer(out _currentOutputSegment))
                         _socket.CommitSend();
                     _outputSegmentTotalLength = _currentOutputSegment.TotalLength;
@@ -188,11 +185,9 @@ namespace RioSharp
         {
             Flush(false);
 
-            if (_currentInputSegment != null)
-                _currentInputSegment.Dispose();
-
-            _currentOutputSegment.Dispose();
-            _incommingSegments.Dispose();
+            _currentInputSegment?.Dispose();
+            _currentOutputSegment?.Dispose();
+            _nextInputSegment?.Dispose();
         }
 
         public override bool CanRead => true;

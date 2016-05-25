@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ConsoleApplication2
+namespace RioSharp.BenchClient
 {
     public class Program
     {
@@ -37,13 +37,13 @@ namespace ConsoleApplication2
 
             timer.Start();
             requestBytes = Enumerable.Repeat(_requestBytes, pipeLineDeph).SelectMany(b => b).ToArray();
-            var tasks = Enumerable.Range(0, connections).Select(t => Task.Run(doit));
+            var tasks = Enumerable.Range(0, connections).Select(t => Task.Run(Execute));
 
             var totalRequests = tasks.Sum(t => t.Result);
-            Console.WriteLine($"Made {totalRequests / span.TotalSeconds} in {span.TotalSeconds} seconds");
+            Console.WriteLine($"Made {totalRequests / span.TotalSeconds} requests in {span.TotalSeconds} seconds");
         }
 
-        public async static Task<int> doit()
+        public async static Task<int> Execute()
         {
             {
                 var buffer = new byte[256 * pipeLineDeph];
@@ -128,7 +128,7 @@ namespace ConsoleApplication2
                     }
                 }
 
-                connection.Dispose();
+                connection?.Dispose();
                 return total;
             }
         }

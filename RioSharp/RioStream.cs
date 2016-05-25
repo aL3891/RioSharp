@@ -19,8 +19,8 @@ namespace RioSharp
         byte[] _readBuffer;
         int _readoffset;
         int _readCount;
-        Func<int> _getNewSegmentDelegate;
         private Action _getNewSegmentDelegateDelegate;
+        WaitCallback waitcallback;
 
         public RioStream(RioSocket socket)
         {
@@ -28,12 +28,13 @@ namespace RioSharp
             _currentInputSegment = _socket.ReceiveBufferPool.GetBuffer();
             _currentOutputSegment = _socket.SendBufferPool.GetBuffer();
             _nextInputSegment = _socket.ReceiveBufferPool.GetBuffer();
-            _getNewSegmentDelegate = GetNewSegment;
             _getNewSegmentDelegateDelegate = GetNewSegmentDelegateWrapper;
 
             _outputSegmentTotalLength = _currentOutputSegment.TotalLength;
             _remainingSpaceInOutputSegment = _outputSegmentTotalLength;
             socket.BeginReceive(_nextInputSegment);
+
+            waitcallback = waitCallbackcallback;
         }
 
         public void Flush(bool moreData)
@@ -105,12 +106,6 @@ namespace RioSharp
 
             _bytesReadInCurrentSegment += toCopy;
 
-            //if (_currentContentLength == _bytesReadInCurrentSegment)
-            //{
-            //    _currentInputSegment.Dispose();
-            //    _currentInputSegment = null;
-            //}
-
             return toCopy;
         }
 
@@ -136,9 +131,14 @@ namespace RioSharp
 
         }
 
+        private void waitCallbackcallback(object o)
+        {
+            _readtcs.SetResult(GetNewSegment());
+        }
+
         private void GetNewSegmentDelegateWrapper()
         {
-            _readtcs.SetResult(_getNewSegmentDelegate());
+            ThreadPool.QueueUserWorkItem(waitcallback);
         }
 
         public override int Read(byte[] buffer, int offset, int count) => ReadAsync(buffer, offset, count, CancellationToken.None).Result;

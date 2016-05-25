@@ -20,8 +20,7 @@ namespace RioSharp
             _currentInputSegment = _socket.ReceiveBufferPool.GetBuffer();            
             completeReadDelegate = CompleteRead;
         }
-
-
+        
         public void Start()
         {
             _socket.BeginReceive(_nextInputSegment);
@@ -31,8 +30,7 @@ namespace RioSharp
             else
                 _nextInputSegment.OnCompleted(completeReadDelegate);
         }
-
-
+        
         public void CompleteRead()
         {
             var tmp = _currentInputSegment;

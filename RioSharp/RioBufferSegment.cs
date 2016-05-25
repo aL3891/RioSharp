@@ -70,9 +70,7 @@ namespace RioSharp
         {
             _continuation = null;
             complete = false;
-
             disposeOnComplete = false;
-
             SegmentPointer->Length = TotalLength;
             _pool.ReleaseBuffer(this);
         }
@@ -97,12 +95,10 @@ namespace RioSharp
 
             complete = true;
             var cont = _continuation;
+            _continuation = null;
             _spinLock.Exit();
 
             cont?.Invoke();
-
-            //if (cont != null)
-            //    ThreadPool.QueueUserWorkItem(_continuationWrapperDelegate, cont);
 
             if (disposeOnComplete)
                 Dispose();

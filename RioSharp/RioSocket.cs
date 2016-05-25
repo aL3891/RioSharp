@@ -66,6 +66,7 @@ namespace RioSharp
             }
             currentSegment.SegmentPointer->Length = buffer.Length;
             SendInternal(currentSegment, RIO_SEND_FLAGS.NONE);
+            currentSegment.DisposeWhenComplete();
             return currentSegment;
         }
 

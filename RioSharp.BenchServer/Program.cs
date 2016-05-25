@@ -48,7 +48,7 @@ namespace ConsoleApplication1
             sendPool = new RioFixedBufferPool(10 * connections, 256 * pipeLineDeph);
             recivePool = new RioFixedBufferPool(10 * connections, 256 * pipeLineDeph);
 
-            listener = new RioTcpListener(sendPool, recivePool, 1024);
+            listener = new RioTcpListener(sendPool, recivePool, (uint)connections);
             currentSegment = listener.PreAllocateWrite(GetResponse());
             responseBytes = GetResponse();
             //Task.Run(async () =>
@@ -145,8 +145,7 @@ namespace ConsoleApplication1
                     int r = await stream.ReadAsync(buffer, 0, buffer.Length);
                     if (r == 0)
                         break;
-
-
+                    
                     for (int i = 0; leftoverLength != 0 && i < 4 - leftoverLength; i++)
                     {
                         current += buffer[i];

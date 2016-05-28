@@ -28,7 +28,6 @@ namespace RioSharp
         public int GetData(byte[] data, int offset)
         {
             var l = Math.Min((data.Length - offset), CurrentContentLength);
-            Marshal.Copy(new IntPtr(RawPointer), data, offset, l);
             unsafe
             {
                 fixed (void* p = &data[0])

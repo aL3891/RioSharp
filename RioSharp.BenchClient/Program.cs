@@ -31,16 +31,24 @@ namespace RioSharp.BenchClient
             int connections = int.Parse(args.FirstOrDefault(f => f.StartsWith("-c"))?.Substring(2) ?? "512");
             clientPool = new RioTcpClientPool(new RioFixedBufferPool(1000, (256 * pipeLineDeph)), new RioFixedBufferPool(1000, (256 * pipeLineDeph)), (uint)connections);
             timer = new Stopwatch();
-            span = TimeSpan.FromSeconds(int.Parse(args.FirstOrDefault(f => f.StartsWith("-d"))?.Substring(2) ?? "30"));
+            span = TimeSpan.FromSeconds(int.Parse(args.FirstOrDefault(f => f.StartsWith("-d"))?.Substring(2) ?? "5"));
             uri = new Uri(args.FirstOrDefault(a => !a.StartsWith("-")) ?? "http://localhost:5000");
             keepAlive = true;
+            requestBytes = Enumerable.Repeat(_requestBytes, pipeLineDeph).SelectMany(b => b).ToArray();
+
+            Console.WriteLine("RioSharp http benchmark");
+            Console.WriteLine("Connections: " + connections);
+            Console.WriteLine("Duration: " + span.TotalSeconds + " seconds");
+            Console.WriteLine("Pipeline depth: " + pipeLineDeph);
+            Console.WriteLine("Target: " + uri);
+            Console.WriteLine("Starting benchmark...");
 
             timer.Start();
-            requestBytes = Enumerable.Repeat(_requestBytes, pipeLineDeph).SelectMany(b => b).ToArray();
             var tasks = Enumerable.Range(0, connections).Select(t => Task.Run(Execute));
 
             var totalRequests = tasks.Sum(t => t.Result);
-            Console.WriteLine($"Made {totalRequests / span.TotalSeconds} requests in {span.TotalSeconds} seconds");
+            Console.WriteLine($"Made {totalRequests / span.TotalSeconds} requests per second over {span.TotalSeconds} seconds");
+            clientPool.Dispose();
         }
 
         public async static Task<int> Execute()
@@ -67,7 +75,7 @@ namespace RioSharp.BenchClient
                             connection = await clientPool.Connect(uri);
                             stream = new RioStream(connection);
                         }
-                        catch (Exception e)
+                        catch (Exception)
                         {
                             continue;
                         }

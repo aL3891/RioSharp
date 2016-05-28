@@ -44,12 +44,15 @@ namespace RioSharp
         [DllImport(Kernel_32, SetLastError = true)]
         [SuppressUnmanagedCodeSecurity]
         internal static extern IntPtr CloseHandle([In]IntPtr handle);
-    }
 
-    internal static class Msvcrt
-    {
-        [DllImport("msvcrt.dll", EntryPoint = "memset", CallingConvention = CallingConvention.Cdecl, SetLastError = false)]
+
+        [DllImport(Kernel_32, SetLastError = true)]
         [SuppressUnmanagedCodeSecurity]
-        internal static extern IntPtr MemSet(IntPtr dest, int c, int count);
+        internal static extern bool VirtualFree([In]IntPtr lpAddress, [In]uint dwSize, [In]int dwFreeType);
+
+        [DllImport(Kernel_32, SetLastError = true)]
+        [SuppressUnmanagedCodeSecurity]
+        internal static extern IntPtr VirtualAlloc([In]IntPtr lpAddress, [In]uint dwSize, [In]int flAllocationType, [In]int flProtect);
+
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,7 +21,7 @@ namespace RioSharp
         int _readoffset;
         int _readCount;
         private Action _getNewSegmentDelegateDelegate;
-        WaitCallback waitcallback;
+        WaitCallback _waitCallback;
 
         public RioStream(RioSocket socket)
         {
@@ -32,9 +33,9 @@ namespace RioSharp
 
             _outputSegmentTotalLength = _currentOutputSegment.TotalLength;
             _remainingSpaceInOutputSegment = _outputSegmentTotalLength;
-            socket.BeginReceive(_nextInputSegment);
+            _socket.BeginReceive(_nextInputSegment);
 
-            waitcallback = waitCallbackcallback;
+            _waitCallback = WaitCallbackcallback;
         }
 
         public void Flush(bool moreData)
@@ -101,7 +102,7 @@ namespace RioSharp
             unsafe
             {
                 fixed (byte* p = &_readBuffer[_readoffset])
-                    Buffer.MemoryCopy(_currentInputSegment.RawPointer + _bytesReadInCurrentSegment, p, _readCount, toCopy);
+                    Unsafe.CopyBlock(p, _currentInputSegment.RawPointer + _bytesReadInCurrentSegment, (uint)toCopy);
             }
 
             _bytesReadInCurrentSegment += toCopy;
@@ -131,14 +132,14 @@ namespace RioSharp
 
         }
 
-        private void waitCallbackcallback(object o)
+        private void WaitCallbackcallback(object o)
         {
             _readtcs.SetResult(GetNewSegment());
         }
 
         private void GetNewSegmentDelegateWrapper()
         {
-            ThreadPool.QueueUserWorkItem(waitcallback);
+            ThreadPool.QueueUserWorkItem(_waitCallback);
         }
 
         public override int Read(byte[] buffer, int offset, int count) => ReadAsync(buffer, offset, count, CancellationToken.None).Result;
@@ -166,7 +167,7 @@ namespace RioSharp
 
                 fixed (byte* p = &buffer[offset])
                 {
-                    Buffer.MemoryCopy(p + writtenFromBuffer, _currentOutputSegment.RawPointer + (_outputSegmentTotalLength - _remainingSpaceInOutputSegment), _remainingSpaceInOutputSegment, toWrite);
+                    Unsafe.CopyBlock(_currentOutputSegment.RawPointer + (_outputSegmentTotalLength - _remainingSpaceInOutputSegment), p + writtenFromBuffer, (uint)toWrite);
                 }
 
                 writtenFromBuffer += toWrite;

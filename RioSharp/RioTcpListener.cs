@@ -96,7 +96,8 @@ namespace RioSharp
                 }
                 else {
                     var error = Marshal.GetLastWin32Error();
-
+                    if (error == 735)
+                        break;
                     if (error != 0 && error != 64) //connection no longer available
                         throw new Win32Exception(error);
                 }
@@ -115,6 +116,8 @@ namespace RioSharp
                     BeginAccept(allSockets[lpOverlapped->SocketIndex]);
                 else {
                     var error = Marshal.GetLastWin32Error();
+                    if (error == 735)
+                        break;
                     if (error != 0 && error != 64) //connection no longer available
                         throw new Win32Exception(error);
                 }

@@ -42,7 +42,7 @@ namespace RioSharp
                 }
             }
         }
-        
+
 
         protected override unsafe void SocketIocpComplete(object o)
         {
@@ -71,7 +71,8 @@ namespace RioSharp
                             if (_ongoingConnections.TryRemove(res, out r))
                                 r.SetResult(res);
                         }
-                        else {
+                        else
+                        {
                             //recycle socket
                         }
                     }
@@ -80,8 +81,10 @@ namespace RioSharp
                 {
                     var error = Marshal.GetLastWin32Error();
 
-                    if (error != 0 && error != 64 & error != 1225) //connection no longer available
+                    if (error != 0 && error != 64 && error != 1225 && error != 735) //connection no longer available
                         throw new Win32Exception(error);
+                    else if (error != 735)
+                        break;
                     else
                     {
                         res = allSockets[lpOverlapped->SocketIndex];

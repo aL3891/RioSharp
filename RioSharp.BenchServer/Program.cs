@@ -45,6 +45,10 @@ namespace ConsoleApplication1
             pipeLineDeph = int.Parse(args.FirstOrDefault(f => f.StartsWith("-p"))?.Substring(2) ?? "16");
             int connections = int.Parse(args.FirstOrDefault(f => f.StartsWith("-c"))?.Substring(2) ?? "512");
 
+            Console.WriteLine("RioSharp http server");
+            Console.WriteLine("Optimizing for " + connections + " connections");
+            Console.WriteLine("Optimizing for pipeline depth of: " + pipeLineDeph);
+
             sendPool = new RioFixedBufferPool(10 * connections, 256 * pipeLineDeph);
             recivePool = new RioFixedBufferPool(10 * connections, 256 * pipeLineDeph);
 
@@ -62,7 +66,13 @@ namespace ConsoleApplication1
 
             listener.OnAccepted = new Action<RioSocket>(s => ThreadPool.QueueUserWorkItem(o => Servebuff((RioSocket)o), s));
             listener.Listen(new IPEndPoint(new IPAddress(new byte[] { 0, 0, 0, 0 }), 5000), 1024 * connections);
+            Console.WriteLine("Listening on : http://localhost:5000");
+            Console.WriteLine("Press enter to exit");
             Console.ReadLine();
+
+            listener.Dispose();
+
+            
         }
 
         static async Task ServeFixed(RioSocket socket)
@@ -145,7 +155,7 @@ namespace ConsoleApplication1
                     int r = await stream.ReadAsync(buffer, 0, buffer.Length);
                     if (r == 0)
                         break;
-                    
+
                     for (int i = 0; leftoverLength != 0 && i < 4 - leftoverLength; i++)
                     {
                         current += buffer[i];

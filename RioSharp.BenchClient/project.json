@@ -1,13 +1,15 @@
 {
   "version": "1.0.0-*",
   "buildOptions": {
-    "emitEntryPoint": true, "allowUnsafe": true
+    "emitEntryPoint": true,
+    "allowUnsafe": true,
+    "optimize": true
   },
 
   "dependencies": {
     "Microsoft.NETCore.App": {
       "type": "platform",
-      "version": "1.0.0-rc2-3002702"
+      "version": "1.0.0-rc2-*"
     },
     "RioSharp": "0.0.5-alpha"
   },

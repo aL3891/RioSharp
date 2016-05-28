@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,6 +29,12 @@ namespace RioSharp
         {
             var l = Math.Min((data.Length - offset), CurrentContentLength);
             Marshal.Copy(new IntPtr(RawPointer), data, offset, l);
+            unsafe
+            {
+                fixed (void* p = &data[0])
+                    Unsafe.CopyBlock(p, RawPointer, (uint)l);
+            }
+
             return l;
         }
 

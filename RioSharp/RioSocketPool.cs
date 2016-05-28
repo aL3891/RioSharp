@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace RioSharp
@@ -96,7 +99,7 @@ namespace RioSharp
             var currentSegment = SendBufferPool.GetBuffer();
             fixed (byte* p = &buffer[0])
             {
-                Buffer.MemoryCopy(p, currentSegment.RawPointer, currentSegment.TotalLength, buffer.Length);
+                Unsafe.CopyBlock(currentSegment.RawPointer, p, (uint)buffer.Length);
             }
 
             currentSegment.SegmentPointer->Length = buffer.Length;
@@ -137,7 +140,14 @@ namespace RioSharp
                     } while (count > 0);
                 }
                 else
-                    Kernel32.ThrowLastError();
+                {
+                    var error = Marshal.GetLastWin32Error();
+
+                    if (error != 0 && error != 735)
+                        throw new Win32Exception(error);
+                    else
+                        break;
+                }
             }
         }
 
@@ -167,7 +177,15 @@ namespace RioSharp
                     } while (count > 0);
                 }
                 else
-                    Kernel32.ThrowLastError();
+                {
+                    var error = Marshal.GetLastWin32Error();
+
+                    if (error != 0 && error != 735)
+                        throw new Win32Exception(error);
+                    else
+                        break;
+                }
+
             }
         }
 

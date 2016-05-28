@@ -50,18 +50,21 @@ namespace RioSharp
             activeSockets.TryRemove(socket.GetHashCode(), out c);
             socket.ResetOverlapped();
             socket._overlapped->Status = 1;
-            if (!RioStatic.DisconnectEx(socket.Socket, socket._overlapped, 0x02, 0)) //TF_REUSE_SOCKET
+            if (!RioStatic.DisconnectEx(socket.Socket, socket._overlapped, disconnectexflag, 0)) //TF_REUSE_SOCKET
                 if (WinSock.WSAGetLastError() != 997) // error_io_pending
                     WinSock.ThrowLastWSAError();
             //else
             //    AcceptEx(socket);
         }
 
+        uint disconnectexflag = 0x02;
+
         public override void Dispose()
         {
+            disconnectexflag = 0;
             Kernel32.CloseHandle(socketIocp);
             for (int i = 0; i < allSockets.Length; i++)
-                allSockets[i].Dispose();
+                allSockets[i].Close();
 
             base.Dispose();
         }

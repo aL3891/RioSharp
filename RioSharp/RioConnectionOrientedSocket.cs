@@ -40,6 +40,10 @@ namespace RioSharp
         {
             _pool.Recycle(this);
         }
+
+        internal void Close() {
+            WinSock.closesocket(Socket);
+        }
     }
 }
 

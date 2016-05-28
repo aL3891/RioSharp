@@ -18,9 +18,12 @@ namespace RioSharp
         {
             AllSegments = new RioBufferSegment[segmentCount];
             TotalLength = segmentCount * segmentLength;
-            BufferPointer = Marshal.AllocHGlobal(TotalLength);
-            _segmentpointer = Marshal.AllocHGlobal(Marshal.SizeOf<RIO_BUFSEGMENT>() * segmentCount);
-            
+            //BufferPointer = Marshal.AllocHGlobal(TotalLength);
+            BufferPointer = Kernel32.VirtualAlloc(IntPtr.Zero, (uint)TotalLength, 0x00001000 | 0x00002000, 0x04);
+
+            //_segmentpointer = Marshal.AllocHGlobal(Marshal.SizeOf<RIO_BUFSEGMENT>() * segmentCount);
+            _segmentpointer = Kernel32.VirtualAlloc(IntPtr.Zero, (uint)(Marshal.SizeOf<RIO_BUFSEGMENT>() * segmentCount), 0x00001000 | 0x00002000, 0x04);
+
             for (int i = 0; i < segmentCount; i++)
             {
                 var b = new RioBufferSegment(this, BufferPointer ,_segmentpointer, i, segmentLength );
@@ -60,15 +63,18 @@ namespace RioSharp
             } while (true);
         }
 
-        public void ReleaseBuffer(RioBufferSegment bufferIndex)
+        public void ReleaseBuffer(RioBufferSegment buffer)
         {
-            _availableSegments.Enqueue(bufferIndex);
+            _availableSegments.Enqueue(buffer);
         }
 
         public void Dispose()
         {
-            Marshal.FreeHGlobal(BufferPointer);
-            Marshal.FreeHGlobal(_segmentpointer);
+            //Marshal.FreeHGlobal(BufferPointer);
+            //Marshal.FreeHGlobal(_segmentpointer);
+
+            Kernel32.VirtualFree(BufferPointer, 0, 0x8000);
+            Kernel32.VirtualFree(_segmentpointer, 0, 0x8000);
         }
     }
 }

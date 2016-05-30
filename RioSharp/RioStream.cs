@@ -74,7 +74,8 @@ namespace RioSharp
         private int GetNewSegment()
         {
             var tmp = _currentInputSegment;
-            _currentInputSegment = _nextInputSegment.GetResult();
+            _nextInputSegment.GetResult();
+            _currentInputSegment = _nextInputSegment;
 
             _bytesReadInCurrentSegment = 0;
             _currentContentLength = _currentInputSegment.CurrentContentLength;

@@ -87,9 +87,6 @@
     <Compile Include="..\RioSharp\RioTcpListener.cs">
       <Link>RioTcpListener.cs</Link>
     </Compile>
-    <Compile Include="..\RioSharp\SegmentAwaiter.cs">
-      <Link>SegmentAwaiter.cs</Link>
-    </Compile>
     <Compile Include="..\RioSharp\WinSock.cs">
       <Link>WinSock.cs</Link>
     </Compile>

@@ -18,10 +18,8 @@ namespace RioSharp
         {
             AllSegments = new RioBufferSegment[segmentCount];
             TotalLength = segmentCount * segmentLength;
-            //BufferPointer = Marshal.AllocHGlobal(TotalLength);
             BufferPointer = Kernel32.VirtualAlloc(IntPtr.Zero, (uint)TotalLength, 0x00001000 | 0x00002000, 0x04);
-
-            //_segmentpointer = Marshal.AllocHGlobal(Marshal.SizeOf<RIO_BUFSEGMENT>() * segmentCount);
+            
             _segmentpointer = Kernel32.VirtualAlloc(IntPtr.Zero, (uint)(Marshal.SizeOf<RIO_BUFSEGMENT>() * segmentCount), 0x00001000 | 0x00002000, 0x04);
 
             for (int i = 0; i < segmentCount; i++)
@@ -38,10 +36,7 @@ namespace RioSharp
                 AllSegments[i].SetBufferId(id);
         }
 
-        public bool TryGetBuffer(out RioBufferSegment buf)
-        {
-            return _availableSegments.TryDequeue(out buf);
-        }
+        public bool TryGetBuffer(out RioBufferSegment buf) => _availableSegments.TryDequeue(out buf);
 
         public RioBufferSegment GetBuffer()
         {
@@ -52,16 +47,7 @@ namespace RioSharp
                     return buf;
             } while (true);
         }
-
-        public RioBufferSegment GetBuffer(int requestedBufferSize)
-        {
-            RioBufferSegment buf;
-            do
-            {
-                if (_availableSegments.TryDequeue(out buf))
-                    return buf;
-            } while (true);
-        }
+        
 
         public void ReleaseBuffer(RioBufferSegment buffer)
         {
@@ -70,9 +56,6 @@ namespace RioSharp
 
         public void Dispose()
         {
-            //Marshal.FreeHGlobal(BufferPointer);
-            //Marshal.FreeHGlobal(_segmentpointer);
-
             Kernel32.VirtualFree(BufferPointer, 0, 0x8000);
             Kernel32.VirtualFree(_segmentpointer, 0, 0x8000);
         }

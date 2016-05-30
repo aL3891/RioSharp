@@ -41,13 +41,13 @@ namespace RioSharp.BenchClient
             Console.WriteLine("Duration: " + span.TotalSeconds + " seconds");
             Console.WriteLine("Pipeline depth: " + pipeLineDeph);
             Console.WriteLine("Target: " + uri);
-            Console.WriteLine("Starting benchmark...");
+            Console.WriteLine("Benchmarking...");
 
             timer.Start();
             var tasks = Enumerable.Range(0, connections).Select(t => Task.Run(Execute));
 
             var totalRequests = tasks.Sum(t => t.Result);
-            Console.WriteLine($"Made {totalRequests / span.TotalSeconds} requests per second over {span.TotalSeconds} seconds");
+            Console.WriteLine($"Made {totalRequests } requests over {span.TotalSeconds} seconds ({totalRequests / span.TotalSeconds} Rps)");
             clientPool.Dispose();
         }
 

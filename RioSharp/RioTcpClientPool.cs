@@ -81,10 +81,10 @@ namespace RioSharp
                 {
                     var error = Marshal.GetLastWin32Error();
 
-                    if (error != 0 && error != 64 && error != 1225 && error != 735) //connection no longer available
-                        throw new Win32Exception(error);
-                    else if (error != 735)
+                    if (error == 735)
                         break;
+                    else if (error != 0 && error != 64 && error != 1225 && error != 735) //connection no longer available
+                        throw new Win32Exception(error);
                     else
                     {
                         res = allSockets[lpOverlapped->SocketIndex];

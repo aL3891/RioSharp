@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -10,6 +11,13 @@ namespace RioSharp
 {
     public sealed unsafe class RioBufferSegment : IDisposable
     {
+        private static readonly Action _awaitableIsCompleted = () => { };
+        private static readonly Action _awaitableIsNotCompleted = () => { };
+
+        private Action _awaitableState;
+        private readonly ManualResetEventSlim _manualResetEvent = new ManualResetEventSlim(false, 0);
+        private Exception _awaitableError;
+
         RioFixedBufferPool _pool;
         internal int Index;
         internal int TotalLength;
@@ -17,9 +25,7 @@ namespace RioSharp
 
         internal byte* RawPointer;
         internal RIO_BUFSEGMENT* SegmentPointer;
-        internal bool complete;
-        Action _continuation;
-        SpinLock _spinLock = new SpinLock();
+
         bool disposeOnComplete = false;
         WaitCallback _continuationWrapperDelegate;
 
@@ -61,64 +67,83 @@ namespace RioSharp
 
         public void DisposeWhenComplete()
         {
-            bool taken = false;
-            _spinLock.Enter(ref taken);
-
-            disposeOnComplete = !complete;
-
-            _spinLock.Exit();
+            disposeOnComplete = !ReferenceEquals(_awaitableState, _awaitableIsCompleted);
 
             if (!disposeOnComplete)
                 Dispose();
         }
+        
+        internal void SetNotComplete()
+        {
+            Interlocked.Exchange(ref _awaitableState, _awaitableIsNotCompleted);
+            _manualResetEvent.Reset();
+        }
 
         public void Dispose()
         {
-            _continuation = null;
-            complete = false;
+            Interlocked.Exchange(ref _awaitableState, _awaitableIsNotCompleted);
+            _manualResetEvent.Reset();
             disposeOnComplete = false;
             SegmentPointer->Length = TotalLength;
             _pool.ReleaseBuffer(this);
         }
 
-        public bool IsCompleted
-        {
-            get
-            {
-                bool taken = false;
-                _spinLock.Enter(ref taken);
-                if (complete)
-                    _spinLock.Exit();
-                return complete;
-
-            }
-        }
+        public bool IsCompleted => ReferenceEquals(_awaitableState, _awaitableIsCompleted);
 
         public void Set()
         {
-            bool taken = false;
-            _spinLock.Enter(ref taken);
+            var awaitableState = Interlocked.Exchange(ref _awaitableState, _awaitableIsCompleted);
+            _manualResetEvent.Set();
 
-            complete = true;
-            var cont = _continuation;
-            _continuation = null;
-            _spinLock.Exit();
-
-            cont?.Invoke();
+            if (!ReferenceEquals(awaitableState, _awaitableIsCompleted) &&
+                !ReferenceEquals(awaitableState, _awaitableIsNotCompleted))
+            {
+                awaitableState();
+            }
 
             if (disposeOnComplete)
                 Dispose();
-
         }
 
         public void OnCompleted(Action continuation)
         {
-            _continuation = continuation;
-            _spinLock.Exit();
+            var awaitableState = Interlocked.CompareExchange(ref _awaitableState, continuation, _awaitableIsNotCompleted);
+
+            if (ReferenceEquals(awaitableState, _awaitableIsNotCompleted))
+                return;
+
+            else if (ReferenceEquals(awaitableState, _awaitableIsCompleted))
+                ThreadPool.QueueUserWorkItem(o => continuation());
+            else
+            {
+                _awaitableError = new InvalidOperationException("Concurrent operations are not supported.");
+
+                Interlocked.Exchange(ref _awaitableState, _awaitableIsCompleted);
+                _manualResetEvent.Set();
+
+                ThreadPool.QueueUserWorkItem(o => continuation());
+                ThreadPool.QueueUserWorkItem(o => awaitableState());
+            }
         }
 
-        public RioBufferSegment GetResult() => this;
+        public void GetResult()
+        {
+            if (!IsCompleted)
+            {
+                _manualResetEvent.Wait();
+            }
+            var error = _awaitableError;
+            if (error != null)
+            {
+                if (error is TaskCanceledException || error is InvalidOperationException)
+                {
+                    throw error;
+                }
+                throw new IOException(error.Message, error);
+            }
+        }
 
         public RioBufferSegment GetAwaiter() => this;
     }
 }
+    

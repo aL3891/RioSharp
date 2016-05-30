@@ -28,7 +28,7 @@ namespace RioSharp
         {
             unsafe
             {
-                Segment.complete = false;
+                Segment.SetNotComplete();
                 if (!RioStatic.Send(_requestQueue, Segment.SegmentPointer, 1, RIO_SEND_FLAGS.DEFER, Segment.Index))
                     WinSock.ThrowLastWSAError();
             }
@@ -43,7 +43,7 @@ namespace RioSharp
 
         internal unsafe void SendInternal(RioBufferSegment segment, RIO_SEND_FLAGS flags)
         {
-            segment.complete = false;
+            segment.SetNotComplete();
             if (!RioStatic.Send(_requestQueue, segment.SegmentPointer, 1, flags, segment.Index))
                 WinSock.ThrowLastWSAError();
         }
@@ -51,7 +51,7 @@ namespace RioSharp
         public unsafe RioBufferSegment BeginReceive(RioBufferSegment segment)
         {
 
-            segment.complete = false;
+            segment.SetNotComplete();
             if (!RioStatic.Receive(_requestQueue, segment.SegmentPointer, 1, RIO_RECEIVE_FLAGS.NONE, segment.Index))
                 WinSock.ThrowLastWSAError();
 

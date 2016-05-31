@@ -201,4 +201,37 @@ namespace RioSharp
         public override void SetLength(long value) { throw new NotImplementedException(); }
 
     }
+
+    internal class PoolingLinkedList<T>
+    {
+        Node _first, _last;
+        Node _firstFree, _lastFree;
+
+        public void Push(object value)
+        {
+            var n = Interlocked.Exchange(ref _firstFree, _firstFree.Next);
+            var l = Interlocked.Exchange(ref _last.Next, n);
+            while (l != null)
+                l = Interlocked.Exchange(ref _last.Next, n);
+        }
+
+        public T Pop()
+        {
+            T res;
+            var r = Interlocked.Exchange(ref _first, _first.Next);
+            res = r.value;
+            var l = Interlocked.Exchange(ref _lastFree.Next, r);
+            while (l != null)
+                l = Interlocked.Exchange(ref _lastFree.Next, r);
+
+            return res;
+        }
+
+        public class Node
+        {
+            public Node Next;
+            public Node prev;
+            public T value;
+        }
+    }
 }

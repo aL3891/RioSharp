@@ -119,13 +119,13 @@ namespace RioSharp
             while (true)
             {
                 RioStatic.Notify(ReceiveCompletionQueue);
-                WinSock.ThrowLastWSAError();
+                //WinSock.ThrowLastWSAError();
 
                 if (Kernel32.GetQueuedCompletionStatus(ReceiveCompletionPort, out bytes, out key, out overlapped, -1) != 0)
                 {
                     do
                     {
-                        count = RioStatic.DequeueCompletion(ReceiveCompletionQueue, (IntPtr)results, maxResults);
+                        count = RioStatic.DequeueCompletion(ReceiveCompletionQueue, results, maxResults);
                         if (count == 0xFFFFFFFF)
                             WinSock.ThrowLastWSAError();
 
@@ -142,9 +142,8 @@ namespace RioSharp
                 else
                 {
                     var error = Marshal.GetLastWin32Error();
-
                     if (error != 0 && error != 735)
-                        throw new Win32Exception(error);
+                        throw new Win32Exception(error);                                         
                     else
                         break;
                 }
@@ -166,7 +165,7 @@ namespace RioSharp
                 {
                     do
                     {
-                        count = RioStatic.DequeueCompletion(SendCompletionQueue, (IntPtr)results, maxResults);
+                        count = RioStatic.DequeueCompletion(SendCompletionQueue, results, maxResults);
                         if (count == 0xFFFFFFFF)
                             WinSock.ThrowLastWSAError();
                         for (var i = 0; i < count; i++)

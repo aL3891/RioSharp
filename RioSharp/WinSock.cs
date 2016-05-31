@@ -622,7 +622,7 @@ namespace RioSharp
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = false)]
         [SuppressUnmanagedCodeSecurity]
-        internal delegate uint RIODequeueCompletion([In] IntPtr CQ, [In] IntPtr ResultArray, [In] uint ResultArrayLength);
+        internal unsafe delegate uint RIODequeueCompletion([In] IntPtr CQ, [In] RIO_RESULT* ResultArray, [In] uint ResultArrayLength);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = false)]
         [SuppressUnmanagedCodeSecurity]

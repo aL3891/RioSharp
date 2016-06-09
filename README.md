@@ -1,22 +1,25 @@
 # RioSharp
 A .net wrapper around the registered io winsock extensions
 
-This was inspired (and based on) by the work Ben Adams did over at the asp.net 5 benchmarking repo. I wanted to create soemthing similar to the .net socket classes while still retaining the perf of rio.
+This was inspired (and based on) by the work Ben Adams did over at the asp.net 5 benchmarking repo allthough significant changes have now been made. I wanted to create soemthing similar to the .net socket classes while still retaining the perf of rio.
 
-Some other goals are/where
+## Features
+Tcp and udp support
+Listening for incomming connections
+Make outgoing connections
+Implementation of standard .net streams for rio sockets
+Low level api for directly using rio memory segments
 
-* Exposing RIO as regular .net streams
-* Strike a balance between the nature of Rio and the socket apis we're used to
-* Support making outgoing http calls using rio (via HttpClient)
-* Enable high performance benchmarking of tcp/udp and http servers (similar to wrk but on windows)
+The main objective with this project for me was perf, as opposed to security or safety of use. This project i also something i work on in my spare time.
 
-So far the basic tcp/http scenario works, however even that is very experimental and the code can probably be cleaned up significantly. The main objective with this project for me was perf, as opposed to security or safety of use. This project i also something i work on between putting kids to bed and passing out on the couch, so it might not be production level, lets say.
+## Usage
+Rio and rosharp is based on the concept of pools of resources. Rio sharp requires users to specify upfront how many slots of memory should be used and how big they should be, as well as how many concurrent connections to accept. This is because Riosharp creates sockets in advance and reuses them using the AcceptEx windows functions. In order to listen for 10 concurrent incomming connections where memory is read/written in 256 byte chunks the following code would be used.
 
-Currently my road map is something like this:
+    var sendPool = new RioFixedBufferPool(10 , 256);
+    var recivePool = new RioFixedBufferPool(10 , 256 );
+    var listener = new RioTcpListener(sendPool, recivePool, 10);
+    listener.OnAccepted = new Action<RioSocket>(s => ThreadPool.QueueUserWorkItem(o => Serve(o), s));
+    listener.Listen(new IPEndPoint(new IPAddress(new byte[] { 0, 0, 0, 0 }), 5000), 10);
+    
+The Serve() method here is responsible for completley processing the connection and then closing it witch will return in to the pool of incomming sockets. The memory size of 256 does not mean that is the maximum data that can be read or written, its only the batch size for data written and the amount of data that can be read at once. These memory blocks will be allocated upfroont however so its up to the application to optimize this value for memory consumtion and performace. Ideally the size of each segment should represent the size of the data beeing sent/recived.
 
-* Implement support for doing outgoing tcp calls - _Done_
-* Implement simple http server and client for benchmarking - _Done_
-* Implement support for udp - _Done_
-* Implement socket reuse via ConnectEx, AcceptEx and DisconnectEx _Done_
-* Add ctstraffic test client and server - _In progress_
-* Implement httpClient support

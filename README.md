@@ -23,3 +23,9 @@ Rio and rosharp is based on the concept of pools of resources. Rio sharp require
     
 The Serve() method here is responsible for completley processing the connection and then closing it witch will return in to the pool of incomming sockets. The memory size of 256 does not mean that is the maximum data that can be read or written, its only the batch size for data written and the amount of data that can be read at once. These memory blocks will be allocated upfroont however so its up to the application to optimize this value for memory consumtion and performace. Ideally the size of each segment should represent the size of the data beeing sent/recived.
 
+Creating outgoing connections is done in a similar fashion:
+
+    var clientPool = new RioTcpClientPool(sendPool, recivePool, 10);
+    RioSocket connection = await clientPool.Connect(uri);
+    var stream = new RioStream(connection);
+    

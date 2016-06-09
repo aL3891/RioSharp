@@ -3,6 +3,11 @@ A .net wrapper around the registered io winsock extensions
 
 This was inspired (and based on) by the work Ben Adams did over at the asp.net 5 benchmarking repo allthough significant changes have now been made. I wanted to create something similar to the .net socket classes while still retaining the perf of rio.
 
+## Installation
+Riosharp is on nuget:
+    
+    Install-Package RioSharp -Pre 
+
 ## Features
 Tcp and udp support
 Listening for incomming connections

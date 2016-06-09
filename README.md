@@ -9,11 +9,11 @@ Riosharp is on nuget:
     Install-Package RioSharp -Pre 
 
 ## Features
-Tcp and udp support
-Listening for incomming connections
-Make outgoing connections
-Implementation of standard .net streams for rio sockets
-Low level api for directly using rio memory segments
+* Tcp and udp support (as well as other socket types)
+* Listening for incomming connections
+* Make outgoing connections
+* Implementation of standard .net streams for rio sockets
+* Low level api for directly using rio memory segments
 
 The main objective with this project for me was perf, as opposed to security or safety of use. This project i also something i work on in my spare time.
 

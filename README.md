@@ -15,7 +15,7 @@ Riosharp is on nuget:
 * Implementation of standard .net streams for rio sockets
 * Low level api for directly using rio memory segments
 
-The main objective with this project for me was perf, as opposed to security or safety of use. This project i also something i work on in my spare time.
+The main objective with this project is performance, as opposed to security or safety of use.
 
 ## Usage
 Rio and rosharp is based on the concept of pools of resources. Rio sharp requires users to specify upfront how many slots of memory should be used and how big they should be, as well as how many concurrent connections to accept. This is because Riosharp creates sockets in advance and reuses them using the AcceptEx windows functions. In order to listen for 10 concurrent incomming connections where memory is read/written in 256 byte chunks the following code would be used.

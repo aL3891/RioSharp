@@ -3,20 +3,31 @@
   "buildOptions": {
     "emitEntryPoint": true,
     "allowUnsafe": true,
-    "optimize": true
+    "optimize": true,
+    "platform": "x64"
   },
 
   "dependencies": {
     "Microsoft.NETCore.App": {
-      "type": "platform",
-      "version": "1.0.0-rc2-*"
+      "version": "1.0.0"
     },
-    "RioSharp": "0.0.5-alpha"
+    "RioSharp": "0.0.6-beta"
   },
 
   "frameworks": {
     "netcoreapp1.0": {
-      "imports": "dnxcore50"
+
     }
+  },
+
+  "runtimeOptions": {
+    "configProperties": {
+      "System.GC.Server": true
+    }
+  },
+
+  "runtimes": {
+    "win10-x64": ""
   }
+
 }

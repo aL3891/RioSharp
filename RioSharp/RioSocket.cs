@@ -17,6 +17,12 @@ namespace RioSharp
             if ((Socket = WinSock.WSASocket(adressFam, sockType, protocol, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.WSA_FLAG_OVERLAPPED)) == IntPtr.Zero)
                 WinSock.ThrowLastWSAError();
 
+            int True = -1;
+            UInt32 dwBytes = 0;
+
+            WinSock.setsockopt(Socket, WinSock.IPPROTO_TCP, WinSock.TCP_NODELAY, (char*)&True, 4);
+            //WinSock.WSAIoctlGeneral(Socket, WinSock.SIO_LOOPBACK_FAST_PATH, &True, 4, null, 0, out dwBytes, IntPtr.Zero, IntPtr.Zero);
+
             SendBufferPool = sendBufferPool;
             ReceiveBufferPool = receiveBufferPool;
 

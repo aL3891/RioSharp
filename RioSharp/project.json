@@ -1,5 +1,5 @@
 {
-  "version": "0.0.5-alpha",
+  "version": "0.0.6-beta",
 
   "buildOptions": {
     "allowUnsafe": true,
@@ -7,21 +7,22 @@
   },
 
   "dependencies": {
-    "System.Net.NameResolution": "4.0.0-rc2-*",
-    "System.Threading.Overlapped": "4.0.1-rc2-*",
-    "System.Threading.Thread": "4.0.0-rc2-*",
-    "System.Threading.ThreadPool": "4.0.10-rc2-*",
-    "System.Runtime.CompilerServices.Unsafe": "4.0.0-rc3-*",
-    "System.Runtime.InteropServices": "4.1.0-rc2-*",
-    "Microsoft.Win32.Primitives": "4.0.1-rc2-*",
-    "System.Threading": "4.0.11-rc2-*",
-    "System.Collections.Concurrent": "4.0.12-rc2-*",
-    "System.Linq": "4.1.0-rc2-*",
-    "System.Runtime.Extensions": "4.1.0-rc2-*"
+    "System.Net.NameResolution": "4.0.0",
+    "System.Threading.Overlapped": "4.0.1",
+    "System.Threading.Thread": "4.0.0",
+    "System.Threading.ThreadPool": "4.0.10",
+    "System.Runtime.CompilerServices.Unsafe": "4.0.0",
+    "System.Runtime.InteropServices": "4.1.0",
+    "Microsoft.Win32.Primitives": "4.0.1",
+    "System.Threading": "4.0.11",
+    "System.Collections.Concurrent": "4.0.12",
+    "System.Linq": "4.1.0",
+    "System.Runtime.Extensions": "4.1.0"
+    
   },
 
   "frameworks": {
-    "netstandard1.5": {
+    "netstandard1.3": {
 
     }
   }

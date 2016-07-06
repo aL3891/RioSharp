@@ -22,7 +22,7 @@ namespace RioSharp
             UInt32 dwBytes = 0;
 
             WinSock.setsockopt(_listenerSocket, WinSock.IPPROTO_TCP, WinSock.TCP_NODELAY, (char*)&True, 4);
-          //  WinSock.WSAIoctlGeneral(_listenerSocket, WinSock.SIO_LOOPBACK_FAST_PATH, &True, 4, null, 0, out dwBytes, IntPtr.Zero, IntPtr.Zero);
+            WinSock.WSAIoctlGeneral(_listenerSocket, WinSock.SIO_LOOPBACK_FAST_PATH, &True, 4, null, 0, out dwBytes, IntPtr.Zero, IntPtr.Zero);
 
             if ((_listenIocp = Kernel32.CreateIoCompletionPort(_listenerSocket, _listenIocp, 0, 1)) == IntPtr.Zero)
                 Kernel32.ThrowLastError();

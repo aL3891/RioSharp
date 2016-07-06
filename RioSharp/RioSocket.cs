@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -9,7 +10,8 @@ namespace RioSharp
         IntPtr _requestQueue;
         internal IntPtr Socket;
         internal RioFixedBufferPool SendBufferPool, ReceiveBufferPool;
-      
+
+
         internal RioSocket(RioFixedBufferPool sendBufferPool, RioFixedBufferPool receiveBufferPool,
             uint maxOutstandingReceive, uint maxOutstandingSend, IntPtr SendCompletionQueue, IntPtr ReceiveCompletionQueue,
             ADDRESS_FAMILIES adressFam, SOCKET_TYPE sockType, PROTOCOL protocol)
@@ -21,7 +23,7 @@ namespace RioSharp
             UInt32 dwBytes = 0;
 
             WinSock.setsockopt(Socket, WinSock.IPPROTO_TCP, WinSock.TCP_NODELAY, (char*)&True, 4);
-            //WinSock.WSAIoctlGeneral(Socket, WinSock.SIO_LOOPBACK_FAST_PATH, &True, 4, null, 0, out dwBytes, IntPtr.Zero, IntPtr.Zero);
+            WinSock.WSAIoctlGeneral(Socket, WinSock.SIO_LOOPBACK_FAST_PATH, &True, 4, null, 0, out dwBytes, IntPtr.Zero, IntPtr.Zero);
 
             SendBufferPool = sendBufferPool;
             ReceiveBufferPool = receiveBufferPool;
@@ -29,7 +31,7 @@ namespace RioSharp
             _requestQueue = RioStatic.CreateRequestQueue(Socket, maxOutstandingReceive, 1, maxOutstandingSend, 1, ReceiveCompletionQueue, SendCompletionQueue, GetHashCode());
             WinSock.ThrowLastWSAError();
         }
-        
+
         public RioBufferSegment WritePreAllocated(RioBufferSegment Segment)
         {
             unsafe
@@ -51,6 +53,14 @@ namespace RioSharp
         {
             segment.SetNotComplete();
             if (!RioStatic.Send(_requestQueue, segment.SegmentPointer, 1, flags, segment.Index))
+                WinSock.ThrowLastWSAError();
+        }
+
+        internal unsafe void SendInternal(RioBufferSegment segment, IPEndPoint remoteAdress, RIO_SEND_FLAGS flags)
+        {
+            RIO_BUFSEGMENT* nullSegment = (RIO_BUFSEGMENT*)0;
+            segment.SetNotComplete();
+            if (!RioStatic.SendEx(_requestQueue, segment.SegmentPointer, 1, nullSegment, nullSegment, nullSegment, nullSegment, flags, segment.Index))
                 WinSock.ThrowLastWSAError();
         }
 
@@ -83,15 +93,21 @@ namespace RioSharp
         }
 
 
-        public int SetSocketOption(IPPROTO_IP_SocketOptions option, IntPtr value, int valueLength) => WinSock.setsockopt(Socket, WinSock.IPPROTO_IP, (int)option, (char*)value.ToPointer(), valueLength);
+        public int SetSocketOption(IPPROTO_IP_SocketOptions option, void* value, int valueLength) => WinSock.setsockopt(Socket, WinSock.IPPROTO_IP, (int)option, value, valueLength);
 
-        public int SetSocketOption(IPPROTO_IPV6_SocketOptions option, IntPtr value, int valueLength) => WinSock.setsockopt(Socket, WinSock.IPPROTO_IPV6, (int)option, (char*)value.ToPointer(), valueLength);
+        public int SetSocketOption(IPPROTO_IPV6_SocketOptions option, void* value, int valueLength) => WinSock.setsockopt(Socket, WinSock.IPPROTO_IPV6, (int)option, value, valueLength);
 
-        public int SetSocketOption(IPPROTO_TCP_SocketOptions option, IntPtr value, int valueLength) => WinSock.setsockopt(Socket, WinSock.IPPROTO_TCP, (int)option, (char*)value.ToPointer(), valueLength);
+        public int SetSocketOption(IPPROTO_TCP_SocketOptions option, void* value, int valueLength) => WinSock.setsockopt(Socket, WinSock.IPPROTO_TCP, (int)option, value, valueLength);
 
-        public int SetSocketOption(IPPROTO_UDP_SocketOptions option, IntPtr value, int valueLength) => WinSock.setsockopt(Socket, WinSock.IPPROTO_UDP, (int)option, (char*)value.ToPointer(), valueLength);
+        public int SetSocketOption(IPPROTO_UDP_SocketOptions option, void* value, int valueLength) => WinSock.setsockopt(Socket, WinSock.IPPROTO_UDP, (int)option, value, valueLength);
 
-        public int SetSocketOption(SOL_SOCKET_SocketOptions option, IntPtr value, int valueLength) => WinSock.setsockopt(Socket, WinSock.SOL_SOCKET, (int)option, (char*)value.ToPointer(), valueLength);
+        public int SetSocketOption(SOL_SOCKET_SocketOptions option, void* value, int valueLength) => WinSock.setsockopt(Socket, WinSock.SOL_SOCKET, (int)option, value, valueLength);
+
+
+        public int SetSocketOption(MCAST_SocketOptions option, void* value, int valueLength) => WinSock.setsockopt(Socket, WinSock.IPPROTO_IP, (int)option, value, valueLength);
+
+
+        public int GetSocketOption(MCAST_SocketOptions option, IntPtr value, int valueLength) => WinSock.getsockopt(Socket, WinSock.IPPROTO_IP, (int)option, (char*)value.ToPointer(), &valueLength);
 
 
         public int GetSocketOption(IPPROTO_IP_SocketOptions option, IntPtr value, int valueLength) => WinSock.getsockopt(Socket, WinSock.IPPROTO_IP, (int)option, (char*)value.ToPointer(), &valueLength);

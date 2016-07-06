@@ -45,6 +45,9 @@ namespace RioSharp
         internal WinSock.RIOResizeCompletionQueue ResizeCompletionQueue;
         internal WinSock.RIOResizeRequestQueue ResizeRequestQueue;
         internal const long CachedValue = long.MinValue;
+
+        internal WinSock.RIOReceiveEx ReceiveEx;
+        internal WinSock.RIOSendEx SendEx;
     }
 
 
@@ -55,6 +58,8 @@ namespace RioSharp
         internal static WinSock.RIOCreateRequestQueue CreateRequestQueue;
         internal static WinSock.RIOReceive Receive;
         internal static WinSock.RIOSend Send;
+        internal static WinSock.RIOReceiveEx ReceiveEx;
+        internal static WinSock.RIOSendEx SendEx;
         internal static WinSock.RIONotify Notify;
         internal static WinSock.RIOCloseCompletionQueue CloseCompletionQueue;
         internal static WinSock.RIODequeueCompletion DequeueCompletion;
@@ -154,7 +159,10 @@ namespace RioSharp
                 Notify = Marshal.GetDelegateForFunctionPointer<WinSock.RIONotify>(rio.RIONotify);
                 DequeueCompletion = Marshal.GetDelegateForFunctionPointer<WinSock.RIODequeueCompletion>(rio.RIODequeueCompletion);
                 Receive = Marshal.GetDelegateForFunctionPointer<WinSock.RIOReceive>(rio.RIOReceive);
+                ReceiveEx = Marshal.GetDelegateForFunctionPointer<WinSock.RIOReceiveEx>(rio.RIOReceiveEx);
                 Send = Marshal.GetDelegateForFunctionPointer<WinSock.RIOSend>(rio.RIOSend);
+                SendEx = Marshal.GetDelegateForFunctionPointer<WinSock.RIOSendEx>(rio.RIOSendEx);
+
                 CloseCompletionQueue = Marshal.GetDelegateForFunctionPointer<WinSock.RIOCloseCompletionQueue>(rio.RIOCloseCompletionQueue);
                 DeregisterBuffer = Marshal.GetDelegateForFunctionPointer<WinSock.RIODeregisterBuffer>(rio.RIODeregisterBuffer);
                 ResizeCompletionQueue = Marshal.GetDelegateForFunctionPointer<WinSock.RIOResizeCompletionQueue>(rio.RIOResizeCompletionQueue);
@@ -243,8 +251,11 @@ namespace RioSharp
     }
 
     [StructLayout(LayoutKind.Explicit, Size = 4)]
-    internal struct in_addr
+    internal unsafe struct in_addr
     {
+        [FieldOffset(0)]
+        public fixed byte Address[4];
+
         [FieldOffset(0)]
         public byte s_b1;
         [FieldOffset(1)]
@@ -253,6 +264,61 @@ namespace RioSharp
         public byte s_b3;
         [FieldOffset(3)]
         public byte s_b4;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct in6_addr
+    {
+        public fixed byte Address[16];
+    }
+
+
+    //https://msdn.microsoft.com/en-us/library/windows/desktop/ms738695(v=vs.85).aspx
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct ip_mreq
+    {
+        public in_addr imr_multiaddr;
+        public in_addr imr_interface;
+    }
+
+    //https://msdn.microsoft.com/en-us/library/windows/desktop/ms738704(v=vs.85).aspx
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct ip_mreq_source
+    {
+        public in_addr imr_multiaddr;
+        public in_addr imr_sourceaddr;
+        public in_addr imr_interface;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct ipv6_mreq
+    {
+        public in6_addr ipv6mr_multiaddr;
+        public uint ipv6mr_interface;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct group_req
+    {
+        public uint gr_interface;
+        public SOCKADDR_STORAGE gr_group;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct group_source_req
+    {
+        public uint gsr_interface;
+        public SOCKADDR_STORAGE gsr_group;
+        public SOCKADDR_STORAGE gsr_source;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct SOCKADDR_STORAGE
+    {
+        public ADDRESS_FAMILIES AdressFamily;
+        public fixed byte padding1[6];
+        public long ssalign;
+        public fixed byte Address[112];
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -415,6 +481,16 @@ namespace RioSharp
         DEFER = 0x00000002,
         WAITALL = 0x00000004,
         COMMIT_ONLY = 0x00000008
+    }
+
+    public enum MCAST_SocketOptions
+    {
+        MCAST_JOIN_GROUP = 41,  // Join all sources for a group.
+        MCAST_LEAVE_GROUP = 42,  // Drop all sources for a group.
+        MCAST_BLOCK_SOURCE = 43,    // Block IP group/source.
+        MCAST_UNBLOCK_SOURCE = 44,  // Unblock IP group/source.
+        MCAST_JOIN_SOURCE_GROUP = 45,   // Join IP group/source.
+        MCAST_LEAVE_SOURCE_GROUP = 46 // Leave IP group/source.
     }
 
     public enum IPPROTO_IP_SocketOptions
@@ -593,11 +669,21 @@ namespace RioSharp
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = false)]
         [SuppressUnmanagedCodeSecurity]
-        internal unsafe delegate bool RIOSend([In] IntPtr SocketQueue, RIO_BUFSEGMENT* RioBuffer, [In] uint DataBufferCount, [In] RIO_SEND_FLAGS Flags, [In] long RequestCorrelation);
+        internal unsafe delegate bool RIOSend([In] IntPtr SocketQueue, [In] RIO_BUFSEGMENT* RioBuffer, [In] uint DataBufferCount, [In] RIO_SEND_FLAGS Flags, [In] long RequestCorrelation);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = false)]
         [SuppressUnmanagedCodeSecurity]
-        internal unsafe delegate bool RIOReceive([In] IntPtr SocketQueue, RIO_BUFSEGMENT* RioBuffer, [In] uint DataBufferCount, [In] RIO_RECEIVE_FLAGS Flags, [In] long RequestCorrelation);
+        internal unsafe delegate bool RIOSendEx([In] IntPtr SocketQueue, [In]RIO_BUFSEGMENT* RioBuffer, [In] uint DataBufferCount, [In]RIO_BUFSEGMENT* localAdress, [In]RIO_BUFSEGMENT* remoteAdress, [In]RIO_BUFSEGMENT* controlContext, [In]RIO_BUFSEGMENT* pflags, [In] RIO_SEND_FLAGS Flags, [In] long RequestCorrelation);
+
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = false)]
+        [SuppressUnmanagedCodeSecurity]
+        internal unsafe delegate bool RIOReceive([In] IntPtr SocketQueue, [In] RIO_BUFSEGMENT* RioBuffer, [In] uint DataBufferCount, [In] RIO_RECEIVE_FLAGS Flags, [In] long RequestCorrelation);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = false)]
+        [SuppressUnmanagedCodeSecurity]
+        internal unsafe delegate bool RIOReceiveEx([In] IntPtr SocketQueue, [In]RIO_BUFSEGMENT* RioBuffer, [In] uint DataBufferCount, [In]RIO_BUFSEGMENT* localAdress, [In]RIO_BUFSEGMENT* remoteAdress, [In]RIO_BUFSEGMENT* controlContext, [In]RIO_BUFSEGMENT* pflags, [In] RIO_RECEIVE_FLAGS Flags, [In] long RequestCorrelation);
+
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         [SuppressUnmanagedCodeSecurity]
@@ -695,7 +781,9 @@ namespace RioSharp
                     Notify = Marshal.GetDelegateForFunctionPointer<RIONotify>(rio.RIONotify),
                     DequeueCompletion = Marshal.GetDelegateForFunctionPointer<RIODequeueCompletion>(rio.RIODequeueCompletion),
                     Receive = Marshal.GetDelegateForFunctionPointer<RIOReceive>(rio.RIOReceive),
+                    ReceiveEx = Marshal.GetDelegateForFunctionPointer<RIOReceiveEx>(rio.RIOReceiveEx),
                     Send = Marshal.GetDelegateForFunctionPointer<RIOSend>(rio.RIOSend),
+                    SendEx = Marshal.GetDelegateForFunctionPointer<RIOSendEx>(rio.RIOSendEx),
                     CloseCompletionQueue = Marshal.GetDelegateForFunctionPointer<RIOCloseCompletionQueue>(rio.RIOCloseCompletionQueue),
                     DeregisterBuffer = Marshal.GetDelegateForFunctionPointer<RIODeregisterBuffer>(rio.RIODeregisterBuffer),
                     ResizeCompletionQueue = Marshal.GetDelegateForFunctionPointer<RIOResizeCompletionQueue>(rio.RIOResizeCompletionQueue),
@@ -704,7 +792,7 @@ namespace RioSharp
                 return rioFunctions;
             }
         }
-        
+
 
         [DllImport(WS2_32, SetLastError = true)]
         internal static extern int WSAIoctl(
@@ -764,7 +852,7 @@ namespace RioSharp
         internal static extern int listen(IntPtr s, int backlog);
 
         [DllImport(WS2_32, SetLastError = true)]
-        internal unsafe static extern int setsockopt(IntPtr s, int level, int optname, char* optval, int optlen);
+        internal unsafe static extern int setsockopt(IntPtr s, int level, int optname, void* optval, int optlen);
 
         [DllImport(WS2_32, SetLastError = true)]
         internal unsafe static extern int getsockopt(IntPtr s, int level, int optname, char* optval, int* optlen);
@@ -779,7 +867,7 @@ namespace RioSharp
         internal static int ThrowLastWSAError()
         {
             var error = WinSock.WSAGetLastError();
-        
+
             if (error != 0 && error != 997)
             {
                 throw new Win32Exception(error);

@@ -24,10 +24,10 @@ namespace UdpSample
 
 
             NetworkInterface[] nics = NetworkInterface.GetAllNetworkInterfaces();
-            var bajskorv = nics.Where(n => n.Supports(NetworkInterfaceComponent.IPv4)).Select(n => n.GetIPProperties().GetIPv4Properties().Index) ;
+            var n = nics.Where(n => n.Supports(NetworkInterfaceComponent.IPv4)).Select(n => n.GetIPProperties().GetIPv4Properties().Index);
 
 
-            sock.JoinMulticastGroup(new IPAddress(new byte[] { 224, 0, 3, 15 }),0);
+            sock.JoinMulticastGroup(new IPAddress(new byte[] { 224, 0, 3, 15 }), 0);
 
             var name = Guid.NewGuid().ToString();
 

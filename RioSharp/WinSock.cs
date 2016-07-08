@@ -250,6 +250,29 @@ namespace RioSharp
         public fixed byte sin_zero[8];
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    struct sockaddr_in6
+    {
+        public short sin6_family;
+        public ushort sin6_port;
+        public uint sin6_flowinfo;
+        public in6_addr sin6_addr;
+        public uint sin6_scope_id;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    internal unsafe struct SOCKADDR_INET
+    {
+        [FieldOffset(0)]
+        public sockaddr_in Ipv4;
+
+        [FieldOffset(0)]
+        public sockaddr_in6 Ipv6;
+
+        [FieldOffset(0)]
+        public ADDRESS_FAMILIES si_family;
+    }
+
     [StructLayout(LayoutKind.Explicit, Size = 4)]
     internal unsafe struct in_addr
     {

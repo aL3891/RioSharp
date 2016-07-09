@@ -13,8 +13,8 @@ namespace RioSharp
         internal RioConnectionOrientedSocket[] allSockets;
 
         public unsafe RioConnectionOrientedSocketPool(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool, uint socketCount, ADDRESS_FAMILIES adressFam, SOCKET_TYPE sockType, PROTOCOL protocol,
-            uint maxOutstandingReceive = 1024, uint maxOutstandingSend = 1024, uint maxConnections = 1024)
-            : base(sendPool, revicePool, adressFam, sockType, protocol, maxOutstandingReceive, maxOutstandingSend, maxConnections)
+            uint maxOutstandingReceive = 1024, uint maxOutstandingSend = 1024)
+            : base(sendPool, revicePool, adressFam, sockType, protocol, maxOutstandingReceive , maxOutstandingSend , socketCount)
         {
             var adrSize = (sizeof(sockaddr_in) + 16) * 2;
             var overlapped = Marshal.AllocHGlobal(new IntPtr(socketCount * Marshal.SizeOf<RioNativeOverlapped>()));
@@ -24,7 +24,7 @@ namespace RioSharp
 
             for (int i = 0; i < socketCount; i++)
             {
-                allSockets[i] = new RioConnectionOrientedSocket(overlapped + (i * Marshal.SizeOf<RioNativeOverlapped>()), adressBuffer + (i * adrSize), this, SendBufferPool, ReceiveBufferPool, maxOutstandingReceive, maxOutstandingSend, SendCompletionQueue, ReceiveCompletionQueue, adressFam, sockType, protocol);
+                allSockets[i] = new RioConnectionOrientedSocket(overlapped + (i * Marshal.SizeOf<RioNativeOverlapped>()), adressBuffer + (i * adrSize), this, SendBufferPool, ReceiveBufferPool, adressBufferPool, maxOutstandingReceive, maxOutstandingSend, SendCompletionQueue, ReceiveCompletionQueue, adressFam, sockType, protocol);
                 allSockets[i]._overlapped->SocketIndex = i;
             }
 

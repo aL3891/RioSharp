@@ -86,9 +86,8 @@ namespace RioSharp
 
         internal unsafe void SendInternal(RioBufferSegment segment, RioBufferSegment remoteAdress, RIO_SEND_FLAGS flags)
         {
-            RIO_BUFSEGMENT* nullSegment = (RIO_BUFSEGMENT*)0;
             segment.SetNotComplete();
-            if (!RioStatic.SendEx(_requestQueue, segment.SegmentPointer, 1, nullSegment, remoteAdress.SegmentPointer, nullSegment, nullSegment, flags, segment.Index))
+            if (!RioStatic.SendEx(_requestQueue, segment.SegmentPointer, 1, RIO_BUFSEGMENT.NullSegment, remoteAdress.SegmentPointer, RIO_BUFSEGMENT.NullSegment, RIO_BUFSEGMENT.NullSegment, flags, segment.Index))
                 WinSock.ThrowLastWSAError();
         }
 
@@ -111,6 +110,19 @@ namespace RioSharp
             }
             currentSegment.SegmentPointer->Length = buffer.Length;
             SendInternal(currentSegment, RIO_SEND_FLAGS.NONE);
+            currentSegment.DisposeWhenComplete();
+            return currentSegment;
+        }
+
+        public unsafe RioBufferSegment WriteFixed(byte[] buffer, IPEndPoint remoteAdress)
+        {
+            var currentSegment = SendBufferPool.GetBuffer();
+            fixed (byte* p = &buffer[0])
+            {
+                Unsafe.CopyBlock(currentSegment.RawPointer, p, (uint)buffer.Length);
+            }
+            currentSegment.SegmentPointer->Length = buffer.Length;
+            SendInternal(currentSegment, remoteAdress, RIO_SEND_FLAGS.NONE);
             currentSegment.DisposeWhenComplete();
             return currentSegment;
         }

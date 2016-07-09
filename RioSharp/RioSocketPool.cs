@@ -9,11 +9,11 @@ namespace RioSharp
 {
     public abstract class RioSocketPool : IDisposable
     {
-        internal RioFixedBufferPool SendBufferPool, ReceiveBufferPool;
+        internal RioFixedBufferPool SendBufferPool, ReceiveBufferPool, adressBufferPool;
         IntPtr _sendBufferId, _reciveBufferId;
         IntPtr SendCompletionPort, ReceiveCompletionPort;
         protected IntPtr SendCompletionQueue, ReceiveCompletionQueue;
-        protected uint MaxOutstandingReceive, MaxOutstandingSend, MaxOutsandingCompletions;
+        protected uint MaxOutstandingReceive, MaxOutstandingSend, MaxSockets;
         internal ConcurrentDictionary<long, RioSocket> activeSockets = new ConcurrentDictionary<long, RioSocket>();
         protected ADDRESS_FAMILIES adressFam;
         protected SOCKET_TYPE sockType;
@@ -21,13 +21,14 @@ namespace RioSharp
 
 
         public unsafe RioSocketPool(RioFixedBufferPool sendPool, RioFixedBufferPool receivePool, ADDRESS_FAMILIES adressFam, SOCKET_TYPE sockType, PROTOCOL protocol,
-            uint maxOutstandingReceive = 1024, uint maxOutstandingSend = 1024, uint maxOutsandingCompletions = 2048)
+            uint maxOutstandingReceive = 1024, uint maxOutstandingSend = 1024, uint maxSockets = 256, int adressBufferSize = 1024)
         {
             MaxOutstandingReceive = maxOutstandingReceive;
             MaxOutstandingSend = maxOutstandingSend;
-            MaxOutsandingCompletions = maxOutsandingCompletions;
+            MaxSockets = maxSockets;
             SendBufferPool = sendPool;
             ReceiveBufferPool = receivePool;
+            adressBufferPool = new RioFixedBufferPool(adressBufferSize, Marshal.SizeOf<SOCKADDR_INET>());
 
             this.adressFam = adressFam;
             this.sockType = sockType;
@@ -56,6 +57,10 @@ namespace RioSharp
             WinSock.ThrowLastWSAError();
             ReceiveBufferPool.SetBufferId(_reciveBufferId);
 
+            _reciveBufferId = RioStatic.RegisterBuffer(adressBufferPool.BufferPointer, (uint)adressBufferPool.TotalLength);
+            WinSock.ThrowLastWSAError();
+            adressBufferPool.SetBufferId(_reciveBufferId);
+
             var sendCompletionMethod = new RIO_NOTIFICATION_COMPLETION()
             {
                 Type = RIO_NOTIFICATION_COMPLETION_TYPE.IOCP_COMPLETION,
@@ -67,7 +72,7 @@ namespace RioSharp
                 }
             };
 
-            if ((SendCompletionQueue = RioStatic.CreateCompletionQueue(MaxOutsandingCompletions, sendCompletionMethod)) == IntPtr.Zero)
+            if ((SendCompletionQueue = RioStatic.CreateCompletionQueue(MaxOutstandingSend * MaxSockets, sendCompletionMethod)) == IntPtr.Zero)
                 WinSock.ThrowLastWSAError();
 
             var receiveCompletionMethod = new RIO_NOTIFICATION_COMPLETION()
@@ -81,7 +86,7 @@ namespace RioSharp
                 }
             };
 
-            if ((ReceiveCompletionQueue = RioStatic.CreateCompletionQueue(MaxOutsandingCompletions, receiveCompletionMethod)) == IntPtr.Zero)
+            if ((ReceiveCompletionQueue = RioStatic.CreateCompletionQueue(MaxOutstandingReceive * MaxSockets, receiveCompletionMethod)) == IntPtr.Zero)
                 WinSock.ThrowLastWSAError();
 
 
@@ -143,7 +148,7 @@ namespace RioSharp
                 {
                     var error = Marshal.GetLastWin32Error();
                     if (error != 0 && error != 735)
-                        throw new Win32Exception(error);                                         
+                        throw new Win32Exception(error);
                     else
                         break;
                 }

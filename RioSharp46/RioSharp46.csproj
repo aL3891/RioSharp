@@ -72,6 +72,9 @@
     <Compile Include="..\RioSharp\RioFixedBufferPool.cs">
       <Link>RioFixedBufferPool.cs</Link>
     </Compile>
+    <Compile Include="..\RioSharp\RioSegmentReader.cs">
+      <Link>RioSegmentReader.cs</Link>
+    </Compile>
     <Compile Include="..\RioSharp\RioSocket.cs">
       <Link>RioSocket.cs</Link>
     </Compile>

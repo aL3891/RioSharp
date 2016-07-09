@@ -7,6 +7,8 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using System.Net.NetworkInformation;
+using System.Diagnostics;
+using System.Threading;
 
 namespace UdpSample
 {
@@ -14,20 +16,26 @@ namespace UdpSample
     {
         public static unsafe void Main(string[] args)
         {
-
             var sendPool = new RioFixedBufferPool(10, 256);
             var recivePool = new RioFixedBufferPool(10, 256);
 
             var pool = new RioConnectionlessSocketPool(sendPool, recivePool, ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_DGRAM, PROTOCOL.IPPROTO_UDP);
 
-            var sock = pool.Bind(new IPEndPoint(new IPAddress(new byte[] { 0, 0, 0, 0 }), 3000));
+            RioConnectionlessSocket sock = null;
+
+            try
+            {
+                sock = pool.Bind(new IPEndPoint(new IPAddress(new byte[] { 0, 0, 0, 0 }), 3000));
+            }
+            catch (Exception)
+            {
+                sock = pool.Create();
+            }
+
+            var nics = NetworkInterface.GetAllNetworkInterfaces().Where(n => n.Supports(NetworkInterfaceComponent.IPv4)).Select(n => n.GetIPProperties().GetIPv4Properties().Index);
 
 
-            NetworkInterface[] nics = NetworkInterface.GetAllNetworkInterfaces();
-            var n = nics.Where(n => n.Supports(NetworkInterfaceComponent.IPv4)).Select(n => n.GetIPProperties().GetIPv4Properties().Index);
-
-
-            sock.JoinMulticastGroup(new IPAddress(new byte[] { 224, 0, 3, 15 }), 0);
+            sock.JoinMulticastGroup(new IPAddress(new byte[] { 224, 0, 3, 15 }), 7);
 
             var name = Guid.NewGuid().ToString();
 
@@ -37,9 +45,9 @@ namespace UdpSample
 
             while (true)
             {
-                sock.WriteFixed(Encoding.ASCII.GetBytes("Hi, my name is " + name));
+                sock.WriteFixed(Encoding.ASCII.GetBytes("Hi, my name is " + name), new IPEndPoint(new IPAddress(new byte[] { 224, 0, 3, 15 }), 3000));
+                Thread.Sleep(500);
             }
-
         }
     }
 }

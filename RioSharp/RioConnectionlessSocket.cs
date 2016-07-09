@@ -11,10 +11,10 @@ namespace RioSharp
 {
     public class RioConnectionlessSocket : RioSocket
     {
-        internal RioConnectionlessSocket(RioSocketPool pool, RioFixedBufferPool sendBufferPool, RioFixedBufferPool receiveBufferPool,
+        internal RioConnectionlessSocket(RioSocketPool pool, RioFixedBufferPool sendBufferPool, RioFixedBufferPool receiveBufferPool, RioFixedBufferPool adressBufferPool,
             uint maxOutstandingReceive, uint maxOutstandingSend, IntPtr SendCompletionQueue, IntPtr ReceiveCompletionQueue,
             ADDRESS_FAMILIES adressFam, SOCKET_TYPE sockType, PROTOCOL protocol) :
-            base(sendBufferPool, receiveBufferPool, maxOutstandingReceive, maxOutstandingSend,
+            base(sendBufferPool, receiveBufferPool, adressBufferPool, maxOutstandingReceive, maxOutstandingSend,
                 SendCompletionQueue, ReceiveCompletionQueue,
                 adressFam, sockType, protocol) //ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_DGRAM, PROTOCOL.IPPROTO_UDP
         {

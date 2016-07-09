@@ -24,7 +24,8 @@ namespace RioSharp
 
         public unsafe void EnableMulticast()
         {
-            SetSocketOption(SOL_SOCKET_SocketOptions.SO_BROADCAST, new IntPtr(1).ToPointer(), IntPtr.Size);
+            byte v = 1;
+            SetSocketOption(SOL_SOCKET_SocketOptions.SO_BROADCAST, &v, 1);
         }
 
         //public unsafe void JoinMulticastGroup(IPAddress groupAdress, uint interfaceIndex = 0)

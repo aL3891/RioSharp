@@ -22,8 +22,8 @@ namespace RioSharp
             int True = -1;
             UInt32 dwBytes = 0;
 
-            WinSock.setsockopt(Socket, WinSock.IPPROTO_TCP, WinSock.TCP_NODELAY, (char*)&True, 4);
-            WinSock.WSAIoctlGeneral(Socket, WinSock.SIO_LOOPBACK_FAST_PATH, &True, 4, null, 0, out dwBytes, IntPtr.Zero, IntPtr.Zero);
+            //WinSock.setsockopt(Socket, WinSock.IPPROTO_TCP, WinSock.TCP_NODELAY, (char*)&True, 4);
+            //WinSock.WSAIoctlGeneral(Socket, WinSock.SIO_LOOPBACK_FAST_PATH, &True, 4, null, 0, out dwBytes, IntPtr.Zero, IntPtr.Zero);
 
             SendBufferPool = sendBufferPool;
             ReceiveBufferPool = receiveBufferPool;
@@ -77,9 +77,7 @@ namespace RioSharp
 
         internal unsafe void SendInternal(RioBufferSegment segment, IPEndPoint remoteAdress, RIO_SEND_FLAGS flags)
         {
-
             var adresssegment = AllocateAdress(remoteAdress);
-
             SendInternal(segment, adresssegment, flags);
             adresssegment.Dispose();
         }
@@ -93,7 +91,7 @@ namespace RioSharp
 
         public unsafe RioBufferSegment BeginReceive(RioBufferSegment segment)
         {
-
+            segment.SegmentPointer->Length = segment.TotalLength;
             segment.SetNotComplete();
             if (!RioStatic.Receive(_requestQueue, segment.SegmentPointer, 1, RIO_RECEIVE_FLAGS.NONE, segment.Index))
                 WinSock.ThrowLastWSAError();

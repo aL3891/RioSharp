@@ -14,15 +14,25 @@ namespace RioSharp
         {
 
         }
-
-        public RioConnectionlessSocket Create()
+        
+        /// <summary>
+        /// Binds a socket to the default ip and port
+        /// </summary>
+        /// <returns></returns>
+        public RioConnectionlessSocket Bind()
         {
-            return new RioConnectionlessSocket(this, SendBufferPool, ReceiveBufferPool, adressBufferPool, MaxOutstandingReceive, MaxOutstandingSend, SendCompletionQueue, ReceiveCompletionQueue, adressFam, sockType, protocol);
+            return Bind(new IPEndPoint(new IPAddress(new byte[] { 0, 0, 0, 0 }), 0));
         }
 
+        /// <summary>
+        /// Binds a socket to a local ip and port, 
+        /// for multicast applications sending to a destinations on the same machine, use port 0
+        /// </summary>
+        /// <param name="localEP"></param>
+        /// <returns></returns>
         public RioConnectionlessSocket Bind(IPEndPoint localEP)
         {
-            var socket = Create();
+            var socket = new RioConnectionlessSocket(this, SendBufferPool, ReceiveBufferPool, adressBufferPool, MaxOutstandingReceive, MaxOutstandingSend, SendCompletionQueue, ReceiveCompletionQueue, adressFam, sockType, protocol); 
 
             in_addr inAddress = new in_addr();
             inAddress.s_b1 = localEP.Address.GetAddressBytes()[0];

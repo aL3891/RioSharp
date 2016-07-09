@@ -18,10 +18,10 @@ namespace UdpSample
         {
             var sendPool = new RioFixedBufferPool(10, 256);
             var recivePool = new RioFixedBufferPool(10, 256);
-
             var pool = new RioConnectionlessSocketPool(sendPool, recivePool, ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_DGRAM, PROTOCOL.IPPROTO_UDP);
-
             RioConnectionlessSocket sock = null;
+
+            var multicastAdress = IPAddress.Parse("238.0.3.15");
 
             try
             {
@@ -29,24 +29,23 @@ namespace UdpSample
             }
             catch (Exception)
             {
-                sock = pool.Create();
+                sock = pool.Bind();
             }
 
-            var nics = NetworkInterface.GetAllNetworkInterfaces().Where(n => n.Supports(NetworkInterfaceComponent.IPv4)).Select(n => n.GetIPProperties().GetIPv4Properties().Index);
+            var nics = NetworkInterface.GetAllNetworkInterfaces()
+                .Where(n => n.Supports(NetworkInterfaceComponent.IPv4))
+                .Select(n => new { n.GetIPProperties().GetIPv4Properties().Index });
 
-
-            sock.JoinMulticastGroup(new IPAddress(new byte[] { 224, 0, 3, 15 }), 7);
-
-            var name = Guid.NewGuid().ToString();
+            sock.JoinMulticastGroup(multicastAdress, 0);
 
             RioSegmentReader r = new RioSegmentReader(sock);
             r.OnIncommingSegment = segment => Console.WriteLine(Encoding.ASCII.GetString(segment.Datapointer, segment.CurrentContentLength));
             r.Start();
-
+            
             while (true)
             {
-                sock.WriteFixed(Encoding.ASCII.GetBytes("Hi, my name is " + name), new IPEndPoint(new IPAddress(new byte[] { 224, 0, 3, 15 }), 3000));
-                Thread.Sleep(500);
+                sock.WriteFixed(Encoding.ASCII.GetBytes("Hello, i'm process " + Process.GetCurrentProcess().Id), new IPEndPoint(multicastAdress, 3000));
+                Thread.Sleep(1000);
             }
         }
     }

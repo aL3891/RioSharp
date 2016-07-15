@@ -18,11 +18,13 @@ namespace RioSharp
             if ((_listenerSocket = WinSock.WSASocket(adressFam, sockType, protocol, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.WSA_FLAG_OVERLAPPED)) == IntPtr.Zero)
                 WinSock.ThrowLastWSAError();
 
-            int True = -1;
-            UInt32 dwBytes = 0;
+            int True = 1;
+            uint dwBytes = 0;
 
-            WinSock.setsockopt(_listenerSocket, WinSock.IPPROTO_TCP, WinSock.TCP_NODELAY, (char*)&True, 4);
-            WinSock.WSAIoctlGeneral(_listenerSocket, WinSock.SIO_LOOPBACK_FAST_PATH, &True, 4, null, 0, out dwBytes, IntPtr.Zero, IntPtr.Zero);
+            if (WinSock.WSAIoctlGeneral2(_listenerSocket, WinSock.SIO_LOOPBACK_FAST_PATH, &True, sizeof(int), (void*)0, 0, out dwBytes, IntPtr.Zero, IntPtr.Zero) != 0)
+                WinSock.ThrowLastWSAError();
+            if (WinSock.setsockopt(_listenerSocket, WinSock.IPPROTO_TCP, WinSock.TCP_NODELAY, &True, 4) != 0)
+                WinSock.ThrowLastWSAError();
 
             if ((_listenIocp = Kernel32.CreateIoCompletionPort(_listenerSocket, _listenIocp, 0, 1)) == IntPtr.Zero)
                 Kernel32.ThrowLastError();

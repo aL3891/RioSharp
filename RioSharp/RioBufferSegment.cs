@@ -24,21 +24,19 @@ namespace RioSharp
         public int CurrentContentLength => SegmentPointer->Length;
 
         internal byte* RawPointer;
-        internal RIO_BUFSEGMENT* SegmentPointer;
+        internal RIO_BUF* SegmentPointer;
 
         bool disposeOnComplete = false;
         WaitCallback _continuationWrapperDelegate;
 
         public byte* Datapointer => RawPointer;
 
-        public int GetData(byte[] data, int offset)
+        public unsafe int GetData(byte[] data, int offset)
         {
             var l = Math.Min((data.Length - offset), CurrentContentLength);
-            unsafe
-            {
-                fixed (void* p = &data[0])
-                    Unsafe.CopyBlock(p, RawPointer, (uint)l);
-            }
+
+            fixed (void* p = &data[0])
+                Unsafe.CopyBlock(p, RawPointer, (uint)l);
 
             return l;
         }
@@ -51,7 +49,7 @@ namespace RioSharp
 
             var offset = index * Length;
             RawPointer = (byte*)(bufferStartPointer + offset).ToPointer();
-            SegmentPointer = (RIO_BUFSEGMENT*)(segmentStartPointer + index * Marshal.SizeOf<RIO_BUFSEGMENT>()).ToPointer();
+            SegmentPointer = (RIO_BUF*)(segmentStartPointer + index * Marshal.SizeOf<RIO_BUF>()).ToPointer();
 
             SegmentPointer->BufferId = IntPtr.Zero;
             SegmentPointer->Offset = offset;
@@ -72,7 +70,7 @@ namespace RioSharp
             if (!disposeOnComplete)
                 Dispose();
         }
-        
+
         internal void SetNotComplete()
         {
             Interlocked.Exchange(ref _awaitableState, _awaitableIsNotCompleted);
@@ -146,4 +144,3 @@ namespace RioSharp
         public RioBufferSegment GetAwaiter() => this;
     }
 }
-    

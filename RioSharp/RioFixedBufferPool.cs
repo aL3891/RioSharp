@@ -20,7 +20,7 @@ namespace RioSharp
             TotalLength = segmentCount * segmentLength;
             BufferPointer = Kernel32.VirtualAlloc(IntPtr.Zero, (uint)TotalLength, 0x00001000 | 0x00002000, 0x04);
             
-            _segmentpointer = Kernel32.VirtualAlloc(IntPtr.Zero, (uint)(Marshal.SizeOf<RIO_BUFSEGMENT>() * segmentCount), 0x00001000 | 0x00002000, 0x04);
+            _segmentpointer = Kernel32.VirtualAlloc(IntPtr.Zero, (uint)(Marshal.SizeOf<RIO_BUF>() * segmentCount), 0x00001000 | 0x00002000, 0x04);
 
             for (int i = 0; i < segmentCount; i++)
             {

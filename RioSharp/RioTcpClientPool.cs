@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
@@ -23,17 +24,8 @@ namespace RioSharp
             {
                 _freeSockets.Enqueue(s);
 
-                in_addr inAddress = new in_addr();
-                inAddress.s_b1 = 0;
-                inAddress.s_b2 = 0;
-                inAddress.s_b3 = 0;
-                inAddress.s_b4 = 0;
-
                 sockaddr_in sa = new sockaddr_in();
                 sa.sin_family = adressFam;
-                sa.sin_port = 0;
-                //Imports.ThrowLastWSAError();
-                sa.sin_addr = inAddress;
 
                 unsafe
                 {
@@ -98,19 +90,15 @@ namespace RioSharp
 
         public unsafe Task<RioSocket> Connect(Uri adress)
         {
-            var adr = Dns.GetHostAddressesAsync(adress.Host).Result.First(i => i.AddressFamily == AddressFamily.InterNetwork);
-
-            in_addr inAddress = new in_addr();
-            inAddress.s_b1 = adr.GetAddressBytes()[0];
-            inAddress.s_b2 = adr.GetAddressBytes()[1];
-            inAddress.s_b3 = adr.GetAddressBytes()[2];
-            inAddress.s_b4 = adr.GetAddressBytes()[3];
+            var ip = Dns.GetHostAddressesAsync(adress.Host).Result.First(i => i.AddressFamily == AddressFamily.InterNetwork);
 
             sockaddr_in sa = new sockaddr_in();
             sa.sin_family = adressFam;
             sa.sin_port = WinSock.htons((ushort)adress.Port);
-            //Imports.ThrowLastWSAError();
-            sa.sin_addr = inAddress;
+            
+            var ipBytes = ip.GetAddressBytes();
+            fixed (byte* a = ipBytes)
+                Unsafe.CopyBlock(sa.sin_addr.Address, a, (uint)ipBytes.Length);
 
             RioConnectionOrientedSocket s;
             _freeSockets.TryDequeue(out s);

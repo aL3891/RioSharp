@@ -204,8 +204,8 @@ namespace RioSharp
 
     internal class PoolingLinkedList<T>
     {
-        Node _first, _last;
-        Node _firstFree, _lastFree;
+        Node _first = null, _last = null;
+        Node _firstFree = null, _lastFree = null;
 
         public void Push(object value)
         {
@@ -229,9 +229,9 @@ namespace RioSharp
 
         public class Node
         {
-            public Node Next;
-            public Node prev;
-            public T value;
+            public Node Next = null;
+            public Node prev = null;
+            public T value = default(T);
         }
     }
 }

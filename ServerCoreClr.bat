@@ -1,1 +1,1 @@
-dotnet RioSharp.BenchServer\bin\Release\netcoreapp1.0\RioSharp.BenchServer.dll -p16 -c1024
+RioSharp.BenchServer\bin\Release\netcoreapp1.0\win10-x64\RioSharp.BenchServer.exe -p16 -c1024

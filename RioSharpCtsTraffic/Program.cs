@@ -53,16 +53,18 @@ namespace RioSharpCtsTraffic
 
         public static void ListenTcp()
         {
-            RioTcpListener l = new RioTcpListener(new RioFixedBufferPool(16000, 65536), new RioFixedBufferPool(16000, 65536), (uint)Connections*2,16000,16000);
+            RioTcpListener l = new RioTcpListener(new RioFixedBufferPool(16000, 65536), new RioFixedBufferPool(16000, 65536), (uint)Connections * 2, 16000, 16000);
             l.OnAccepted = s =>
             {
                 RioStream r = new RioStream(s);
                 int totalRecived = 0;
                 int currentRecived = 0;
+                var reader = new RioSegmentReader(s);
+
                 var pb = new byte[PullBytes];
                 if (Pattern == "PushPull")
                 {
-                    s.OnIncommingSegment = seg =>
+                    reader.OnIncommingSegment = seg =>
                     {
                         totalRecived += seg.CurrentContentLength;
                         currentRecived += seg.CurrentContentLength;
@@ -73,22 +75,23 @@ namespace RioSharpCtsTraffic
                             currentRecived = 0;
                         }
                     };
+                    reader.Start();
                 }
                 else if (Pattern == "Pull")
                     r.Write(new byte[Transfer], 0, Transfer);
                 //s.WriteFixed(new byte[Transfer]);
                 else if (Pattern == "Push")
                 {
-                    s.OnIncommingSegment = seg =>
+                    reader.OnIncommingSegment = seg =>
                     {
                         totalRecived += seg.CurrentContentLength;
                     };
-                    s.BeginReceive();
+                    reader.Start();
                 }
                 else if (Pattern == "Duplex")
                 {
                     s.WriteFixed(new byte[Transfer / 2]);
-                    s.OnIncommingSegment = seg =>
+                    reader.OnIncommingSegment = seg =>
                     {
                         totalRecived += seg.CurrentContentLength;
                         //if (apa >= Transfer / 2)
@@ -109,6 +112,7 @@ namespace RioSharpCtsTraffic
             for (int i = 0; i < Iterations; i++)
             {
                 var s = await l.Connect(new Uri(Target));
+                var reader = new RioSegmentReader(s);
 
                 if (Pattern == "PushPull")
                 {
@@ -116,7 +120,7 @@ namespace RioSharpCtsTraffic
                     {
                         tcs = new TaskCompletionSource<object>();
                         s.WriteFixed(new byte[PushBytes]);
-                        s.OnIncommingSegment = seg =>
+                        reader.OnIncommingSegment = seg =>
                         {
                             totalBytesRecived += seg.CurrentContentLength;
                             currentRecived += seg.CurrentContentLength;
@@ -132,7 +136,7 @@ namespace RioSharpCtsTraffic
                 {
                     tcs = new TaskCompletionSource<object>();
 
-                    s.OnIncommingSegment = seg =>
+                    reader.OnIncommingSegment = seg =>
                     {
                         totalBytesRecived += seg.CurrentContentLength;
                         if (totalBytesRecived >= Transfer)
@@ -144,7 +148,7 @@ namespace RioSharpCtsTraffic
                 {
                     tcs = new TaskCompletionSource<object>();
                     s.WriteFixed(new byte[Transfer / 2]);
-                    s.OnIncommingSegment = seg =>
+                    reader.OnIncommingSegment = seg =>
                     {
                         totalBytesRecived += seg.CurrentContentLength;
                         if (totalBytesRecived >= Transfer / 2)

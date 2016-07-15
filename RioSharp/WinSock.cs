@@ -345,11 +345,11 @@ namespace RioSharp
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct RIO_BUFSEGMENT
+    internal unsafe struct RIO_BUF
     {
-        public static RIO_BUFSEGMENT* NullSegment = (RIO_BUFSEGMENT*)new IntPtr().ToPointer();
+        public static RIO_BUF* NullSegment = (RIO_BUF*)new IntPtr().ToPointer();
 
-        internal RIO_BUFSEGMENT(IntPtr bufferId, int offset, int length) // should be longs?
+        internal RIO_BUF(IntPtr bufferId, int offset, int length) // should be longs?
         {
             BufferId = bufferId;
             Offset = offset;
@@ -692,20 +692,20 @@ namespace RioSharp
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = false)]
         [SuppressUnmanagedCodeSecurity]
-        internal unsafe delegate bool RIOSend([In] IntPtr SocketQueue, [In] RIO_BUFSEGMENT* RioBuffer, [In] uint DataBufferCount, [In] RIO_SEND_FLAGS Flags, [In] long RequestCorrelation);
+        internal unsafe delegate bool RIOSend([In] IntPtr SocketQueue, [In] RIO_BUF* RioBuffer, [In] uint DataBufferCount, [In] RIO_SEND_FLAGS Flags, [In] long RequestCorrelation);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = false)]
         [SuppressUnmanagedCodeSecurity]
-        internal unsafe delegate bool RIOSendEx([In] IntPtr SocketQueue, [In]RIO_BUFSEGMENT* RioBuffer, [In] uint DataBufferCount, [In]RIO_BUFSEGMENT* localAdress, [In]RIO_BUFSEGMENT* remoteAdress, [In]RIO_BUFSEGMENT* controlContext, [In]RIO_BUFSEGMENT* pflags, [In] RIO_SEND_FLAGS Flags, [In] long RequestCorrelation);
+        internal unsafe delegate bool RIOSendEx([In] IntPtr SocketQueue, [In]RIO_BUF* RioBuffer, [In] uint DataBufferCount, [In]RIO_BUF* localAdress, [In]RIO_BUF* remoteAdress, [In]RIO_BUF* controlContext, [In]RIO_BUF* pflags, [In] RIO_SEND_FLAGS Flags, [In] long RequestCorrelation);
 
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = false)]
         [SuppressUnmanagedCodeSecurity]
-        internal unsafe delegate bool RIOReceive([In] IntPtr SocketQueue, [In] RIO_BUFSEGMENT* RioBuffer, [In] uint DataBufferCount, [In] RIO_RECEIVE_FLAGS Flags, [In] long RequestCorrelation);
+        internal unsafe delegate bool RIOReceive([In] IntPtr SocketQueue, [In] RIO_BUF* RioBuffer, [In] uint DataBufferCount, [In] RIO_RECEIVE_FLAGS Flags, [In] long RequestCorrelation);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = false)]
         [SuppressUnmanagedCodeSecurity]
-        internal unsafe delegate bool RIOReceiveEx([In] IntPtr SocketQueue, [In]RIO_BUFSEGMENT* RioBuffer, [In] uint DataBufferCount, [In]RIO_BUFSEGMENT* localAdress, [In]RIO_BUFSEGMENT* remoteAdress, [In]RIO_BUFSEGMENT* controlContext, [In]RIO_BUFSEGMENT* pflags, [In] RIO_RECEIVE_FLAGS Flags, [In] long RequestCorrelation);
+        internal unsafe delegate bool RIOReceiveEx([In] IntPtr SocketQueue, [In]RIO_BUF* RioBuffer, [In] uint DataBufferCount, [In]RIO_BUF* localAdress, [In]RIO_BUF* remoteAdress, [In]RIO_BUF* controlContext, [In]RIO_BUF* pflags, [In] RIO_RECEIVE_FLAGS Flags, [In] long RequestCorrelation);
 
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
@@ -847,6 +847,19 @@ namespace RioSharp
         );
 
         [DllImport(WS2_32, SetLastError = true, EntryPoint = "WSAIoctl")]
+        internal unsafe static extern int WSAIoctlGeneral2(
+  [In] IntPtr socket,
+  [In] uint dwIoControlCode,
+  [In] void* lpvInBuffer,
+  [In] uint cbInBuffer,
+  [In] void* lpvOutBuffer,
+  [In] int cbOutBuffer,
+  [Out] out uint lpcbBytesReturned,
+  [In] IntPtr lpOverlapped,
+  [In] IntPtr lpCompletionRoutine
+);
+
+        [DllImport(WS2_32, SetLastError = true, EntryPoint = "WSAIoctl")]
         internal unsafe static extern int WSAIoctl2(
           [In] IntPtr socket,
           [In] uint dwIoControlCode,
@@ -914,7 +927,7 @@ namespace RioSharp
         internal const uint IOC_VENDOR = 0x18000000;
         internal const uint SIO_GET_EXTENSION_FUNCTION_POINTER = IOC_INOUT | IOC_WS2 | 6;
         internal const uint SIO_GET_MULTIPLE_EXTENSION_FUNCTION_POINTER = IOC_INOUT | IOC_WS2 | 36;
-        internal const uint SIO_LOOPBACK_FAST_PATH = IOC_IN | IOC_WS2 | 16;
+        internal const uint SIO_LOOPBACK_FAST_PATH = IOC_IN | IOC_VENDOR | 16;
         internal const int TCP_NODELAY = 0x0001;
 
 

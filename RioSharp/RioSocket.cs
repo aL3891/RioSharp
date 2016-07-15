@@ -19,18 +19,23 @@ namespace RioSharp
             if ((Socket = WinSock.WSASocket(adressFam, sockType, protocol, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.WSA_FLAG_OVERLAPPED)) == IntPtr.Zero)
                 WinSock.ThrowLastWSAError();
 
-            int True = -1;
-            UInt32 dwBytes = 0;
+            int True = 1;
+            uint dwBytes = 0;
 
-            //WinSock.setsockopt(Socket, WinSock.IPPROTO_TCP, WinSock.TCP_NODELAY, (char*)&True, 4);
-            //WinSock.WSAIoctlGeneral(Socket, WinSock.SIO_LOOPBACK_FAST_PATH, &True, 4, null, 0, out dwBytes, IntPtr.Zero, IntPtr.Zero);
+            if (WinSock.WSAIoctlGeneral2(Socket, WinSock.SIO_LOOPBACK_FAST_PATH, &True, sizeof(int), (void*)0, 0, out dwBytes, IntPtr.Zero, IntPtr.Zero) != 0)
+                WinSock.ThrowLastWSAError();
+            if (WinSock.setsockopt(Socket, WinSock.IPPROTO_TCP, WinSock.TCP_NODELAY, &True, 4) != 0)
+                WinSock.ThrowLastWSAError();
 
             SendBufferPool = sendBufferPool;
             ReceiveBufferPool = receiveBufferPool;
             AdressPool = adressBufferPool;
 
-            _requestQueue = RioStatic.CreateRequestQueue(Socket, maxOutstandingReceive, 1, maxOutstandingSend, 1, ReceiveCompletionQueue, SendCompletionQueue, GetHashCode());
+            _requestQueue = RioStatic.CreateRequestQueue(Socket, maxOutstandingReceive - 1, 1, maxOutstandingSend - 1, 1, ReceiveCompletionQueue, SendCompletionQueue, GetHashCode());
             WinSock.ThrowLastWSAError();
+
+
+
         }
 
         public RioBufferSegment WritePreAllocated(RioBufferSegment Segment)
@@ -46,7 +51,7 @@ namespace RioSharp
 
         internal unsafe void CommitSend()
         {
-            if (!RioStatic.Send(_requestQueue, RIO_BUFSEGMENT.NullSegment, 0, RIO_SEND_FLAGS.COMMIT_ONLY, 0))
+            if (!RioStatic.Send(_requestQueue, RIO_BUF.NullSegment, 0, RIO_SEND_FLAGS.COMMIT_ONLY, 0))
                 WinSock.ThrowLastWSAError();
         }
 
@@ -85,7 +90,7 @@ namespace RioSharp
         internal unsafe void SendInternal(RioBufferSegment segment, RioBufferSegment remoteAdress, RIO_SEND_FLAGS flags)
         {
             segment.SetNotComplete();
-            if (!RioStatic.SendEx(_requestQueue, segment.SegmentPointer, 1, RIO_BUFSEGMENT.NullSegment, remoteAdress.SegmentPointer, RIO_BUFSEGMENT.NullSegment, RIO_BUFSEGMENT.NullSegment, flags, segment.Index))
+            if (!RioStatic.SendEx(_requestQueue, segment.SegmentPointer, 1, RIO_BUF.NullSegment, remoteAdress.SegmentPointer, RIO_BUF.NullSegment, RIO_BUF.NullSegment, flags, segment.Index))
                 WinSock.ThrowLastWSAError();
         }
 

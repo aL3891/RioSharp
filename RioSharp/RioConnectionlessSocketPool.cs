@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace RioSharp
@@ -30,20 +31,16 @@ namespace RioSharp
         /// </summary>
         /// <param name="localEP"></param>
         /// <returns></returns>
-        public RioConnectionlessSocket Bind(IPEndPoint localEP)
+        public unsafe RioConnectionlessSocket Bind(IPEndPoint localEP)
         {
             var socket = new RioConnectionlessSocket(this, SendBufferPool, ReceiveBufferPool, adressBufferPool, MaxOutstandingReceive, MaxOutstandingSend, SendCompletionQueue, ReceiveCompletionQueue, adressFam, sockType, protocol); 
-
-            in_addr inAddress = new in_addr();
-            inAddress.s_b1 = localEP.Address.GetAddressBytes()[0];
-            inAddress.s_b2 = localEP.Address.GetAddressBytes()[1];
-            inAddress.s_b3 = localEP.Address.GetAddressBytes()[2];
-            inAddress.s_b4 = localEP.Address.GetAddressBytes()[3];
-
+            
             sockaddr_in sa = new sockaddr_in();
             sa.sin_family = ADDRESS_FAMILIES.AF_INET;
             sa.sin_port = WinSock.htons((ushort)localEP.Port);
-            sa.sin_addr = inAddress;
+            var ipBytes = localEP.Address.GetAddressBytes();
+            fixed (byte* a = ipBytes)
+                Unsafe.CopyBlock(sa.sin_addr.Address, a, (uint)ipBytes.Length);
 
             unsafe
             {

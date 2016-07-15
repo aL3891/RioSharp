@@ -32,7 +32,7 @@ namespace RioSharp.BenchClient
             clientPool = new RioTcpClientPool(new RioFixedBufferPool(1000, (256 * pipeLineDeph)), new RioFixedBufferPool(1000, (256 * pipeLineDeph)), (uint)connections);
             timer = new Stopwatch();
             span = TimeSpan.FromSeconds(int.Parse(args.FirstOrDefault(f => f.StartsWith("-d"))?.Substring(2) ?? "5"));
-            uri = new Uri(args.FirstOrDefault(a => !a.StartsWith("-")) ?? "http://localhost:5000");
+            uri = new Uri(args.FirstOrDefault(a => !a.StartsWith("-")) ?? "http://localhost:5000/plaintext");
             keepAlive = true;
             requestBytes = Enumerable.Repeat(_requestBytes, pipeLineDeph).SelectMany(b => b).ToArray();
 

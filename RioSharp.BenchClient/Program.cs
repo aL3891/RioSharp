@@ -29,9 +29,9 @@ namespace RioSharp.BenchClient
         {
             pipeLineDeph = int.Parse(args.FirstOrDefault(f => f.StartsWith("-p"))?.Substring(2) ?? "16");
             int connections = int.Parse(args.FirstOrDefault(f => f.StartsWith("-c"))?.Substring(2) ?? "512");
-            clientPool = new RioTcpClientPool(new RioFixedBufferPool(1000, (256 * pipeLineDeph)), new RioFixedBufferPool(1000, (256 * pipeLineDeph)), (uint)connections);
+            clientPool = new RioTcpClientPool(new RioFixedBufferPool(10 * connections, (256 * pipeLineDeph)), new RioFixedBufferPool(10 * connections, (256 * pipeLineDeph)), (uint)connections);
             timer = new Stopwatch();
-            span = TimeSpan.FromSeconds(int.Parse(args.FirstOrDefault(f => f.StartsWith("-d"))?.Substring(2) ?? "5"));
+            span = TimeSpan.FromSeconds(int.Parse(args.FirstOrDefault(f => f.StartsWith("-d"))?.Substring(2) ?? "25"));
             uri = new Uri(args.FirstOrDefault(a => !a.StartsWith("-")) ?? "http://localhost:5000/plaintext");
             keepAlive = true;
             requestBytes = Enumerable.Repeat(_requestBytes, pipeLineDeph).SelectMany(b => b).ToArray();
@@ -44,7 +44,7 @@ namespace RioSharp.BenchClient
             Console.WriteLine("Benchmarking...");
 
             timer.Start();
-            var tasks = Enumerable.Range(0, connections).Select(t => Task.Run(Execute));
+            var tasks = Enumerable.Range(0, connections).Select(t => Task.Run(Execute)).ToList();
 
             var totalRequests = tasks.Sum(t => t.Result);
             Console.WriteLine($"Made {totalRequests } requests over {span.TotalSeconds} seconds ({totalRequests / span.TotalSeconds} Rps)");

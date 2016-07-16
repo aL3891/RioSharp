@@ -71,7 +71,11 @@ namespace RioSharp
                 WinSock.ThrowLastWSAError();
 
             foreach (var s in allSockets)
+            {
+                s.SetLoopbackFastPath(true);
+                s.SetTcpNoDelay(true);
                 BeginAccept(s);
+            }
         }
 
         unsafe void ListenIocpComplete(object o)
@@ -92,11 +96,13 @@ namespace RioSharp
                         activeSockets.TryAdd(res.GetHashCode(), res);
                         OnAccepted(res);
                     }
-                    else {
+                    else
+                    {
                         //recycle socket
                     }
                 }
-                else {
+                else
+                {
                     var error = Marshal.GetLastWin32Error();
                     if (error == 735)
                         break;
@@ -116,7 +122,8 @@ namespace RioSharp
             {
                 if (Kernel32.GetQueuedCompletionStatusRio(socketIocp, out lpNumberOfBytes, out lpCompletionKey, out lpOverlapped, -1))
                     BeginAccept(allSockets[lpOverlapped->SocketIndex]);
-                else {
+                else
+                {
                     var error = Marshal.GetLastWin32Error();
                     if (error == 735)
                         break;

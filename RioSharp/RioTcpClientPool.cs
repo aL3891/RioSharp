@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RioSharp
@@ -22,6 +23,8 @@ namespace RioSharp
         {
             foreach (var s in allSockets)
             {
+                s.SetLoopbackFastPath(true);
+                s.SetTcpNoDelay(true);
                 _freeSockets.Enqueue(s);
 
                 sockaddr_in sa = new sockaddr_in();
@@ -61,7 +64,11 @@ namespace RioSharp
                             res = allSockets[lpOverlapped->SocketIndex];
                             activeSockets.TryAdd(res.GetHashCode(), res);
                             if (_ongoingConnections.TryRemove(res, out r))
-                                r.SetResult(res);
+                                ThreadPool.QueueUserWorkItem(oo =>
+                                {
+                                    var rr = (Tuple<TaskCompletionSource<RioSocket>, RioConnectionOrientedSocket>)oo;
+                                    rr.Item1.SetResult(rr.Item2);
+                                }, Tuple.Create(r, res));
                         }
                         else
                         {
@@ -82,23 +89,31 @@ namespace RioSharp
                         res = allSockets[lpOverlapped->SocketIndex];
                         _freeSockets.Enqueue(allSockets[lpOverlapped->SocketIndex]);
                         if (_ongoingConnections.TryRemove(res, out r))
-                            r.SetException(new Win32Exception(error));
+                            ThreadPool.QueueUserWorkItem(oo =>
+                            {
+                                var rr = (Tuple<TaskCompletionSource<RioSocket>, int>)oo;
+                                rr.Item1.SetException(new Win32Exception(rr.Item2));
+                            }, Tuple.Create(r, error));
                     }
                 }
             }
         }
 
-        public unsafe Task<RioSocket> Connect(Uri adress)
+        public async Task<RioSocket> Connect(Uri adress)
         {
-            var ip = Dns.GetHostAddressesAsync(adress.Host).Result.First(i => i.AddressFamily == AddressFamily.InterNetwork);
+            var ip = (await Dns.GetHostAddressesAsync(adress.Host)).First(i => i.AddressFamily == AddressFamily.InterNetwork);
 
             sockaddr_in sa = new sockaddr_in();
             sa.sin_family = adressFam;
             sa.sin_port = WinSock.htons((ushort)adress.Port);
-            
+
             var ipBytes = ip.GetAddressBytes();
-            fixed (byte* a = ipBytes)
-                Unsafe.CopyBlock(sa.sin_addr.Address, a, (uint)ipBytes.Length);
+
+            unsafe
+            {
+                fixed (byte* a = ipBytes)
+                    Unsafe.CopyBlock(sa.sin_addr.Address, a, (uint)ipBytes.Length);
+            }
 
             RioConnectionOrientedSocket s;
             _freeSockets.TryDequeue(out s);
@@ -116,7 +131,7 @@ namespace RioSharp
                         WinSock.ThrowLastWSAError();
             }
 
-            return tcs.Task;
+            return await tcs.Task;
         }
     }
 }

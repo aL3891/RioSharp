@@ -18,23 +18,29 @@ namespace RioSharp
         {
             if ((Socket = WinSock.WSASocket(adressFam, sockType, protocol, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.WSA_FLAG_OVERLAPPED)) == IntPtr.Zero)
                 WinSock.ThrowLastWSAError();
-
-            int True = 1;
-            uint dwBytes = 0;
-
-            if (WinSock.WSAIoctlGeneral2(Socket, WinSock.SIO_LOOPBACK_FAST_PATH, &True, sizeof(int), (void*)0, 0, out dwBytes, IntPtr.Zero, IntPtr.Zero) != 0)
-                WinSock.ThrowLastWSAError();
-            if (WinSock.setsockopt(Socket, WinSock.IPPROTO_TCP, WinSock.TCP_NODELAY, &True, 4) != 0)
-                WinSock.ThrowLastWSAError();
-
+            
             SendBufferPool = sendBufferPool;
             ReceiveBufferPool = receiveBufferPool;
             AdressPool = adressBufferPool;
 
             _requestQueue = RioStatic.CreateRequestQueue(Socket, maxOutstandingReceive - 1, 1, maxOutstandingSend - 1, 1, ReceiveCompletionQueue, SendCompletionQueue, GetHashCode());
             WinSock.ThrowLastWSAError();
+        }
 
+        public void SetTcpNoDelay(bool value)
+        {
+            int v = value ? 1 : 0;
+            if (WinSock.setsockopt(Socket, WinSock.IPPROTO_TCP, WinSock.TCP_NODELAY, &v, 4) != 0)
+                WinSock.ThrowLastWSAError();
+        }
 
+        public void SetLoopbackFastPath(bool value)
+        {
+            int v = value ? 1 : 0;
+            uint dwBytes = 0;
+
+            if (WinSock.WSAIoctlGeneral2(Socket, WinSock.SIO_LOOPBACK_FAST_PATH, &v, sizeof(int), (void*)0, 0, out dwBytes, IntPtr.Zero, IntPtr.Zero) != 0)
+                WinSock.ThrowLastWSAError();
 
         }
 

@@ -891,7 +891,7 @@ namespace RioSharp
         internal unsafe static extern int setsockopt(IntPtr s, int level, int optname, void* optval, int optlen);
 
         [DllImport(WS2_32, SetLastError = true)]
-        internal unsafe static extern int getsockopt(IntPtr s, int level, int optname, char* optval, int* optlen);
+        internal unsafe static extern int getsockopt(IntPtr s, int level, int optname, void* optval, int* optlen);
 
 
         [DllImport(WS2_32, SetLastError = true)]

@@ -1,3 +1,8 @@
 {
-  "profiles": {}
+  "profiles": {
+    "RioSharp.BenchServer": {
+      "commandName": "Project",
+      "commandLineArgs": "-c1"
+    }
+  }
 }

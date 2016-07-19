@@ -10,10 +10,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "RioSharp", "RioSharp\RioSharp.xproj", "{36DDDB67-1DA4-4670-9D20-605AA2EAF1D3}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "RioSharp.BenchClient", "RioSharp.BenchClient\RioSharp.BenchClient.xproj", "{438C1AD6-5537-4156-BC5B-BCAC72B71FDF}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "RioSharp.BenchServer", "RioSharp.BenchServer\RioSharp.BenchServer.xproj", "{D1D9B300-0369-4E0E-A3FC-8C4ACDD294A4}"
-EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "RioSharpCtsTraffic", "RioSharpCtsTraffic\RioSharpCtsTraffic.xproj", "{67365BAE-4F1B-43B3-AD57-86551B330889}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RioSharp.BenchClient46", "RioSharp.BenchClient46\RioSharp.BenchClient46.csproj", "{D3344BC8-690E-4225-AB5D-5E4B76DEFE6E}"
@@ -24,10 +20,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RioSharp46", "RioSharp46\Ri
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "UdpSample", "UdpSample\UdpSample.xproj", "{8DAD64B7-CB5B-4F8D-817C-7919EE81A42F}"
 EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "RioSharp.BenchServer", "RioSharp.BenchServer\RioSharp.BenchServer.xproj", "{9E963954-4CE3-4562-96C7-DBDB980E45A6}"
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "RioSharp.BenchClient", "RioSharp.BenchClient\RioSharp.BenchClient.xproj", "{4F27E9F4-2EF9-400A-B15F-97C03846542F}"
+EndProject
 Global
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
@@ -37,14 +34,6 @@ Global
 		{36DDDB67-1DA4-4670-9D20-605AA2EAF1D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{36DDDB67-1DA4-4670-9D20-605AA2EAF1D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{36DDDB67-1DA4-4670-9D20-605AA2EAF1D3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{438C1AD6-5537-4156-BC5B-BCAC72B71FDF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{438C1AD6-5537-4156-BC5B-BCAC72B71FDF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{438C1AD6-5537-4156-BC5B-BCAC72B71FDF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{438C1AD6-5537-4156-BC5B-BCAC72B71FDF}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D1D9B300-0369-4E0E-A3FC-8C4ACDD294A4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D1D9B300-0369-4E0E-A3FC-8C4ACDD294A4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D1D9B300-0369-4E0E-A3FC-8C4ACDD294A4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D1D9B300-0369-4E0E-A3FC-8C4ACDD294A4}.Release|Any CPU.Build.0 = Release|Any CPU
 		{67365BAE-4F1B-43B3-AD57-86551B330889}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{67365BAE-4F1B-43B3-AD57-86551B330889}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{67365BAE-4F1B-43B3-AD57-86551B330889}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -65,6 +54,14 @@ Global
 		{8DAD64B7-CB5B-4F8D-817C-7919EE81A42F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8DAD64B7-CB5B-4F8D-817C-7919EE81A42F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8DAD64B7-CB5B-4F8D-817C-7919EE81A42F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9E963954-4CE3-4562-96C7-DBDB980E45A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9E963954-4CE3-4562-96C7-DBDB980E45A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9E963954-4CE3-4562-96C7-DBDB980E45A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9E963954-4CE3-4562-96C7-DBDB980E45A6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4F27E9F4-2EF9-400A-B15F-97C03846542F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4F27E9F4-2EF9-400A-B15F-97C03846542F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4F27E9F4-2EF9-400A-B15F-97C03846542F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4F27E9F4-2EF9-400A-B15F-97C03846542F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

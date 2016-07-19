@@ -11,6 +11,13 @@ namespace RioSharp
         const string Kernel_32 = "Kernel32";
         internal static IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
 
+        public const int ERROR_ABANDONED_WAIT_0 = 735;
+        public const int ERROR_NETNAME_DELETED = 64;
+        public const int ERROR_CONNECTION_REFUSED = 1225;
+        public const int ERROR_IO_PENDING = 997;
+
+
+
         [DllImport(Kernel_32, SetLastError = true)]
         [SuppressUnmanagedCodeSecurity]
         internal unsafe static extern IntPtr CreateIoCompletionPort(IntPtr handle, IntPtr hExistingCompletionPort, int puiCompletionKey, uint uiNumberOfConcurrentThreads);

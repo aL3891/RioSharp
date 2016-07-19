@@ -44,7 +44,7 @@ namespace UdpSample
             
             while (true)
             {
-                sock.WriteFixed(Encoding.ASCII.GetBytes("Hello, i'm process " + Process.GetCurrentProcess().Id), new IPEndPoint(multicastAdress, 3000));
+                sock.Send(Encoding.ASCII.GetBytes("Hello, i'm process " + Process.GetCurrentProcess().Id), new IPEndPoint(multicastAdress, 3000));
                 Thread.Sleep(1000);
             }
         }

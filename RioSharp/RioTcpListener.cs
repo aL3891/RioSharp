@@ -40,8 +40,7 @@ namespace RioSharp
             acceptSocket.ResetOverlapped();
             if (!RioStatic.AcceptEx(_listenerSocket, acceptSocket.Socket, acceptSocket._adressBuffer, 0, sizeof(sockaddr_in) + 16, sizeof(sockaddr_in) + 16, out recived, acceptSocket._overlapped))
             {
-                if (WinSock.WSAGetLastError() != 997) // error_io_pending
-                    WinSock.ThrowLastWSAError();
+                WinSock.ThrowLastWSAError();
             }
             else
                 OnAccepted(acceptSocket);
@@ -67,7 +66,7 @@ namespace RioSharp
                     WinSock.ThrowLastWSAError();
             }
 
-            if (WinSock.listen(_listenerSocket, backlog) == WinSock.SOCKET_ERROR)
+            if (WinSock.listen(_listenerSocket, 0) == WinSock.SOCKET_ERROR)
                 WinSock.ThrowLastWSAError();
 
             foreach (var s in allSockets)
@@ -83,30 +82,36 @@ namespace RioSharp
             IntPtr lpNumberOfBytes;
             IntPtr lpCompletionKey;
             RioNativeOverlapped* lpOverlapped = stackalloc RioNativeOverlapped[1];
-            int lpcbTransfer;
-            int lpdwFlags;
+            //int lpcbTransfer;
+            //int lpdwFlags;
 
             while (true)
             {
                 if (Kernel32.GetQueuedCompletionStatusRio(_listenIocp, out lpNumberOfBytes, out lpCompletionKey, out lpOverlapped, -1))
                 {
-                    if (WinSock.WSAGetOverlappedResult(_listenerSocket, lpOverlapped, out lpcbTransfer, false, out lpdwFlags))
-                    {
-                        var res = allSockets[lpOverlapped->SocketIndex];
-                        activeSockets.TryAdd(res.GetHashCode(), res);
-                        OnAccepted(res);
-                    }
-                    else
-                    {
-                        //recycle socket
-                    }
+                    //if (WinSock.WSAGetOverlappedResult(_listenerSocket, lpOverlapped, out lpcbTransfer, false, out lpdwFlags))
+                    //{
+                    var res = allSockets[lpOverlapped->SocketIndex];
+                    activeSockets.TryAdd(res.GetHashCode(), res);
+                    void* apa = _listenerSocket.ToPointer();
+                    if (res.SetSocketOption(SOL_SOCKET_SocketOptions.SO_UPDATE_ACCEPT_CONTEXT, &apa, IntPtr.Size) != 0)
+                        WinSock.ThrowLastWSAError();
+
+                    OnAccepted(res);
+                    //}
+                    //else
+                    //{
+                    //    //recycle socket
+                    //}
                 }
                 else
                 {
                     var error = Marshal.GetLastWin32Error();
-                    if (error == 735)
+                    if (error == Kernel32.ERROR_ABANDONED_WAIT_0)
                         break;
-                    if (error != 0 && error != 64) //connection no longer available
+                    else if (error == Kernel32.ERROR_NETNAME_DELETED)//connection no longer available
+                        Recycle(allSockets[lpOverlapped->SocketIndex]);
+                    else
                         throw new Win32Exception(error);
                 }
             }
@@ -121,13 +126,15 @@ namespace RioSharp
             while (true)
             {
                 if (Kernel32.GetQueuedCompletionStatusRio(socketIocp, out lpNumberOfBytes, out lpCompletionKey, out lpOverlapped, -1))
-                    BeginAccept(allSockets[lpOverlapped->SocketIndex]);
+                     BeginAccept(allSockets[lpOverlapped->SocketIndex]);
                 else
                 {
                     var error = Marshal.GetLastWin32Error();
-                    if (error == 735)
+                    if (error == Kernel32.ERROR_ABANDONED_WAIT_0)
                         break;
-                    if (error != 0 && error != 64) //connection no longer available
+                    else if (error == Kernel32.ERROR_NETNAME_DELETED)//connection no longer available
+                        Recycle(allSockets[lpOverlapped->SocketIndex]);
+                    else
                         throw new Win32Exception(error);
                 }
             }

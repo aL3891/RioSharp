@@ -90,7 +90,7 @@ namespace RioSharpCtsTraffic
                 }
                 else if (Pattern == "Duplex")
                 {
-                    s.WriteFixed(new byte[Transfer / 2]);
+                    s.Send(new byte[Transfer / 2]);
                     reader.OnIncommingSegment = seg =>
                     {
                         totalRecived += seg.CurrentContentLength;
@@ -119,7 +119,7 @@ namespace RioSharpCtsTraffic
                     while (totalBytesRecived < Transfer)
                     {
                         tcs = new TaskCompletionSource<object>();
-                        s.WriteFixed(new byte[PushBytes]);
+                        s.Send(new byte[PushBytes]);
                         reader.OnIncommingSegment = seg =>
                         {
                             totalBytesRecived += seg.CurrentContentLength;
@@ -131,7 +131,7 @@ namespace RioSharpCtsTraffic
                     }
                 }
                 else if (Pattern == "Push")
-                    s.WriteFixed(new byte[Transfer]);
+                    s.Send(new byte[Transfer]);
                 else if (Pattern == "Pull")
                 {
                     tcs = new TaskCompletionSource<object>();
@@ -147,7 +147,7 @@ namespace RioSharpCtsTraffic
                 else if (Pattern == "Duplex")
                 {
                     tcs = new TaskCompletionSource<object>();
-                    s.WriteFixed(new byte[Transfer / 2]);
+                    s.Send(new byte[Transfer / 2]);
                     reader.OnIncommingSegment = seg =>
                     {
                         totalBytesRecived += seg.CurrentContentLength;

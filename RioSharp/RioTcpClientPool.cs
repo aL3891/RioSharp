@@ -46,8 +46,8 @@ namespace RioSharp
             RioNativeOverlapped* lpOverlapped = stackalloc RioNativeOverlapped[1];
             TaskCompletionSource<RioSocket> r;
             RioConnectionOrientedSocket res;
-            int lpcbTransfer;
-            int lpdwFlags;
+            //int lpcbTransfer;
+            //int lpdwFlags;
 
             while (true)
             {
@@ -59,34 +59,36 @@ namespace RioSharp
                     }
                     else if (lpOverlapped->Status == 2)
                     {
-                        if (WinSock.WSAGetOverlappedResult(allSockets[lpOverlapped->SocketIndex].Socket, lpOverlapped, out lpcbTransfer, false, out lpdwFlags))
-                        {
-                            res = allSockets[lpOverlapped->SocketIndex];
-                            activeSockets.TryAdd(res.GetHashCode(), res);
-                            if (_ongoingConnections.TryRemove(res, out r))
-                                ThreadPool.QueueUserWorkItem(oo =>
-                                {
-                                    var rr = (Tuple<TaskCompletionSource<RioSocket>, RioConnectionOrientedSocket>)oo;
-                                    rr.Item1.SetResult(rr.Item2);
-                                }, Tuple.Create(r, res));
-                        }
-                        else
-                        {
-                            //recycle socket
-                        }
+                        //if (WinSock.WSAGetOverlappedResult(allSockets[lpOverlapped->SocketIndex].Socket, lpOverlapped, out lpcbTransfer, false, out lpdwFlags))
+                        //{
+                        res = allSockets[lpOverlapped->SocketIndex];
+                        activeSockets.TryAdd(res.GetHashCode(), res);
+                        if (res.SetSocketOption(SOL_SOCKET_SocketOptions.SO_UPDATE_CONNECT_CONTEXT, (void*)0, 0) != 0)
+                            WinSock.ThrowLastWSAError();
+
+                        if (_ongoingConnections.TryRemove(res, out r))
+                            ThreadPool.QueueUserWorkItem(oo =>
+                            {
+                                var rr = (Tuple<TaskCompletionSource<RioSocket>, RioConnectionOrientedSocket>)oo;
+                                rr.Item1.SetResult(rr.Item2);
+                            }, Tuple.Create(r, res));
+                        //}
+                        //else
+                        //{
+                        //    //recycle socket
+                        //}
                     }
                 } //1225
                 else
                 {
                     var error = Marshal.GetLastWin32Error();
 
-                    if (error == 735)
+                    if (error == Kernel32.ERROR_ABANDONED_WAIT_0)
                         break;
-                    else if (error != 0 && error != 64 && error != 1225 && error != 735) //connection no longer available
-                        throw new Win32Exception(error);
-                    else
+                    else if (error == Kernel32.ERROR_NETNAME_DELETED || error == Kernel32.ERROR_CONNECTION_REFUSED)
                     {
                         res = allSockets[lpOverlapped->SocketIndex];
+                        Recycle(res);
                         _freeSockets.Enqueue(allSockets[lpOverlapped->SocketIndex]);
                         if (_ongoingConnections.TryRemove(res, out r))
                             ThreadPool.QueueUserWorkItem(oo =>
@@ -95,6 +97,9 @@ namespace RioSharp
                                 rr.Item1.SetException(new Win32Exception(rr.Item2));
                             }, Tuple.Create(r, error));
                     }
+                    else
+                        throw new Win32Exception(error);
+
                 }
             }
         }
@@ -116,22 +121,24 @@ namespace RioSharp
             }
 
             RioConnectionOrientedSocket s;
-            _freeSockets.TryDequeue(out s);
-            var tcs = new TaskCompletionSource<RioSocket>();
-            _ongoingConnections.TryAdd(s, tcs);
-
-            uint gurka;
-
-            unsafe
+            if (_freeSockets.TryDequeue(out s))
             {
-                s.ResetOverlapped();
-                s._overlapped->Status = 2;
-                if (!RioStatic.ConnectEx(s.Socket, sa, sizeof(sockaddr_in), IntPtr.Zero, 0, out gurka, s._overlapped))
-                    if (WinSock.WSAGetLastError() != 997) // error_io_pending
+                var tcs = new TaskCompletionSource<RioSocket>();
+                _ongoingConnections.TryAdd(s, tcs);
+                uint bytesSent;
+                unsafe
+                {
+                    s.ResetOverlapped();
+                    s._overlapped->Status = 2;
+                    if (!RioStatic.ConnectEx(s.Socket, sa, sizeof(sockaddr_in), IntPtr.Zero, 0, out bytesSent, s._overlapped))
                         WinSock.ThrowLastWSAError();
-            }
+                }
 
-            return await tcs.Task;
+                return await tcs.Task;
+            }
+            else
+                return await Task.FromException<RioConnectionOrientedSocket>(new ArgumentException("No sockets available in pool"));
+
         }
     }
 }

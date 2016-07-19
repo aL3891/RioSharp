@@ -11,7 +11,8 @@
     "Microsoft.NETCore.App": {
       "version": "1.0.0"
     },
-    "RioSharp": "0.0.6-beta"
+    "RioSharp": "0.0.9-beta",
+    "System.Numerics.Vectors": "4.1.1"
   },
 
   "frameworks": {
@@ -28,7 +29,5 @@
 
   "runtimes": {
     "win10-x64": ""
-  },
-  "userSecretsId": "aspnet-RioSharp.BenchServer-20160714032417"
-
+  }
 }

@@ -31,12 +31,24 @@ namespace RioSharp
 
         public byte* Datapointer => RawPointer;
 
-        public unsafe int GetData(byte[] data, int offset)
+        public unsafe int Read(byte[] data, int offset)
         {
             var l = Math.Min((data.Length - offset), CurrentContentLength);
 
             fixed (void* p = &data[0])
                 Unsafe.CopyBlock(p, RawPointer, (uint)l);
+
+            return l;
+        }
+
+        public unsafe int Write(byte[] data)
+        {
+            var l = Math.Min((data.Length), TotalLength- SegmentPointer->Length);
+
+            fixed (void* p = &data[0])
+                Unsafe.CopyBlock(RawPointer+ SegmentPointer->Length, p, (uint)l);
+
+            SegmentPointer->Length += l;
 
             return l;
         }
@@ -53,7 +65,7 @@ namespace RioSharp
 
             SegmentPointer->BufferId = IntPtr.Zero;
             SegmentPointer->Offset = offset;
-            SegmentPointer->Length = TotalLength;
+            SegmentPointer->Length = 0;
 
             _continuationWrapperDelegate = o => ((Action)o)();
         }
@@ -82,7 +94,7 @@ namespace RioSharp
             Interlocked.Exchange(ref _awaitableState, _awaitableIsNotCompleted);
             _manualResetEvent.Reset();
             disposeOnComplete = false;
-            SegmentPointer->Length = TotalLength;
+            SegmentPointer->Length = 0;
             _pool.ReleaseBuffer(this);
         }
 

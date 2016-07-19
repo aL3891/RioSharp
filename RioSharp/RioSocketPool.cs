@@ -184,7 +184,7 @@ namespace RioSharp
                 {
                     var error = Marshal.GetLastWin32Error();
 
-                    if (error != 0 && error != 735)
+                    if (error != 0 && error != Kernel32.ERROR_ABANDONED_WAIT_0)
                         throw new Win32Exception(error);
                     else
                         break;

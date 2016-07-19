@@ -14,7 +14,7 @@ namespace RioSharp
 
         public unsafe RioConnectionOrientedSocketPool(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool, uint socketCount, ADDRESS_FAMILIES adressFam, SOCKET_TYPE sockType, PROTOCOL protocol,
             uint maxOutstandingReceive = 1024, uint maxOutstandingSend = 1024)
-            : base(sendPool, revicePool, adressFam, sockType, protocol, maxOutstandingReceive , maxOutstandingSend , socketCount)
+            : base(sendPool, revicePool, adressFam, sockType, protocol, maxOutstandingReceive, maxOutstandingSend, socketCount)
         {
             var adrSize = (sizeof(sockaddr_in) + 16) * 2;
             var overlapped = Marshal.AllocHGlobal(new IntPtr(socketCount * Marshal.SizeOf<RioNativeOverlapped>()));
@@ -44,24 +44,25 @@ namespace RioSharp
 
         protected abstract void SocketIocpComplete(object o);
 
-        internal unsafe virtual void Recycle(RioConnectionOrientedSocket socket)
+
+        internal unsafe virtual bool Recycle(RioConnectionOrientedSocket socket)
         {
             RioSocket c;
             activeSockets.TryRemove(socket.GetHashCode(), out c);
             socket.ResetOverlapped();
             socket._overlapped->Status = 1;
-            if (!RioStatic.DisconnectEx(socket.Socket, socket._overlapped, disconnectexflag, 0)) //TF_REUSE_SOCKET
-                if (WinSock.WSAGetLastError() != 997) // error_io_pending
+            if (!RioStatic.DisconnectEx(socket.Socket, socket._overlapped, WinSock.TF_REUSE_SOCKET, 0))
+            {
+                if (WinSock.WSAGetLastError() == 10057)
+                    return false;
+                else
                     WinSock.ThrowLastWSAError();
-            //else
-            //    AcceptEx(socket);
+            }
+            return true;
         }
-
-        uint disconnectexflag = 0x02;
 
         public override void Dispose()
         {
-            disconnectexflag = 0;
             Kernel32.CloseHandle(socketIocp);
             for (int i = 0; i < allSockets.Length; i++)
                 allSockets[i].Close();

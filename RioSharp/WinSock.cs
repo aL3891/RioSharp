@@ -904,7 +904,7 @@ namespace RioSharp
         {
             var error = WinSock.WSAGetLastError();
 
-            if (error != 0 && error != 997)
+            if (error != 0 && error != Kernel32.ERROR_IO_PENDING)
             {
                 throw new Win32Exception(error);
             }
@@ -929,6 +929,8 @@ namespace RioSharp
         internal const uint SIO_GET_MULTIPLE_EXTENSION_FUNCTION_POINTER = IOC_INOUT | IOC_WS2 | 36;
         internal const uint SIO_LOOPBACK_FAST_PATH = IOC_IN | IOC_VENDOR | 16;
         internal const int TCP_NODELAY = 0x0001;
+
+        internal const uint TF_REUSE_SOCKET = 0x02;
 
 
         internal const int IPPROTO_IP = 0;

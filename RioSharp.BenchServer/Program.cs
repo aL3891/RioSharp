@@ -64,15 +64,83 @@ namespace ConsoleApplication1
             //    }
             //});
 
-            listener.OnAccepted = new Action<RioSocket>(s => ThreadPool.QueueUserWorkItem(o => Servebuff((RioSocket)o), s));
+            //listener.OnAccepted = new Action<RioSocket>(s => ThreadPool.QueueUserWorkItem(o => Servebuff((RioSocket)o), s));
+            listener.OnAccepted = new Action<RioSocket>(s => ServeSegment(s));
             listener.Listen(new IPEndPoint(new IPAddress(new byte[] { 0, 0, 0, 0 }), 5000), 1024 * connections);
             Console.WriteLine("Listening on : http://localhost:5000");
             Console.WriteLine("Press enter to exit");
             Console.ReadLine();
-
             listener.Dispose();
+        }
 
+
+        static unsafe void ProcessSocket(RioBufferSegment s, ServeState state) {
+            uint current = 0;
+            var r = s.CurrentContentLength;
+
+            if (r == 0)
+            {
+                state.reader.Dispose();
+                state.socket.Dispose();
+                return;
+            }
+
+            var buffer = sendPool.GetBuffer();
+
+            for (int i = 0; state.leftoverLength != 0 && i < 4 - state.leftoverLength; i++)
+            {
+                current += s.Datapointer[i];
+                current = current << 8;
+                if (current == endOfRequest)
+                    buffer.Write(responseBytes);
+            }
+
+            state.leftoverLength = r % 4;
+            var length = r - state.leftoverLength;
+
+            byte* currentPtr = s.Datapointer + state.oldleftoverLength;
+
+            var start = currentPtr;
+            var end = currentPtr + length;
+
+            for (; start <= end; start++)
+            {
+                if (*(uint*)start == endOfRequest)
+                    buffer.Write(responseBytes);
+            }
             
+            state.oldleftoverLength = state.leftoverLength;
+
+            for (int i = r - state.leftoverLength; i < r; i++)
+            {
+                current += s.Datapointer[i];
+                current = current << 4;
+            }
+            
+            state.socket.Send(buffer);
+            buffer.DisposeWhenComplete();
+        }
+
+        static uint endOfRequest = 0x0a0d0a0d;
+
+        class ServeState
+        {
+            internal int leftoverLength;
+            internal int oldleftoverLength;
+            internal RioSegmentReader<ServeState> reader;
+            internal RioSocket socket;
+        }
+
+        static void ServeSegment(RioSocket socket)
+        {
+            var reader = new RioSegmentReader<ServeState>(socket);
+            reader.State = new ServeState();
+            reader.State.leftoverLength = 0;
+            reader.State.oldleftoverLength = 0;
+            reader.State.reader = reader;
+            reader.State.socket = socket;
+            reader.OnIncommingSegment = ProcessSocket;
+            reader.Start();
         }
 
         static async Task ServeFixed(RioSocket socket)
@@ -91,14 +159,13 @@ namespace ConsoleApplication1
                     int r = await stream.ReadAsync(buffer, 0, buffer.Length);
                     if (r == 0)
                         break;
-
-
+                    
                     for (int i = 0; leftoverLength != 0 && i < 4 - leftoverLength; i++)
                     {
                         current += buffer[i];
                         current = current << 8;
                         if (current == endOfRequest)
-                            socket.WritePreAllocated(currentSegment);
+                            socket.Send(currentSegment);
                     }
 
                     leftoverLength = r % 4;
@@ -114,7 +181,7 @@ namespace ConsoleApplication1
                             for (; start <= end; start++)
                             {
                                 if (*(uint*)start == endOfRequest)
-                                    socket.WritePreAllocated(currentSegment);
+                                    socket.Send(currentSegment);
                             }
                         }
                     }

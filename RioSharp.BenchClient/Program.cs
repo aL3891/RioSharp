@@ -11,9 +11,7 @@ namespace RioSharp.BenchClient
 {
     public class Program
     {
-        static string responseStr = "GET / HTTP/1.1\r\n" +
-            "Host: localhost:5000\r\n" +
-            "\r\n";
+        static string requestString = null;
 
         static byte[] _requestBytes;
         private static RioTcpClientPool clientPool;
@@ -39,14 +37,12 @@ namespace RioSharp.BenchClient
             Console.WriteLine("Pipeline depth: " + pipeLineDeph);
             Console.WriteLine("Target: " + uri);
 
-            responseStr = $"GET {uri.PathAndQuery} HTTP/1.1\r\n" +
-            $"Host: {uri.Host}:{uri.Port}\r\n" +
-            "\r\n";
+            requestString = $"GET {uri.PathAndQuery} HTTP/1.1\r\nHost: {uri.Host}:{uri.Port}\r\n\r\n";
 
-            _requestBytes = Encoding.ASCII.GetBytes(responseStr);
+            _requestBytes = Encoding.ASCII.GetBytes(requestString);
             requestBytes = Enumerable.Repeat(_requestBytes, pipeLineDeph).SelectMany(b => b).ToArray();
-
-            clientPool = new RioTcpClientPool(new RioFixedBufferPool(10 * connections, requestBytes.Length), new RioFixedBufferPool(10 * connections, (256 * pipeLineDeph)), (uint)connections);
+            sendPool = new RioFixedBufferPool(10 * connections, requestBytes.Length * pipeLineDeph);
+            clientPool = new RioTcpClientPool(sendPool, new RioFixedBufferPool(10 * connections, (256 * pipeLineDeph)), (uint)connections);
             Console.WriteLine("Benchmarking...");
 
             timer.Start();
@@ -55,6 +51,97 @@ namespace RioSharp.BenchClient
             var totalRequests = tasks.Sum(t => t.Result);
             Console.WriteLine($"Made {totalRequests } requests over {span.TotalSeconds} seconds ({totalRequests / span.TotalSeconds} Rps)");
             clientPool.Dispose();
+        }
+
+        class ServeState
+        {
+            internal int leftoverLength;
+            internal int oldleftoverLength;
+            internal RioSegmentReader<ServeState> reader;
+            internal RioSocket socket;
+        }
+        static uint endOfRequest = 0x0a0d0a0d;
+        private static RioFixedBufferPool sendPool;
+
+        static unsafe void ProcessSocket(RioBufferSegment s, ServeState state)
+        {
+            uint current = 0;
+            var r = s.CurrentContentLength;
+            
+            if (r == 0)
+            {
+                state.reader.Dispose();
+                state.socket.Dispose();
+                return;
+            }
+
+            var buffer = sendPool.GetBuffer();
+
+            for (int i = 0; state.leftoverLength != 0 && i < 4 - state.leftoverLength; i++)
+            {
+                current += s.Datapointer[i];
+                current = current << 8;
+                if (current == endOfRequest)
+                    buffer.Write(_requestBytes);
+            }
+
+            state.leftoverLength = r % 4;
+            var length = r - state.leftoverLength;
+
+            byte* currentPtr = s.Datapointer + state.oldleftoverLength;
+
+            var start = currentPtr;
+            var end = currentPtr + length;
+
+            for (; start <= end; start++)
+            {
+                if (*(uint*)start == endOfRequest)
+                    buffer.Write(_requestBytes);
+            }
+
+            state.oldleftoverLength = state.leftoverLength;
+
+            for (int i = r - state.leftoverLength; i < r; i++)
+            {
+                current += s.Datapointer[i];
+                current = current << 4;
+            }
+
+            state.socket.Send(buffer);
+            buffer.DisposeWhenComplete();
+        }
+
+        public async static Task<int> ExecuteSegment()
+        {
+            RioSocket connection = null;
+            RioSegmentReader<ServeState> reader = null;
+            ServeState state = new ServeState();
+
+            while (timer.Elapsed < span)
+            {
+                if (connection == null)
+                {
+                    try
+                    {
+                        connection = await clientPool.Connect(uri);
+                        reader = new RioSegmentReader<ServeState>(connection);
+                        reader.State = state;
+                        state.socket = connection;
+                        state.reader = reader;
+                        state.leftoverLength = 0;
+                        state.oldleftoverLength = 0;
+                        reader.OnIncommingSegment = ProcessSocket;
+                        reader.Start();
+                        connection.Send(requestBytes);
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.WriteLine(e.Message);
+                        continue;
+                    }
+                }
+            }
+            return 0;
         }
 
         public async static Task<int> ExecuteStream()

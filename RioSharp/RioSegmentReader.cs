@@ -15,11 +15,22 @@ namespace RioSharp
         Action completeReadDelegate;
         WaitCallback completeReadWrapper;
 
+        public RioSocket Socket
+        {
+            get
+            {
+                return _socket;
+            }
+            set
+            {
+                _socket = value;
+            }
+        }
+
         public RioSegmentReader(RioSocket socket)
         {
             _socket = socket;
-            _nextInputSegment = _socket.ReceiveBufferPool.GetBuffer();
-            _currentInputSegment = _socket.ReceiveBufferPool.GetBuffer();
+
             completeReadDelegate = CompleteReadOnThreadPool;
             completeReadWrapper = (o) => CompleteRead();
         }
@@ -31,6 +42,8 @@ namespace RioSharp
 
         public void Start()
         {
+            _nextInputSegment = _nextInputSegment ?? _socket.ReceiveBufferPool.GetBuffer();
+            _currentInputSegment = _currentInputSegment ?? _socket.ReceiveBufferPool.GetBuffer();
             _socket.BeginReceive(_nextInputSegment);
 
             if (_nextInputSegment.IsCompleted)
@@ -57,7 +70,7 @@ namespace RioSharp
                     _nextInputSegment.OnCompleted(completeReadDelegate);
             }
         }
-        
+
         public Action<RioBufferSegment> OnIncommingSegment
         {
             get

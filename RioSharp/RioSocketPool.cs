@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace RioSharp
 {
@@ -14,11 +16,24 @@ namespace RioSharp
         IntPtr SendCompletionPort, ReceiveCompletionPort;
         protected IntPtr SendCompletionQueue, ReceiveCompletionQueue;
         protected uint MaxOutstandingReceive, MaxOutstandingSend, MaxSockets;
-        internal ConcurrentDictionary<long, RioSocket> activeSockets = new ConcurrentDictionary<long, RioSocket>();
+
         protected ADDRESS_FAMILIES adressFam;
         protected SOCKET_TYPE sockType;
         protected PROTOCOL protocol;
 
+        internal static long CurrentTime;
+
+        static RioSocketPool()
+        {
+            Task.Run(async () =>
+            {
+                while (true)
+                {
+                    CurrentTime = Stopwatch.GetTimestamp();
+                    await Task.Delay(500);
+                }
+            });
+        }
 
         public unsafe RioSocketPool(RioFixedBufferPool sendPool, RioFixedBufferPool receivePool, ADDRESS_FAMILIES adressFam, SOCKET_TYPE sockType, PROTOCOL protocol,
             uint maxOutstandingReceive = 1024, uint maxOutstandingSend = 1024, uint maxSockets = 256, int adressBufferSize = 1024)
@@ -89,14 +104,12 @@ namespace RioSharp
             if ((ReceiveCompletionQueue = RioStatic.CreateCompletionQueue(MaxOutstandingReceive * MaxSockets, receiveCompletionMethod)) == IntPtr.Zero)
                 WinSock.ThrowLastWSAError();
 
-
             Thread receiveThread = new Thread(ProcessReceiveCompletes);
             receiveThread.IsBackground = true;
             receiveThread.Start();
             Thread sendThread = new Thread(ProcessSendCompletes);
             sendThread.IsBackground = true;
             sendThread.Start();
-
         }
 
         public unsafe RioBufferSegment PreAllocateWrite(byte[] buffer)
@@ -138,6 +151,7 @@ namespace RioSharp
                         {
                             result = results[i];
                             buf = ReceiveBufferPool.AllSegments[result.RequestCorrelation];
+                            buf.lastSocket.FinishdedReceives++;
                             buf.SegmentPointer->Length = (int)result.BytesTransferred;
                             buf.Set();
                         }
@@ -176,6 +190,7 @@ namespace RioSharp
                         for (var i = 0; i < count; i++)
                         {
                             var buf = SendBufferPool.AllSegments[results[i].RequestCorrelation];
+                            buf.lastSocket.FinishdedSends++;
                             buf.Set();
                         }
                     } while (count > 0);
@@ -189,7 +204,6 @@ namespace RioSharp
                     else
                         break;
                 }
-
             }
         }
 

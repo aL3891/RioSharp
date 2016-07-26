@@ -17,6 +17,7 @@ namespace RioSharp
         private Action _awaitableState;
         private readonly ManualResetEventSlim _manualResetEvent = new ManualResetEventSlim(false, 0);
         private Exception _awaitableError;
+        internal RioSocket lastSocket;
 
         RioFixedBufferPool _pool;
         internal int Index;
@@ -43,10 +44,10 @@ namespace RioSharp
 
         public unsafe int Write(byte[] data)
         {
-            var l = Math.Min((data.Length), TotalLength- SegmentPointer->Length);
+            var l = Math.Min((data.Length), TotalLength - SegmentPointer->Length);
 
             fixed (void* p = &data[0])
-                Unsafe.CopyBlock(RawPointer+ SegmentPointer->Length, p, (uint)l);
+                Unsafe.CopyBlock(RawPointer + SegmentPointer->Length, p, (uint)l);
 
             SegmentPointer->Length += l;
 

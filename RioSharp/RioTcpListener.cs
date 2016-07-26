@@ -29,9 +29,9 @@ namespace RioSharp
             if ((_listenIocp = Kernel32.CreateIoCompletionPort(_listenerSocket, _listenIocp, 0, 1)) == IntPtr.Zero)
                 Kernel32.ThrowLastError();
 
-            Thread ListenIocpThread = new Thread(ListenIocpComplete);
-            ListenIocpThread.IsBackground = true;
-            ListenIocpThread.Start();
+            Thread AcceptIocpThread = new Thread(AcceptIocpComplete);
+            AcceptIocpThread.IsBackground = true;
+            AcceptIocpThread.Start();
         }
 
         unsafe void BeginAccept(RioConnectionOrientedSocket acceptSocket)
@@ -57,7 +57,6 @@ namespace RioSharp
             sockaddr_in sa = new sockaddr_in();
             sa.sin_family = ADDRESS_FAMILIES.AF_INET;
             sa.sin_port = WinSock.htons((ushort)localEP.Port);
-            //Imports.ThrowLastWSAError();
             sa.sin_addr = inAddress;
 
             unsafe
@@ -66,31 +65,26 @@ namespace RioSharp
                     WinSock.ThrowLastWSAError();
             }
 
-            if (WinSock.listen(_listenerSocket, 0) == WinSock.SOCKET_ERROR)
+            if (WinSock.listen(_listenerSocket, 100) == WinSock.SOCKET_ERROR)
                 WinSock.ThrowLastWSAError();
-
+            
             foreach (var s in allSockets)
             {
-                s.SetLoopbackFastPath(true);
-                s.SetTcpNoDelay(true);
+                InitializeSocket(s);
                 BeginAccept(s);
             }
         }
 
-        unsafe void ListenIocpComplete(object o)
+        unsafe void AcceptIocpComplete(object o)
         {
             IntPtr lpNumberOfBytes;
             IntPtr lpCompletionKey;
             RioNativeOverlapped* lpOverlapped = stackalloc RioNativeOverlapped[1];
-            //int lpcbTransfer;
-            //int lpdwFlags;
 
             while (true)
             {
                 if (Kernel32.GetQueuedCompletionStatusRio(_listenIocp, out lpNumberOfBytes, out lpCompletionKey, out lpOverlapped, -1))
                 {
-                    //if (WinSock.WSAGetOverlappedResult(_listenerSocket, lpOverlapped, out lpcbTransfer, false, out lpdwFlags))
-                    //{
                     var res = allSockets[lpOverlapped->SocketIndex];
                     activeSockets.TryAdd(res.GetHashCode(), res);
                     void* apa = _listenerSocket.ToPointer();
@@ -98,23 +92,32 @@ namespace RioSharp
                         WinSock.ThrowLastWSAError();
 
                     OnAccepted(res);
-                    //}
-                    //else
-                    //{
-                    //    //recycle socket
-                    //}
                 }
                 else
                 {
                     var error = Marshal.GetLastWin32Error();
                     if (error == Kernel32.ERROR_ABANDONED_WAIT_0)
                         break;
-                    else if (error == Kernel32.ERROR_NETNAME_DELETED)//connection no longer available
-                        Recycle(allSockets[lpOverlapped->SocketIndex]);
+                    else if (error == Kernel32.ERROR_NETNAME_DELETED)
+                        BeginRecycle(allSockets[lpOverlapped->SocketIndex]);
                     else
                         throw new Win32Exception(error);
                 }
             }
+        }
+
+        internal override void InitializeSocket(RioConnectionOrientedSocket socket)
+        {
+            var t = TimeSpan.FromSeconds(30);
+            socket.SetLoopbackFastPath(true);
+            socket.SetTcpNoDelay(true);
+            socket.SendTimeout = t;
+            socket.ReciveTimeout = t;
+        }
+
+        internal override void FinalizeRecycle(RioConnectionOrientedSocket socket)
+        {
+            BeginAccept(socket);
         }
 
         protected override unsafe void SocketIocpComplete(object o)
@@ -126,14 +129,14 @@ namespace RioSharp
             while (true)
             {
                 if (Kernel32.GetQueuedCompletionStatusRio(socketIocp, out lpNumberOfBytes, out lpCompletionKey, out lpOverlapped, -1))
-                     BeginAccept(allSockets[lpOverlapped->SocketIndex]);
+                    EndRecycle(allSockets[lpOverlapped->SocketIndex],true);
                 else
                 {
                     var error = Marshal.GetLastWin32Error();
                     if (error == Kernel32.ERROR_ABANDONED_WAIT_0)
                         break;
-                    else if (error == Kernel32.ERROR_NETNAME_DELETED)//connection no longer available
-                        Recycle(allSockets[lpOverlapped->SocketIndex]);
+                    else if (error == Kernel32.ERROR_NETNAME_DELETED)
+                        BeginRecycle(allSockets[lpOverlapped->SocketIndex]);
                     else
                         throw new Win32Exception(error);
                 }

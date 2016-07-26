@@ -942,5 +942,7 @@ namespace RioSharp
         //internal const int SOL_APPLETALK = 6;
         //internal const int SOL_IRLMP = 6;
         internal const int SOL_SOCKET = 0xffff;
+
+        internal static int WSAENOTCONN= 10057;
     }
 }

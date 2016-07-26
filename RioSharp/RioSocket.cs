@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -10,17 +11,74 @@ namespace RioSharp
         IntPtr _requestQueue;
         internal IntPtr Socket;
         internal RioFixedBufferPool SendBufferPool, ReceiveBufferPool, AdressPool;
+        internal long lastSendStart;
+        internal long lastReceiveStart;
+        internal int StartedReceives;
+        internal int StartedSends;
+        internal int FinishdedReceives;
+        internal int FinishdedSends;
+        internal long sendTimeout;
+        internal long reciveTimeout;
+        private uint maxOutstandingReceive;
+        private uint maxOutstandingSend;
+        private IntPtr ReceiveCompletionQueue;
+        private IntPtr SendCompletionQueue;
+        private SOCKET_TYPE sockType;
+        private PROTOCOL protocol;
+        private ADDRESS_FAMILIES adressFam;
 
         internal RioSocket(RioFixedBufferPool sendBufferPool, RioFixedBufferPool receiveBufferPool, RioFixedBufferPool adressBufferPool,
             uint maxOutstandingReceive, uint maxOutstandingSend, IntPtr SendCompletionQueue, IntPtr ReceiveCompletionQueue,
             ADDRESS_FAMILIES adressFam, SOCKET_TYPE sockType, PROTOCOL protocol)
         {
-            if ((Socket = WinSock.WSASocket(adressFam, sockType, protocol, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.WSA_FLAG_OVERLAPPED)) == IntPtr.Zero)
-                WinSock.ThrowLastWSAError();
+            this.adressFam = adressFam;
+            this.sockType = sockType;
+            this.protocol = protocol;
+            this.maxOutstandingReceive = maxOutstandingReceive;
+            this.maxOutstandingSend = maxOutstandingSend;
+            this.ReceiveCompletionQueue = ReceiveCompletionQueue;
+            this.SendCompletionQueue = SendCompletionQueue;
 
             SendBufferPool = sendBufferPool;
             ReceiveBufferPool = receiveBufferPool;
             AdressPool = adressBufferPool;
+            sendTimeout = Stopwatch.Frequency * 5;
+            reciveTimeout = Stopwatch.Frequency * 5;
+
+            ResetSocket();
+        }
+
+        public TimeSpan SendTimeout
+        {
+            get
+            {
+                return TimeSpan.FromSeconds(sendTimeout / Stopwatch.Frequency);
+            }
+            set
+            {
+                sendTimeout = (long)(Stopwatch.Frequency * value.TotalSeconds);
+            }
+        }
+
+        public TimeSpan ReciveTimeout
+        {
+            get
+            {
+                return TimeSpan.FromSeconds(reciveTimeout / Stopwatch.Frequency);
+            }
+            set
+            {
+                reciveTimeout = (long)(Stopwatch.Frequency * value.TotalSeconds);
+            }
+        }
+
+        internal void ResetSocket()
+        {
+            if (Socket != IntPtr.Zero)
+                WinSock.closesocket(Socket);
+
+            if ((Socket = WinSock.WSASocket(adressFam, sockType, protocol, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.WSA_FLAG_OVERLAPPED)) == IntPtr.Zero)
+                WinSock.ThrowLastWSAError();
 
             _requestQueue = RioStatic.CreateRequestQueue(Socket, maxOutstandingReceive - 1, 1, maxOutstandingSend - 1, 1, ReceiveCompletionQueue, SendCompletionQueue, GetHashCode());
             WinSock.ThrowLastWSAError();
@@ -28,10 +86,7 @@ namespace RioSharp
 
         public RioBufferSegment Send(RioBufferSegment Segment)
         {
-            Segment.SetNotComplete();
-            if (!RioStatic.Send(_requestQueue, Segment.SegmentPointer, 1, RIO_SEND_FLAGS.NONE, Segment.Index))
-                WinSock.ThrowLastWSAError();
-
+            Send(Segment, RIO_SEND_FLAGS.NONE);
             return Segment;
         }
 
@@ -63,6 +118,9 @@ namespace RioSharp
 
         internal void Send(RioBufferSegment segment, RIO_SEND_FLAGS flags)
         {
+            lastSendStart = RioSocketPool.CurrentTime;
+            StartedSends++;
+            segment.lastSocket = this;
             segment.SetNotComplete();
             if (!RioStatic.Send(_requestQueue, segment.SegmentPointer, 1, flags, segment.Index))
                 WinSock.ThrowLastWSAError();
@@ -77,6 +135,9 @@ namespace RioSharp
 
         internal void Send(RioBufferSegment segment, RioBufferSegment remoteAdress, RIO_SEND_FLAGS flags)
         {
+            lastSendStart = RioSocketPool.CurrentTime;
+            StartedSends++;
+            segment.lastSocket = this;
             segment.SetNotComplete();
             if (!RioStatic.SendEx(_requestQueue, segment.SegmentPointer, 1, RIO_BUF.NullSegment, remoteAdress.SegmentPointer, RIO_BUF.NullSegment, RIO_BUF.NullSegment, flags, segment.Index))
                 WinSock.ThrowLastWSAError();
@@ -84,6 +145,9 @@ namespace RioSharp
 
         public RioBufferSegment BeginReceive(RioBufferSegment segment)
         {
+            lastReceiveStart = RioSocketPool.CurrentTime;
+            StartedReceives++;
+            segment.lastSocket = this;
             segment.SegmentPointer->Length = segment.TotalLength;
             segment.SetNotComplete();
             if (!RioStatic.Receive(_requestQueue, segment.SegmentPointer, 1, RIO_RECEIVE_FLAGS.NONE, segment.Index))

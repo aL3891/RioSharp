@@ -9,6 +9,7 @@ namespace RioSharp
         internal IntPtr _adressBuffer;
         private IntPtr _eventHandle;
         private RioConnectionOrientedSocketPool _pool;
+        internal long disconnectStartTime;
 
         internal RioConnectionOrientedSocket(IntPtr overlapped, IntPtr adressBuffer, RioConnectionOrientedSocketPool pool, RioFixedBufferPool sendBufferPool, RioFixedBufferPool receiveBufferPool, RioFixedBufferPool adressBufferPool,
             uint maxOutstandingReceive, uint maxOutstandingSend, IntPtr SendCompletionQueue, IntPtr ReceiveCompletionQueue,
@@ -38,11 +39,13 @@ namespace RioSharp
 
         public override void Dispose()
         {
-            _pool.Recycle(this);
+            _pool.BeginRecycle(this);
         }
 
-        internal void Close() {
+        internal void Close()
+        {
             WinSock.closesocket(Socket);
+            Kernel32.CloseHandle(_eventHandle);
         }
     }
 }

@@ -18,6 +18,9 @@ namespace ConsoleApplication1
         private static int pipeLineDeph;
         private static byte[] responseBytes;
 
+        static byte[][] reqz;
+
+
         public static byte[] GetResponse()
         {
             var responseStr = "HTTP/1.1 200 OK\r\n" +
@@ -55,6 +58,14 @@ namespace ConsoleApplication1
             listener = new RioTcpListener(sendPool, recivePool, (uint)connections);
             currentSegment = listener.PreAllocateWrite(GetResponse());
             responseBytes = GetResponse();
+
+            reqz = new byte[pipeLineDeph + 1][];
+
+            for (int i = 0; i < reqz.Length; i++)
+            {
+                reqz[i] = Enumerable.Repeat(responseBytes, i).SelectMany(b => b).ToArray();
+            }
+
             //Task.Run(async () =>
             //{
             //    while (true)
@@ -77,6 +88,7 @@ namespace ConsoleApplication1
         static unsafe void ProcessSocket(RioBufferSegment s, ServeState state) {
             uint current = 0;
             var r = s.CurrentContentLength;
+            var reqs = 0;
 
             if (r == 0)
             {
@@ -85,14 +97,12 @@ namespace ConsoleApplication1
                 return;
             }
 
-            var buffer = sendPool.GetBuffer();
-
             for (int i = 0; state.leftoverLength != 0 && i < 4 - state.leftoverLength; i++)
             {
                 current += s.Datapointer[i];
                 current = current << 8;
                 if (current == endOfRequest)
-                    buffer.Write(responseBytes);
+                    reqs++;
             }
 
             state.leftoverLength = r % 4;
@@ -106,7 +116,7 @@ namespace ConsoleApplication1
             for (; start <= end; start++)
             {
                 if (*(uint*)start == endOfRequest)
-                    buffer.Write(responseBytes);
+                    reqs++;
             }
             
             state.oldleftoverLength = state.leftoverLength;
@@ -116,9 +126,8 @@ namespace ConsoleApplication1
                 current += s.Datapointer[i];
                 current = current << 4;
             }
-            
-            state.socket.Send(buffer);
-            buffer.DisposeWhenComplete();
+
+            state.socket.Send(reqz[reqs]);
         }
 
         static uint endOfRequest = 0x0a0d0a0d;

@@ -17,6 +17,10 @@ namespace RioSharp
         public const int ERROR_IO_PENDING = 997;
 
 
+        [DllImport(Kernel_32, SetLastError = true)]
+        [SuppressUnmanagedCodeSecurity]
+        internal unsafe static extern IntPtr CancelIoEx([In]IntPtr handle, NativeOverlapped* overlapped);
+
 
         [DllImport(Kernel_32, SetLastError = true)]
         [SuppressUnmanagedCodeSecurity]

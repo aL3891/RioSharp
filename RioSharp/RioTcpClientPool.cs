@@ -47,59 +47,54 @@ namespace RioSharp
         {
             _freeSockets.Enqueue(socket);
         }
-
-        protected override unsafe void SocketIocpComplete(object o)
+        
+        protected override unsafe bool SocketIocpOk(RioConnectionOrientedSocket socket, byte status)
         {
-            IntPtr lpNumberOfBytes;
-            IntPtr lpCompletionKey;
-            RioNativeOverlapped* lpOverlapped = stackalloc RioNativeOverlapped[1];
-            TaskCompletionSource<RioSocket> r;
-            RioConnectionOrientedSocket res;
 
-            while (true)
+            if (status == 1)
             {
-                if (Kernel32.GetQueuedCompletionStatusRio(socketIocp, out lpNumberOfBytes, out lpCompletionKey, out lpOverlapped, -1))
+                ThreadPool.QueueUserWorkItem(oo =>
                 {
-                    if (lpOverlapped->Status == 1)
-                    {
-                        EndRecycle(allSockets[lpOverlapped->SocketIndex],true);
-                    }
-                    else if (lpOverlapped->Status == 2)
-                    {
-                        res = allSockets[lpOverlapped->SocketIndex];
-                        activeSockets.TryAdd(res.GetHashCode(), res);
-                        if (res.SetSocketOption(SOL_SOCKET_SocketOptions.SO_UPDATE_CONNECT_CONTEXT, (void*)0, 0) != 0)
-                            WinSock.ThrowLastWSAError();
-
-                        if (_ongoingConnections.TryRemove(res, out r))
-                            ThreadPool.QueueUserWorkItem(oo =>
-                            {
-                                var rr = (Tuple<TaskCompletionSource<RioSocket>, RioConnectionOrientedSocket>)oo;
-                                rr.Item1.SetResult(rr.Item2);
-                            }, Tuple.Create(r, res));
-                    }
-                }
-                else
-                {
-                    var error = Marshal.GetLastWin32Error();
-
-                    if (error == Kernel32.ERROR_ABANDONED_WAIT_0)
-                        break;
-                    else if (error == Kernel32.ERROR_NETNAME_DELETED || error == Kernel32.ERROR_CONNECTION_REFUSED)
-                    {
-                        res = allSockets[lpOverlapped->SocketIndex];
-                        BeginRecycle(res);
-                        if (_ongoingConnections.TryRemove(res, out r))
-                            ThreadPool.QueueUserWorkItem(oo =>
-                            {
-                                var rr = (Tuple<TaskCompletionSource<RioSocket>, int>)oo;
-                                rr.Item1.SetException(new Win32Exception(rr.Item2));
-                            }, Tuple.Create(r, error));
-                    }
-                    else
-                        throw new Win32Exception(error);
-                }
+                    EndRecycle((RioConnectionOrientedSocket)oo, true);
+                }, socket);
             }
+            else if (status == 2)
+            {
+                TaskCompletionSource<RioSocket> r;
+                activeSockets.TryAdd(socket.GetHashCode(), socket);
+                if (socket.SetSocketOption(SOL_SOCKET_SocketOptions.SO_UPDATE_CONNECT_CONTEXT, (void*)0, 0) != 0)
+                    WinSock.ThrowLastWSAError();
+
+                if (_ongoingConnections.TryRemove(socket, out r))
+                    ThreadPool.QueueUserWorkItem(oo =>
+                    {
+                        var rr = (Tuple<TaskCompletionSource<RioSocket>, RioConnectionOrientedSocket>)oo;
+                        rr.Item1.SetResult(rr.Item2);
+                    }, Tuple.Create(r, socket));
+            }
+
+            return false;
+        }
+
+        protected override bool SocketIocpError(int error, RioConnectionOrientedSocket socket, byte status)
+        {
+            if (error == Kernel32.ERROR_ABANDONED_WAIT_0)
+                return true;
+            else if (error == Kernel32.ERROR_NETNAME_DELETED || error == Kernel32.ERROR_CONNECTION_REFUSED || error == 52)
+            {
+                TaskCompletionSource<RioSocket> r;
+                BeginRecycle(socket);
+                if (_ongoingConnections.TryRemove(socket, out r))
+                    ThreadPool.QueueUserWorkItem(oo =>
+                    {
+                        var rr = (Tuple<TaskCompletionSource<RioSocket>, int>)oo;
+                        rr.Item1.SetException(new Win32Exception(rr.Item2));
+                    }, Tuple.Create(r, error));
+            }
+            else
+                throw new Win32Exception(error);
+
+            return false;
         }
 
         public async Task<RioSocket> Connect(Uri adress)

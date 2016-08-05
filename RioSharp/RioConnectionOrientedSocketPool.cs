@@ -16,6 +16,9 @@ namespace RioSharp
         internal ConcurrentDictionary<long, RioConnectionOrientedSocket> activeSockets = new ConcurrentDictionary<long, RioConnectionOrientedSocket>();
         ConcurrentDictionary<long, RioConnectionOrientedSocket> disconnectingSockets = new ConcurrentDictionary<long, RioConnectionOrientedSocket>();
 
+        bool running = true;
+        TaskCompletionSource<object> timouttcs = new TaskCompletionSource<object>();
+
         public unsafe RioConnectionOrientedSocketPool(RioFixedBufferPool sendPool, RioFixedBufferPool revicePool, uint socketCount, ADDRESS_FAMILIES adressFam, SOCKET_TYPE sockType, PROTOCOL protocol,
             uint maxOutstandingReceive = 1024, uint maxOutstandingSend = 1024)
             : base(sendPool, revicePool, adressFam, sockType, protocol, maxOutstandingReceive, maxOutstandingSend, socketCount)
@@ -50,55 +53,112 @@ namespace RioSharp
 
         private async void Timeout()
         {
-            while (true)
+            while (running)
             {
                 await Task.Delay(1000);
                 foreach (var s in activeSockets.Values)
                 {
-                    if (((s.StartedReceives - s.FinishdedReceives) > 0 && (CurrentTime - s.lastReceiveStart > s.reciveTimeout)) || ((s.StartedSends - s.FinishdedSends) > 0 && (CurrentTime - s.lastSendStart > s.sendTimeout)))
+                    if ((s.pendingRecives > 0 && CurrentTime - s.lastReceiveStart > s.reciveTimeout) || (s.pendingRecives > 0 && CurrentTime - s.lastSendStart > s.sendTimeout))
                         s.Dispose();
                 }
 
-                foreach (var s in disconnectingSockets.Values)
+                //foreach (var s in disconnectingSockets.Values)
+                //{
+                //    if (CurrentTime - s.disconnectStartTime > Stopwatch.Frequency * 5)
+                //        EndRecycle(s, true);
+                //}
+            }
+
+            timouttcs.SetResult(null);
+        }
+
+        protected unsafe void SocketIocpComplete(object o)
+        {
+            IntPtr lpNumberOfBytes;
+            IntPtr lpCompletionKey;
+            RioNativeOverlapped* lpOverlapped = stackalloc RioNativeOverlapped[1];
+            RioNativeOverlapped* lpOverlappedNull = (RioNativeOverlapped*)0;
+
+            while (true)
+            {
+                if (Kernel32.GetQueuedCompletionStatusRio(socketIocp, out lpNumberOfBytes, out lpCompletionKey, out lpOverlapped, -1))
+                    SocketIocpOk(allSockets[lpOverlapped->SocketIndex], lpOverlapped->Status);
+                else
                 {
-                    if (CurrentTime - s.disconnectStartTime > Stopwatch.Frequency * 5)
-                        EndRecycle(s, true);
+                    var error = Marshal.GetLastWin32Error();
+                    RioConnectionOrientedSocket socket = null;
+                    byte status = 0;
+
+                    if (lpOverlapped != lpOverlappedNull)
+                    {
+                        socket = allSockets[lpOverlapped->SocketIndex];
+                        status = lpOverlapped->Status;
+                    }
+
+                    if (SocketIocpError(error, socket, status))
+                        break;
                 }
             }
         }
 
+        protected abstract bool SocketIocpOk(RioConnectionOrientedSocket socket, byte status);
 
-        protected abstract void SocketIocpComplete(object o);
+        protected abstract bool SocketIocpError(int error, RioConnectionOrientedSocket socket, byte status);
+
+        bool disconnectInProgress = false;
 
         internal void EndRecycle(RioConnectionOrientedSocket socket, bool async)
         {
+            //lock (this)
+            //{
+            //    if (disconnectInProgress)
+            //        return;
+            //    else
+            //        disconnectInProgress = true;
+            //}
+
             RioConnectionOrientedSocket s;
             disconnectingSockets.TryRemove(socket.GetHashCode(), out s);
 
-            bool gotRest = false;
-            int attempts = 0;
-            while ((socket.StartedReceives - socket.FinishdedReceives) > 0 || (socket.StartedSends - socket.FinishdedSends) > 0)
-            {
-                Thread.Sleep(100);
-                attempts++;
-                if (attempts > 10 && !gotRest)
-                {
-                    gotRest = true;
-                    socket.ResetSocket();
-                    if ((Kernel32.CreateIoCompletionPort(socket.Socket, socketIocp, 0, 1)) == IntPtr.Zero)
-                        Kernel32.ThrowLastError();
-                }
-            }
+            //RioStatic.Notify(ReceiveCompletionQueue);
+            //unsafe
+            //{
+            //    uint maxResults = Math.Min(MaxOutstandingSend, int.MaxValue);
+            //    RIO_RESULT* results = stackalloc RIO_RESULT[(int)maxResults];
+            //    var count = RioStatic.DequeueCompletion(ReceiveCompletionQueue, results, maxResults);
+            //}
+            //socket.ResetSocket();
 
-            if (gotRest)
-                InitializeSocket(socket);
+            //bool gotRest = false;
+            //int attempts = 0;
+            //while ((socket.StartedReceives - socket.FinishdedReceives) > 0 || (socket.StartedSends - socket.FinishdedSends) > 0)
+            //{
+            //    await Task.Delay(100);
+            //    attempts++;
+            //    if (attempts > 10 && !gotRest)
+            //    {
+            //        gotRest = true;
+            //        socket.ResetSocket();
+            //        if ((Kernel32.CreateIoCompletionPort(socket.Socket, socketIocp, 0, 1)) == IntPtr.Zero)
+            //            Kernel32.ThrowLastError();
+            //        break;
+            //    }
+            //}
 
-            socket.StartedReceives = 0;
-            socket.StartedSends = 0;
-            socket.FinishdedReceives = 0;
-            socket.FinishdedSends = 0;
+            //if (gotRest)
+            //    InitializeSocket(socket);
+
+            //socket.StartedReceives = 0;
+            //socket.StartedSends = 0;
+            //socket.FinishdedReceives = 0;
+            //socket.FinishdedSends = 0;
 
             FinalizeRecycle(socket);
+
+            //lock (this)
+            //{
+            //    disconnectInProgress = false;
+            //}
         }
 
 
@@ -108,26 +168,66 @@ namespace RioSharp
 
         internal abstract void InitializeSocket(RioConnectionOrientedSocket socket);
 
-        internal unsafe virtual void BeginRecycle(RioConnectionOrientedSocket socket)
+
+        bool disconnectstarted = false;
+
+
+        internal unsafe virtual void BeginRecycle(RioConnectionOrientedSocket socket, bool force)
         {
-            disconnectingSockets.TryAdd(socket.GetHashCode(), socket);
+            lock (this)
+            {
+                if (disconnectInProgress || disconnectstarted)
+                    return;
+                else
+                    disconnectstarted = true;
+            }
+
+            //var res = Kernel32.CancelIoEx(socket.Socket, (NativeOverlapped*)0);
+            //Kernel32.ThrowLastError();
+
+            //socket.SetLinger(0);
+
             RioConnectionOrientedSocket c;
             activeSockets.TryRemove(socket.GetHashCode(), out c);
-            socket.ResetOverlapped();
-            socket.disconnectStartTime = RioSocketPool.CurrentTime;
 
-            socket._overlapped->Status = 1;
-            if (!RioStatic.DisconnectEx(socket.Socket, socket._overlapped, WinSock.TF_REUSE_SOCKET, 0))
+
+            if (force || socket.pendingRecives > 0 || socket.pendingSends > 0)
             {
-                if (WinSock.WSAGetLastError() == WinSock.WSAENOTCONN)
-                    EndRecycle(socket, false);
-                else
-                    WinSock.ThrowLastWSAError();
+                socket.ResetSocket();
+                InitializeSocket(socket);
+                FinalizeRecycle(socket);
+            }
+            else
+            {
+                disconnectingSockets.TryAdd(socket.GetHashCode(), socket);
+
+                socket.ResetOverlapped();
+                socket.disconnectStartTime = RioSocketPool.CurrentTime;
+
+                socket._overlapped->Status = 1;
+                if (!RioStatic.DisconnectEx(socket.Socket, socket._overlapped, WinSock.TF_REUSE_SOCKET, 0))
+                {
+                    if (WinSock.WSAGetLastError() == WinSock.WSAENOTCONN)
+                        EndRecycle(socket, false);
+                    else
+                        WinSock.ThrowLastWSAError();
+                }
+            }
+
+            socket.pendingRecives = 0;
+            socket.pendingSends = 0;
+
+            lock (this)
+            {
+                disconnectstarted = false;
             }
         }
 
         public override void Dispose()
         {
+            running = false;
+            timouttcs.Task.Wait();
+
             Kernel32.CloseHandle(socketIocp);
             for (int i = 0; i < allSockets.Length; i++)
                 allSockets[i].Close();

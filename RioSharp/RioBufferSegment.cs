@@ -103,6 +103,8 @@ namespace RioSharp
 
         public void Set()
         {
+            Interlocked.Decrement(ref lastSocket.pendingRecives);
+
             var awaitableState = Interlocked.Exchange(ref _awaitableState, _awaitableIsCompleted);
             _manualResetEvent.Set();
 

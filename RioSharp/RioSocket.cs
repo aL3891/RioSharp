@@ -13,10 +13,8 @@ namespace RioSharp
         internal RioFixedBufferPool SendBufferPool, ReceiveBufferPool, AdressPool;
         internal long lastSendStart;
         internal long lastReceiveStart;
-        internal int StartedReceives;
-        internal int StartedSends;
-        internal int FinishdedReceives;
-        internal int FinishdedSends;
+        internal int pendingRecives;
+        internal int pendingSends;
         internal long sendTimeout;
         internal long reciveTimeout;
         private uint maxOutstandingReceive;
@@ -80,7 +78,16 @@ namespace RioSharp
             if ((Socket = WinSock.WSASocket(adressFam, sockType, protocol, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.WSA_FLAG_OVERLAPPED)) == IntPtr.Zero)
                 WinSock.ThrowLastWSAError();
 
+            //while (true)
+            //{
             _requestQueue = RioStatic.CreateRequestQueue(Socket, maxOutstandingReceive - 1, 1, maxOutstandingSend - 1, 1, ReceiveCompletionQueue, SendCompletionQueue, GetHashCode());
+            //    if (_requestQueue != IntPtr.Zero)
+            //        break;
+            //    else {
+            //        var error = WinSock.WSAGetLastError();
+            //    }
+            //}
+
             WinSock.ThrowLastWSAError();
         }
 
@@ -143,6 +150,11 @@ namespace RioSharp
                 WinSock.ThrowLastWSAError();
         }
 
+        public RioBufferSegment BeginReceive()
+        {
+            return BeginReceive(ReceiveBufferPool.GetBuffer());
+        }
+
         public RioBufferSegment BeginReceive(RioBufferSegment segment)
         {
             lastReceiveStart = RioSocketPool.CurrentTime;
@@ -201,6 +213,12 @@ namespace RioSharp
             if (WinSock.WSAIoctlGeneral2(Socket, WinSock.SIO_LOOPBACK_FAST_PATH, &v, sizeof(int), (void*)0, 0, out dwBytes, IntPtr.Zero, IntPtr.Zero) != 0)
                 WinSock.ThrowLastWSAError();
 
+        }
+
+        public void SetLinger(int value)
+        {
+            if (SetSocketOption(SOL_SOCKET_SocketOptions.SO_LINGER, &value, sizeof(int)) != 0) ;
+            WinSock.ThrowLastWSAError();
         }
 
 

@@ -67,7 +67,7 @@ namespace RioSharp
 
             if (WinSock.listen(_listenerSocket, 100) == WinSock.SOCKET_ERROR)
                 WinSock.ThrowLastWSAError();
-            
+
             foreach (var s in allSockets)
             {
                 InitializeSocket(s);
@@ -119,28 +119,28 @@ namespace RioSharp
         {
             BeginAccept(socket);
         }
-
-        protected override unsafe void SocketIocpComplete(object o)
+        
+        protected override bool SocketIocpOk(RioConnectionOrientedSocket socket, byte status)
         {
-            IntPtr lpNumberOfBytes;
-            IntPtr lpCompletionKey;
-            RioNativeOverlapped* lpOverlapped = stackalloc RioNativeOverlapped[1];
-
-            while (true)
+            ThreadPool.QueueUserWorkItem(oo =>
             {
-                if (Kernel32.GetQueuedCompletionStatusRio(socketIocp, out lpNumberOfBytes, out lpCompletionKey, out lpOverlapped, -1))
-                    EndRecycle(allSockets[lpOverlapped->SocketIndex],true);
-                else
-                {
-                    var error = Marshal.GetLastWin32Error();
-                    if (error == Kernel32.ERROR_ABANDONED_WAIT_0)
-                        break;
-                    else if (error == Kernel32.ERROR_NETNAME_DELETED)
-                        BeginRecycle(allSockets[lpOverlapped->SocketIndex]);
-                    else
-                        throw new Win32Exception(error);
-                }
-            }
+                EndRecycle((RioConnectionOrientedSocket)oo, true);
+            }, socket);
+
+            return false;
+        }
+
+        protected override bool SocketIocpError(int error, RioConnectionOrientedSocket socket, byte status)
+        {
+
+            if (error == Kernel32.ERROR_ABANDONED_WAIT_0)
+                return true;
+            else if (error == Kernel32.ERROR_NETNAME_DELETED)
+                BeginRecycle(socket);
+            else
+                throw new Win32Exception(error);
+
+            return false;
         }
 
         public override void Dispose()

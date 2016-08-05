@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -19,6 +21,8 @@ namespace RioSharp.BenchClient
         private static TimeSpan span;
         private static byte[] requestBytes;
 
+        static byte[][] reqz;
+
         static void Main(string[] args)
         {
             pipeLineDeph = int.Parse(args.FirstOrDefault(f => f.StartsWith("-p"))?.Substring(2) ?? "16");
@@ -34,16 +38,31 @@ namespace RioSharp.BenchClient
             Console.WriteLine("Pipeline depth: " + pipeLineDeph);
             Console.WriteLine("Target: " + uri);
 
-            requestString = $"GET {uri.PathAndQuery} HTTP/1.1\r\nHost: {uri.Host}:{uri.Port}\r\n\r\n";
 
+            requestString = $"GET {uri.PathAndQuery} HTTP/1.1\r\nHost: {uri.Host}:{uri.Port}\r\n\r\n";
             _requestBytes = Encoding.ASCII.GetBytes(requestString);
             requestBytes = Enumerable.Repeat(_requestBytes, pipeLineDeph).SelectMany(b => b).ToArray();
-            sendPool = new RioFixedBufferPool(10 * connections, requestBytes.Length * pipeLineDeph);
+            
+
+
+
+
+            reqz = new byte[pipeLineDeph + 1][];
+
+            for (int i = 0; i < reqz.Length; i++)
+            {
+                reqz[i] = Enumerable.Repeat(_requestBytes, i).SelectMany(b => b).ToArray();
+            }
+
+            sendPool = new RioFixedBufferPool(10 * connections, requestBytes.Length);
             clientPool = new RioTcpClientPool(sendPool, new RioFixedBufferPool(10 * connections, (256 * pipeLineDeph)), (uint)connections);
             Console.WriteLine("Benchmarking...");
 
+
+
+
             timer.Start();
-            var tasks = Enumerable.Range(0, connections).Select(t => Task.Run(ExecuteSegment)).ToList();
+            var tasks = Enumerable.Range(0, connections).Select(t => Task.Run(ExecuteStream)).ToList();
 
             var totalRequests = tasks.Sum(t => t.Result.Requests);
             Console.WriteLine($"Made {totalRequests } requests over {span.TotalSeconds} seconds ({totalRequests / span.TotalSeconds} Rps)");
@@ -75,7 +94,7 @@ namespace RioSharp.BenchClient
                 ResetConnection(state);
                 return;
             }
-            
+
             for (int i = 0; state.leftoverLength != 0 && i < 4 - state.leftoverLength; i++)
             {
                 current += s.Datapointer[i];
@@ -109,14 +128,7 @@ namespace RioSharp.BenchClient
             state.Requests += responses;
 
             if (timer.Elapsed < span)
-            {
-                var buffer = sendPool.GetBuffer();
-                for (int i = 0; i < responses; i++)
-                    buffer.Write(_requestBytes);
-
-                state.socket.Send(buffer);
-                buffer.DisposeWhenComplete();
-            }
+                state.socket.Send(reqz[responses]);
             else
             {
                 state.reader.Dispose();
@@ -133,7 +145,7 @@ namespace RioSharp.BenchClient
                 {
                     state.socket = await clientPool.Connect(uri);
                     state.reader.Socket = state.socket;
-                    
+
                     state.reader.Start();
                     state.socket.Send(requestBytes);
                     return;
@@ -149,6 +161,39 @@ namespace RioSharp.BenchClient
             state.tcs.SetResult(state);
         }
 
+
+        public unsafe static void apaaaa()
+        {
+            byte v = 0x20;
+
+            fixed (byte* ff = &_requestBytes[0])
+            {
+
+                var ix = new byte[Vector<byte>.Count];
+
+                for (int i = 0; i < ix.Length; i++)
+                    ix[i] = (byte)i;
+                
+                Vector<byte> apaa = new Vector<byte>(_requestBytes), index = new Vector<byte>(ix), space = new Vector<byte>((byte)' ');
+
+                var apaapa = Vector.Equals(apaa, space);
+                
+                var fdas = Vector.ConditionalSelect(apaapa, index ,Vector<byte>.Zero); 
+
+                byte*[] apa = new byte*[16];
+
+                var apa2 = Vector.IsHardwareAccelerated;
+
+                var bajs = Vector<byte>.Count;
+            }
+
+
+
+
+
+
+        }
+
         public static Task<ConnectionState> ExecuteSegment()
         {
             ConnectionState state = new ConnectionState();
@@ -159,7 +204,7 @@ namespace RioSharp.BenchClient
             return state.tcs.Task;
         }
 
-        public async static Task<int> ExecuteStream()
+        public async static Task<ConnectionState> ExecuteStream()
         {
             var buffer = new byte[256 * pipeLineDeph];
             var leftoverLength = 0;
@@ -167,7 +212,8 @@ namespace RioSharp.BenchClient
             uint endOfRequest = 0x0a0d0a0d;
             uint current = 0;
             int responses = 0;
-            int total = 0;
+
+            ConnectionState state = new ConnectionState();
 
             RioSocket connection = null;
             RioStream stream = null;
@@ -232,7 +278,7 @@ namespace RioSharp.BenchClient
                     }
 
                 }
-                total += responses;
+                state.Requests += responses;
                 responses = 0;
 
                 if (!keepAlive)
@@ -244,7 +290,7 @@ namespace RioSharp.BenchClient
             }
 
             connection?.Dispose();
-            return total;
+            return state;
         }
     }
 }

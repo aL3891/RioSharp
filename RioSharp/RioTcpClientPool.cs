@@ -83,7 +83,7 @@ namespace RioSharp
             else if (error == Kernel32.ERROR_NETNAME_DELETED || error == Kernel32.ERROR_CONNECTION_REFUSED || error == 52)
             {
                 TaskCompletionSource<RioSocket> r;
-                BeginRecycle(socket);
+                BeginRecycle(socket,false);
                 if (_ongoingConnections.TryRemove(socket, out r))
                     ThreadPool.QueueUserWorkItem(oo =>
                     {

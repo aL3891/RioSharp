@@ -18,14 +18,14 @@ namespace RioSharp
                 adressFam, sockType, protocol) //ADDRESS_FAMILIES.AF_INET, SOCKET_TYPE.SOCK_STREAM, PROTOCOL.IPPROTO_TCP
         {
             _overlapped = (RioNativeOverlapped*)overlapped.ToPointer();
-            _eventHandle = Kernel32.CreateEvent(IntPtr.Zero, false, false, null);
+            //_eventHandle = Kernel32.CreateEvent(IntPtr.Zero, false, false, null);
             _adressBuffer = adressBuffer;
             _pool = pool;
-            unsafe
-            {
-                var n = (NativeOverlapped*)overlapped.ToPointer();
-                n->EventHandle = _eventHandle;
-            }
+            //unsafe
+            //{
+            //    var n = (NativeOverlapped*)overlapped.ToPointer();
+            //    n->EventHandle = _eventHandle;
+            //}
         }
 
         internal unsafe void ResetOverlapped()
@@ -34,18 +34,18 @@ namespace RioSharp
             _overlapped->InternalLow = IntPtr.Zero;
             _overlapped->OffsetHigh = 0;
             _overlapped->OffsetLow = 0;
-            Kernel32.ResetEvent(_overlapped->EventHandle);
+            //Kernel32.ResetEvent(_overlapped->EventHandle);
         }
 
         public override void Dispose()
         {
-            _pool.BeginRecycle(this);
+            _pool.BeginRecycle(this, false);
         }
 
         internal void Close()
         {
             WinSock.closesocket(Socket);
-            Kernel32.CloseHandle(_eventHandle);
+            //Kernel32.CloseHandle(_eventHandle);
         }
     }
 }

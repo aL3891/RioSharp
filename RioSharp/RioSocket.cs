@@ -126,7 +126,7 @@ namespace RioSharp
         internal void Send(RioBufferSegment segment, RIO_SEND_FLAGS flags)
         {
             lastSendStart = RioSocketPool.CurrentTime;
-            StartedSends++;
+            Interlocked.Increment(ref pendingSends);
             segment.lastSocket = this;
             segment.SetNotComplete();
             if (!RioStatic.Send(_requestQueue, segment.SegmentPointer, 1, flags, segment.Index))
@@ -143,7 +143,7 @@ namespace RioSharp
         internal void Send(RioBufferSegment segment, RioBufferSegment remoteAdress, RIO_SEND_FLAGS flags)
         {
             lastSendStart = RioSocketPool.CurrentTime;
-            StartedSends++;
+            Interlocked.Increment(ref pendingSends);
             segment.lastSocket = this;
             segment.SetNotComplete();
             if (!RioStatic.SendEx(_requestQueue, segment.SegmentPointer, 1, RIO_BUF.NullSegment, remoteAdress.SegmentPointer, RIO_BUF.NullSegment, RIO_BUF.NullSegment, flags, segment.Index))
@@ -158,7 +158,7 @@ namespace RioSharp
         public RioBufferSegment BeginReceive(RioBufferSegment segment)
         {
             lastReceiveStart = RioSocketPool.CurrentTime;
-            StartedReceives++;
+            Interlocked.Increment(ref pendingRecives);
             segment.lastSocket = this;
             segment.SegmentPointer->Length = segment.TotalLength;
             segment.SetNotComplete();

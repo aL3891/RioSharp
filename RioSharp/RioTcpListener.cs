@@ -65,7 +65,7 @@ namespace RioSharp
                     WinSock.ThrowLastWSAError();
             }
 
-            if (WinSock.listen(_listenerSocket, 100) == WinSock.SOCKET_ERROR)
+            if (WinSock.listen(_listenerSocket, backlog) == WinSock.SOCKET_ERROR)
                 WinSock.ThrowLastWSAError();
 
             foreach (var s in allSockets)
@@ -99,7 +99,7 @@ namespace RioSharp
                     if (error == Kernel32.ERROR_ABANDONED_WAIT_0)
                         break;
                     else if (error == Kernel32.ERROR_NETNAME_DELETED)
-                        BeginRecycle(allSockets[lpOverlapped->SocketIndex]);
+                        BeginRecycle(allSockets[lpOverlapped->SocketIndex],false);
                     else
                         throw new Win32Exception(error);
                 }
@@ -136,7 +136,7 @@ namespace RioSharp
             if (error == Kernel32.ERROR_ABANDONED_WAIT_0)
                 return true;
             else if (error == Kernel32.ERROR_NETNAME_DELETED)
-                BeginRecycle(socket);
+                BeginRecycle(socket,false);
             else
                 throw new Win32Exception(error);
 

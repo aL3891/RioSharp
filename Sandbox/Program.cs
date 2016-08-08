@@ -12,37 +12,66 @@ namespace Sandbox
 {
     class Program
     {
+        private static RioTcpClientPool clientPool;
         private static ManualResetEvent e;
+        private static RioTcpListener listener;
+        private static bool running = true;
+        private static int operations;
 
         static void Main(string[] args)
         {
 
-            var clientPool = new RioTcpClientPool(new RioFixedBufferPool(1, 100), new RioFixedBufferPool(1, 100), 1);
-            var listener = new RioTcpListener(new RioFixedBufferPool(1, 100), new RioFixedBufferPool(1, 100), 1);
-            listener.Listen(new IPEndPoint(new IPAddress(new byte[] { 0, 0, 0, 0 }), 5000), 10);
+            clientPool = new RioTcpClientPool(new RioFixedBufferPool(100, 100), new RioFixedBufferPool(10, 100), 4096);
+            listener = new RioTcpListener(new RioFixedBufferPool(100, 100), new RioFixedBufferPool(100, 100), 4096);
+            listener.Listen(new IPEndPoint(new IPAddress(new byte[] { 0, 0, 0, 0 }), 5000), 1024);
             e = new ManualResetEvent(false);
-            listener.OnAccepted = doit;
 
-            var socket = clientPool.Connect(new Uri("http://localhost:5000/")).Result;
-            var segment = socket.BeginReceive();
-            socket.Dispose();
-            //Thread.Sleep(500);
-            //socket = clientPool.Connect(new Uri("http://localhost:5000/")).Result;
-            //e.Set();
-            segment.GetResult();
-
-
-            //Socket s = null;
-            //var se = new SocketAsyncEventArgs { };
-            //se.
-            //s.ReceiveAsync(se);
+            var task = Task.Run((Action)clientDisconnect);
+            Log();
+            Console.ReadLine();
+            running = false;
+            task.Wait();
+            clientPool.Dispose();
+            listener.Dispose();
         }
 
-        public static void doit(RioSocket s)
+        public static async Task Log()
         {
-            e.WaitOne();
-            s.Send(new byte[] { 1, 2, 3 });
+            while (running)
+            {
+
+                await Task.Delay(1000);
+                Console.WriteLine(operations);
+                operations = 0;
+            }
         }
+
+        public static void clientDisconnect()
+        {
+            listener.OnAccepted = (RioSocket s) =>
+            {
+                s.BeginReceive().GetResult();
+                s.Dispose();
+            };
+            while (running)
+            {
+                try
+                {
+                //    Thread.Sleep(100);
+                    var socket = clientPool.Connect(new Uri("http://localhost:5000/")).Result;
+                    socket.Dispose();
+                    operations++;
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                }
+
+            }
+
+
+        }
+
 
     }
 }

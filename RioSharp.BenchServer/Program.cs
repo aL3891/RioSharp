@@ -19,8 +19,7 @@ namespace ConsoleApplication1
         private static byte[] responseBytes;
 
         static byte[][] reqz;
-
-
+        
         public static byte[] GetResponse()
         {
             var responseStr = "HTTP/1.1 200 OK\r\n" +
@@ -99,7 +98,7 @@ namespace ConsoleApplication1
 
             for (int i = 0; state.leftoverLength != 0 && i < 4 - state.leftoverLength; i++)
             {
-                current += s.Datapointer[i];
+                current += s.DataPointer[i];
                 current = current << 8;
                 if (current == endOfRequest)
                     reqs++;
@@ -108,7 +107,7 @@ namespace ConsoleApplication1
             state.leftoverLength = r % 4;
             var length = r - state.leftoverLength;
 
-            byte* currentPtr = s.Datapointer + state.oldleftoverLength;
+            byte* currentPtr = s.DataPointer + state.oldleftoverLength;
 
             var start = currentPtr;
             var end = currentPtr + length;
@@ -123,7 +122,7 @@ namespace ConsoleApplication1
 
             for (int i = r - state.leftoverLength; i < r; i++)
             {
-                current += s.Datapointer[i];
+                current += s.DataPointer[i];
                 current = current << 4;
             }
 

@@ -20,7 +20,7 @@ namespace RioSharp
         byte[] _readBuffer;
         int _readoffset;
         int _readCount;
-        private Action _getNewSegmentDelegateDelegate;
+        Action _getNewSegmentDelegateDelegate;
         WaitCallback _waitCallback;
 
         public RioStream(RioSocket socket)
@@ -71,7 +71,7 @@ namespace RioSharp
             Flush(true);
         }
 
-        private int GetNewSegment()
+        int GetNewSegment()
         {
             var tmp = _currentInputSegment;
             _nextInputSegment.GetResult();
@@ -94,7 +94,7 @@ namespace RioSharp
             }
         }
 
-        private int CompleteRead()
+        int CompleteRead()
         {
             var toCopy = _currentContentLength - _bytesReadInCurrentSegment;
             if (toCopy > _readCount)
@@ -103,7 +103,7 @@ namespace RioSharp
             unsafe
             {
                 fixed (byte* p = &_readBuffer[_readoffset])
-                    Unsafe.CopyBlock(p, _currentInputSegment.RawPointer + _bytesReadInCurrentSegment, (uint)toCopy);
+                    Unsafe.CopyBlock(p, _currentInputSegment.dataPointer + _bytesReadInCurrentSegment, (uint)toCopy);
             }
 
             _bytesReadInCurrentSegment += toCopy;
@@ -133,12 +133,12 @@ namespace RioSharp
 
         }
 
-        private void WaitCallbackcallback(object o)
+        void WaitCallbackcallback(object o)
         {
             _readtcs.SetResult(GetNewSegment());
         }
 
-        private void GetNewSegmentDelegateWrapper()
+        void GetNewSegmentDelegateWrapper()
         {
             ThreadPool.QueueUserWorkItem(_waitCallback);
         }
@@ -168,7 +168,7 @@ namespace RioSharp
 
                 fixed (byte* p = &buffer[offset])
                 {
-                    Unsafe.CopyBlock(_currentOutputSegment.RawPointer + (_outputSegmentTotalLength - _remainingSpaceInOutputSegment), p + writtenFromBuffer, (uint)toWrite);
+                    Unsafe.CopyBlock(_currentOutputSegment.dataPointer + (_outputSegmentTotalLength - _remainingSpaceInOutputSegment), p + writtenFromBuffer, (uint)toWrite);
                 }
 
                 writtenFromBuffer += toWrite;

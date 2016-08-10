@@ -11,19 +11,13 @@ namespace RioSharp
         IntPtr _requestQueue;
         internal IntPtr Socket;
         internal RioFixedBufferPool SendBufferPool, ReceiveBufferPool, AdressPool;
-        internal long lastSendStart;
-        internal long lastReceiveStart;
-        internal int pendingRecives;
-        internal int pendingSends;
-        internal long sendTimeout;
-        internal long reciveTimeout;
-        private uint maxOutstandingReceive;
-        private uint maxOutstandingSend;
-        private IntPtr ReceiveCompletionQueue;
-        private IntPtr SendCompletionQueue;
-        private SOCKET_TYPE sockType;
-        private PROTOCOL protocol;
-        private ADDRESS_FAMILIES adressFam;
+        uint maxOutstandingReceive;
+        uint maxOutstandingSend;
+        IntPtr ReceiveCompletionQueue;
+        IntPtr SendCompletionQueue;
+        SOCKET_TYPE sockType;
+        PROTOCOL protocol;
+        ADDRESS_FAMILIES adressFam;
 
         internal RioSocket(RioFixedBufferPool sendBufferPool, RioFixedBufferPool receiveBufferPool, RioFixedBufferPool adressBufferPool,
             uint maxOutstandingReceive, uint maxOutstandingSend, IntPtr SendCompletionQueue, IntPtr ReceiveCompletionQueue,
@@ -40,35 +34,11 @@ namespace RioSharp
             SendBufferPool = sendBufferPool;
             ReceiveBufferPool = receiveBufferPool;
             AdressPool = adressBufferPool;
-            sendTimeout = Stopwatch.Frequency * 5;
-            reciveTimeout = Stopwatch.Frequency * 5;
-
+            
             ResetSocket();
         }
 
-        public TimeSpan SendTimeout
-        {
-            get
-            {
-                return TimeSpan.FromSeconds(sendTimeout / Stopwatch.Frequency);
-            }
-            set
-            {
-                sendTimeout = (long)(Stopwatch.Frequency * value.TotalSeconds);
-            }
-        }
 
-        public TimeSpan ReciveTimeout
-        {
-            get
-            {
-                return TimeSpan.FromSeconds(reciveTimeout / Stopwatch.Frequency);
-            }
-            set
-            {
-                reciveTimeout = (long)(Stopwatch.Frequency * value.TotalSeconds);
-            }
-        }
 
         internal void ResetSocket()
         {
@@ -78,16 +48,7 @@ namespace RioSharp
             if ((Socket = WinSock.WSASocket(adressFam, sockType, protocol, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.WSA_FLAG_OVERLAPPED)) == IntPtr.Zero)
                 WinSock.ThrowLastWSAError();
 
-            //while (true)
-            //{
             _requestQueue = RioStatic.CreateRequestQueue(Socket, maxOutstandingReceive - 1, 1, maxOutstandingSend - 1, 1, ReceiveCompletionQueue, SendCompletionQueue, GetHashCode());
-            //    if (_requestQueue != IntPtr.Zero)
-            //        break;
-            //    else {
-            //        var error = WinSock.WSAGetLastError();
-            //    }
-            //}
-
             WinSock.ThrowLastWSAError();
         }
 
@@ -102,7 +63,7 @@ namespace RioSharp
             var currentSegment = SendBufferPool.GetBuffer();
             fixed (byte* p = &buffer[0])
             {
-                Unsafe.CopyBlock(currentSegment.RawPointer, p, (uint)buffer.Length);
+                Unsafe.CopyBlock(currentSegment.dataPointer, p, (uint)buffer.Length);
             }
             currentSegment.SegmentPointer->Length = buffer.Length;
             Send(currentSegment, RIO_SEND_FLAGS.NONE);
@@ -115,7 +76,7 @@ namespace RioSharp
             var currentSegment = SendBufferPool.GetBuffer();
             fixed (byte* p = &buffer[0])
             {
-                Unsafe.CopyBlock(currentSegment.RawPointer, p, (uint)buffer.Length);
+                Unsafe.CopyBlock(currentSegment.dataPointer, p, (uint)buffer.Length);
             }
             currentSegment.SegmentPointer->Length = buffer.Length;
             Send(currentSegment, remoteAdress, RIO_SEND_FLAGS.NONE);
@@ -123,11 +84,8 @@ namespace RioSharp
             return currentSegment;
         }
 
-        internal void Send(RioBufferSegment segment, RIO_SEND_FLAGS flags)
+        internal virtual void Send(RioBufferSegment segment, RIO_SEND_FLAGS flags)
         {
-            lastSendStart = RioSocketPool.CurrentTime;
-            Interlocked.Increment(ref pendingSends);
-            segment.lastSocket = this;
             segment.SetNotComplete();
             if (!RioStatic.Send(_requestQueue, segment.SegmentPointer, 1, flags, segment.Index))
                 WinSock.ThrowLastWSAError();
@@ -140,11 +98,8 @@ namespace RioSharp
             adresssegment.Dispose();
         }
 
-        internal void Send(RioBufferSegment segment, RioBufferSegment remoteAdress, RIO_SEND_FLAGS flags)
+        internal virtual void Send(RioBufferSegment segment, RioBufferSegment remoteAdress, RIO_SEND_FLAGS flags)
         {
-            lastSendStart = RioSocketPool.CurrentTime;
-            Interlocked.Increment(ref pendingSends);
-            segment.lastSocket = this;
             segment.SetNotComplete();
             if (!RioStatic.SendEx(_requestQueue, segment.SegmentPointer, 1, RIO_BUF.NullSegment, remoteAdress.SegmentPointer, RIO_BUF.NullSegment, RIO_BUF.NullSegment, flags, segment.Index))
                 WinSock.ThrowLastWSAError();
@@ -155,11 +110,8 @@ namespace RioSharp
             return BeginReceive(ReceiveBufferPool.GetBuffer());
         }
 
-        public RioBufferSegment BeginReceive(RioBufferSegment segment)
+        public virtual RioBufferSegment BeginReceive(RioBufferSegment segment)
         {
-            lastReceiveStart = RioSocketPool.CurrentTime;
-            Interlocked.Increment(ref pendingRecives);
-            segment.lastSocket = this;
             segment.SegmentPointer->Length = segment.TotalLength;
             segment.SetNotComplete();
             if (!RioStatic.Receive(_requestQueue, segment.SegmentPointer, 1, RIO_RECEIVE_FLAGS.NONE, segment.Index))
@@ -177,7 +129,7 @@ namespace RioSharp
         public RioBufferSegment AllocateAdress(IPEndPoint remoteAdress)
         {
             var adresssegment = AdressPool.GetBuffer();
-            SOCKADDR_INET* adress = (SOCKADDR_INET*)adresssegment.Datapointer;
+            SOCKADDR_INET* adress = (SOCKADDR_INET*)adresssegment.DataPointer;
             var adressBytes = remoteAdress.Address.GetAddressBytes();
 
             if (remoteAdress.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
@@ -197,7 +149,6 @@ namespace RioSharp
             WinSock.closesocket(Socket);
         }
 
-
         public void SetTcpNoDelay(bool value)
         {
             int v = value ? 1 : 0;
@@ -212,7 +163,6 @@ namespace RioSharp
 
             if (WinSock.WSAIoctlGeneral2(Socket, WinSock.SIO_LOOPBACK_FAST_PATH, &v, sizeof(int), (void*)0, 0, out dwBytes, IntPtr.Zero, IntPtr.Zero) != 0)
                 WinSock.ThrowLastWSAError();
-
         }
 
         public void SetLinger(int value)
@@ -235,17 +185,17 @@ namespace RioSharp
         public int SetSocketOption(MCAST_SocketOptions option, void* value, int valueLength) => WinSock.setsockopt(Socket, WinSock.IPPROTO_IP, (int)option, value, valueLength);
 
 
-        public int GetSocketOption(MCAST_SocketOptions option, IntPtr value, int valueLength) => WinSock.getsockopt(Socket, WinSock.IPPROTO_IP, (int)option, (char*)value.ToPointer(), &valueLength);
+        public int GetSocketOption(MCAST_SocketOptions option, void* value, int* valueLength) => WinSock.getsockopt(Socket, WinSock.IPPROTO_IP, (int)option, value, valueLength);
 
-        public int GetSocketOption(IPPROTO_IP_SocketOptions option, IntPtr value, int valueLength) => WinSock.getsockopt(Socket, WinSock.IPPROTO_IP, (int)option, (char*)value.ToPointer(), &valueLength);
+        public int GetSocketOption(IPPROTO_IP_SocketOptions option, void* value, int* valueLength) => WinSock.getsockopt(Socket, WinSock.IPPROTO_IP, (int)option, value, valueLength);
 
-        public int GetSocketOption(IPPROTO_IPV6_SocketOptions option, IntPtr value, int valueLength) => WinSock.getsockopt(Socket, WinSock.IPPROTO_IPV6, (int)option, (char*)value.ToPointer(), &valueLength);
+        public int GetSocketOption(IPPROTO_IPV6_SocketOptions option, void* value, int* valueLength) => WinSock.getsockopt(Socket, WinSock.IPPROTO_IPV6, (int)option, value, valueLength);
 
-        public int GetSocketOption(IPPROTO_TCP_SocketOptions option, IntPtr value, int valueLength) => WinSock.getsockopt(Socket, WinSock.IPPROTO_TCP, (int)option, (char*)value.ToPointer(), &valueLength);
+        public int GetSocketOption(IPPROTO_TCP_SocketOptions option, void* value, int* valueLength) => WinSock.getsockopt(Socket, WinSock.IPPROTO_TCP, (int)option, value, valueLength);
 
-        public int GetSocketOption(IPPROTO_UDP_SocketOptions option, IntPtr value, int valueLength) => WinSock.getsockopt(Socket, WinSock.IPPROTO_UDP, (int)option, (char*)value.ToPointer(), &valueLength);
+        public int GetSocketOption(IPPROTO_UDP_SocketOptions option, void* value, int* valueLength) => WinSock.getsockopt(Socket, WinSock.IPPROTO_UDP, (int)option, value, valueLength);
 
-        public int GetSocketOption(SOL_SOCKET_SocketOptions option, IntPtr value, int valueLength) => WinSock.getsockopt(Socket, WinSock.SOL_SOCKET, (int)option, (char*)value.ToPointer(), &valueLength);
+        public int GetSocketOption(SOL_SOCKET_SocketOptions option, void* value, int* valueLength) => WinSock.getsockopt(Socket, WinSock.SOL_SOCKET, (int)option, value, valueLength);
     }
 }
 

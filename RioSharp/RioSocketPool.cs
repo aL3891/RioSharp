@@ -12,7 +12,7 @@ namespace RioSharp
     public abstract class RioSocketPool : IDisposable
     {
         internal RioFixedBufferPool SendBufferPool, ReceiveBufferPool, adressBufferPool;
-        IntPtr _sendBufferId, _reciveBufferId;
+        IntPtr _sendBufferId, _reciveBufferId, _addrbufferId;
         IntPtr SendCompletionPort, ReceiveCompletionPort;
         protected IntPtr SendCompletionQueue, ReceiveCompletionQueue;
         protected uint MaxOutstandingReceive, MaxOutstandingSend, MaxSockets;
@@ -63,7 +63,6 @@ namespace RioSharp
             if ((SendCompletionPort = Kernel32.CreateIoCompletionPort((IntPtr)(-1), IntPtr.Zero, 0, 1)) == IntPtr.Zero)
                 Kernel32.ThrowLastError();
 
-
             _sendBufferId = RioStatic.RegisterBuffer(SendBufferPool.BufferPointer, (uint)SendBufferPool.TotalLength);
             WinSock.ThrowLastWSAError();
             SendBufferPool.SetBufferId(_sendBufferId);
@@ -72,9 +71,9 @@ namespace RioSharp
             WinSock.ThrowLastWSAError();
             ReceiveBufferPool.SetBufferId(_reciveBufferId);
 
-            _reciveBufferId = RioStatic.RegisterBuffer(adressBufferPool.BufferPointer, (uint)adressBufferPool.TotalLength);
+            _addrbufferId = RioStatic.RegisterBuffer(adressBufferPool.BufferPointer, (uint)adressBufferPool.TotalLength);
             WinSock.ThrowLastWSAError();
-            adressBufferPool.SetBufferId(_reciveBufferId);
+            adressBufferPool.SetBufferId(_addrbufferId);
 
             var sendCompletionMethod = new RIO_NOTIFICATION_COMPLETION()
             {
@@ -117,7 +116,7 @@ namespace RioSharp
             var currentSegment = SendBufferPool.GetBuffer();
             fixed (byte* p = &buffer[0])
             {
-                Unsafe.CopyBlock(currentSegment.RawPointer, p, (uint)buffer.Length);
+                Unsafe.CopyBlock(currentSegment.dataPointer, p, (uint)buffer.Length);
             }
 
             currentSegment.SegmentPointer->Length = buffer.Length;
@@ -137,7 +136,6 @@ namespace RioSharp
             while (true)
             {
                 RioStatic.Notify(ReceiveCompletionQueue);
-                //WinSock.ThrowLastWSAError();
 
                 if (Kernel32.GetQueuedCompletionStatus(ReceiveCompletionPort, out bytes, out key, out overlapped, -1) != 0)
                 {
@@ -152,11 +150,8 @@ namespace RioSharp
                             result = results[i];
                             buf = ReceiveBufferPool.AllSegments[result.RequestCorrelation];
                             buf.SegmentPointer->Length = (int)result.BytesTransferred;
-                            Interlocked.Decrement(ref buf.lastSocket.pendingRecives);
-
                             buf.Set();
                         }
-
                     } while (count > 0);
                 }
                 else
@@ -174,6 +169,8 @@ namespace RioSharp
         {
             uint maxResults = Math.Min(MaxOutstandingSend, int.MaxValue);
             RIO_RESULT* results = stackalloc RIO_RESULT[(int)maxResults];
+            RIO_RESULT result;
+            RioBufferSegment buf;
             uint count;
             IntPtr key, bytes;
             NativeOverlapped* overlapped = stackalloc NativeOverlapped[1];
@@ -190,9 +187,8 @@ namespace RioSharp
                             WinSock.ThrowLastWSAError();
                         for (var i = 0; i < count; i++)
                         {
-                            var buf = SendBufferPool.AllSegments[results[i].RequestCorrelation];
-                            Interlocked.Decrement(ref buf.lastSocket.pendingSends);
-
+                            result = results[i];
+                            buf = SendBufferPool.AllSegments[results[i].RequestCorrelation];
                             buf.Set();
                         }
                     } while (count > 0);

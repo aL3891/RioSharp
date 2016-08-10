@@ -11,12 +11,14 @@ namespace RioSharp
 {
     public sealed unsafe class RioBufferSegment : IDisposable
     {
-        private static readonly Action _awaitableIsCompleted = () => { };
-        private static readonly Action _awaitableIsNotCompleted = () => { };
-
-        private Action _awaitableState;
-        private readonly ManualResetEventSlim _manualResetEvent = new ManualResetEventSlim(false, 0);
-        private Exception _awaitableError;
+        static readonly Action _awaitableIsCompleted = () => { };
+        static readonly Action _awaitableIsNotCompleted = () => { };
+        static readonly Action emptyCompletion = () => { };
+        
+        Action _awaitableState;
+       internal Action _internalCompletionSignal = emptyCompletion;
+        ManualResetEventSlim _manualResetEvent = new ManualResetEventSlim(false, 0);
+        Exception _awaitableError;
         internal RioSocket lastSocket;
 
         RioFixedBufferPool _pool;
@@ -24,34 +26,34 @@ namespace RioSharp
         internal int TotalLength;
         public int CurrentContentLength => SegmentPointer->Length;
 
-        internal byte* RawPointer;
+        internal byte* dataPointer;
         internal RIO_BUF* SegmentPointer;
 
         bool disposeOnComplete = false;
         WaitCallback _continuationWrapperDelegate;
 
-        public byte* Datapointer => RawPointer;
+        public byte* DataPointer => dataPointer;
 
         public unsafe int Read(byte[] data, int offset)
         {
-            var l = Math.Min((data.Length - offset), CurrentContentLength);
+            var count = Math.Min((data.Length - offset), CurrentContentLength);
 
             fixed (void* p = &data[0])
-                Unsafe.CopyBlock(p, RawPointer, (uint)l);
+                Unsafe.CopyBlock(p, dataPointer, (uint)count);
 
-            return l;
+            return count;
         }
 
         public unsafe int Write(byte[] data)
         {
-            var l = Math.Min((data.Length), TotalLength - SegmentPointer->Length);
+            var count = Math.Min((data.Length), TotalLength - SegmentPointer->Length);
 
             fixed (void* p = &data[0])
-                Unsafe.CopyBlock(RawPointer + SegmentPointer->Length, p, (uint)l);
+                Unsafe.CopyBlock(dataPointer + SegmentPointer->Length, p, (uint)count);
 
-            SegmentPointer->Length += l;
+            SegmentPointer->Length += count;
 
-            return l;
+            return count;
         }
 
         internal RioBufferSegment(RioFixedBufferPool pool, IntPtr bufferStartPointer, IntPtr segmentStartPointer, int index, int Length)
@@ -61,7 +63,7 @@ namespace RioSharp
             _pool = pool;
 
             var offset = index * Length;
-            RawPointer = (byte*)(bufferStartPointer + offset).ToPointer();
+            dataPointer = (byte*)(bufferStartPointer + offset).ToPointer();
             SegmentPointer = (RIO_BUF*)(segmentStartPointer + index * Marshal.SizeOf<RIO_BUF>()).ToPointer();
 
             SegmentPointer->BufferId = IntPtr.Zero;
@@ -95,17 +97,18 @@ namespace RioSharp
             Interlocked.Exchange(ref _awaitableState, _awaitableIsNotCompleted);
             _manualResetEvent.Reset();
             disposeOnComplete = false;
+            _internalCompletionSignal = emptyCompletion;
             SegmentPointer->Length = 0;
             _pool.ReleaseBuffer(this);
         }
 
         public bool IsCompleted => ReferenceEquals(_awaitableState, _awaitableIsCompleted);
-        
+
 
         public void Set()
         {
-        
             var awaitableState = Interlocked.Exchange(ref _awaitableState, _awaitableIsCompleted);
+            _internalCompletionSignal();
             _manualResetEvent.Set();
 
             if (!ReferenceEquals(awaitableState, _awaitableIsCompleted) &&

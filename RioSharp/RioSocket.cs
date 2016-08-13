@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace RioSharp
 {
@@ -34,7 +35,7 @@ namespace RioSharp
             SendBufferPool = sendBufferPool;
             ReceiveBufferPool = receiveBufferPool;
             AdressPool = adressBufferPool;
-            
+
             ResetSocket();
         }
 
@@ -52,6 +53,8 @@ namespace RioSharp
             WinSock.ThrowLastWSAError();
         }
 
+
+
         public RioBufferSegment Send(RioBufferSegment Segment)
         {
             Send(Segment, RIO_SEND_FLAGS.NONE);
@@ -60,15 +63,7 @@ namespace RioSharp
 
         public unsafe RioBufferSegment Send(byte[] buffer)
         {
-            var currentSegment = SendBufferPool.GetBuffer();
-            fixed (byte* p = &buffer[0])
-            {
-                Unsafe.CopyBlock(currentSegment.dataPointer, p, (uint)buffer.Length);
-            }
-            currentSegment.SegmentPointer->Length = buffer.Length;
-            Send(currentSegment, RIO_SEND_FLAGS.NONE);
-            currentSegment.DisposeWhenComplete();
-            return currentSegment;
+            return Send(buffer, 0, buffer.Length);
         }
 
         public unsafe RioBufferSegment Send(byte[] buffer, IPEndPoint remoteAdress)
@@ -80,6 +75,19 @@ namespace RioSharp
             }
             currentSegment.SegmentPointer->Length = buffer.Length;
             Send(currentSegment, remoteAdress, RIO_SEND_FLAGS.NONE);
+            currentSegment.DisposeWhenComplete();
+            return currentSegment;
+        }
+
+        public unsafe RioBufferSegment Send(byte[] buffer, int offset, int count)
+        {
+            var currentSegment = SendBufferPool.GetBuffer();
+            fixed (byte* p = &buffer[offset])
+            {
+                Unsafe.CopyBlock(currentSegment.dataPointer, p, (uint)count);
+            }
+            currentSegment.SegmentPointer->Length = buffer.Length;
+            Send(currentSegment, RIO_SEND_FLAGS.NONE);
             currentSegment.DisposeWhenComplete();
             return currentSegment;
         }

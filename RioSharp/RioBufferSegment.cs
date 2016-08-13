@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace RioSharp
 {
-    public sealed unsafe class RioBufferSegment : IDisposable
+    public sealed unsafe class RioBufferSegment : IDisposable, INotifyCompletion
     {
         static readonly Action _awaitableIsCompleted = () => { };
         static readonly Action _awaitableIsNotCompleted = () => { };
@@ -84,6 +84,8 @@ namespace RioSharp
 
             if (!disposeOnComplete)
                 Dispose();
+            else{
+            }
         }
 
         internal void SetNotComplete()
@@ -119,6 +121,9 @@ namespace RioSharp
 
             if (disposeOnComplete)
                 Dispose();
+            else
+            {
+            }
         }
 
         public void OnCompleted(Action continuation)
@@ -142,7 +147,7 @@ namespace RioSharp
             }
         }
 
-        public void GetResult()
+        public RioBufferSegment GetResult()
         {
             if (!IsCompleted)
             {
@@ -157,6 +162,7 @@ namespace RioSharp
                 }
                 throw new IOException(error.Message, error);
             }
+            return this;
         }
 
         public RioBufferSegment GetAwaiter() => this;

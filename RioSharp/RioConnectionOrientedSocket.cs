@@ -78,7 +78,7 @@ namespace RioSharp
         {
             lastReceiveStart = RioSocketPool.CurrentTime;
             Interlocked.Increment(ref pendingRecives);
-            segment.lastSocket = this;
+            segment._internalCompletionSignal = onreadCompletion;
 
             return base.BeginReceive(segment);
         }

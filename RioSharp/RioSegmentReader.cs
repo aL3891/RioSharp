@@ -69,6 +69,9 @@ namespace RioSharp
                 else
                     _nextInputSegment.OnCompleted(completeReadDelegate);
             }
+            else {
+                Dispose();
+            }
         }
 
         public Action<RioBufferSegment> OnIncommingSegment

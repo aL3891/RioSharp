@@ -50,16 +50,21 @@ namespace Sandbox
         {
             listener.OnAccepted = (RioSocket s) =>
             {
-                s.BeginReceive().GetResult();
+                while (true)
+                    s.BeginReceive().GetResult().Dispose();
+
                 s.Dispose();
             };
             while (running)
             {
                 try
                 {
-                //    Thread.Sleep(100);
+                    //    Thread.Sleep(100);
                     var socket = clientPool.Connect(new Uri("http://localhost:5000/")).Result;
-                    socket.Dispose();
+                    //socket.Dispose();
+                    while (true)
+                        socket.Send(new byte[] { 1, 2, 3 });
+
                     operations++;
                 }
                 catch (Exception e)

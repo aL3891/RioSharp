@@ -39,7 +39,7 @@ namespace UdpSample
             sock.JoinMulticastGroup(multicastAdress, 0);
 
             RioSegmentReader r = new RioSegmentReader(sock);
-            r.OnIncommingSegment = segment => Console.WriteLine(Encoding.ASCII.GetString(segment.Datapointer, segment.CurrentContentLength));
+            r.OnIncommingSegment = segment => Console.WriteLine(Encoding.ASCII.GetString(segment.DataPointer, segment.CurrentContentLength));
             r.Start();
             
             while (true)

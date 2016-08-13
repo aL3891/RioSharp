@@ -22,6 +22,7 @@ namespace RioSharp
         int _readCount;
         Action _getNewSegmentDelegateDelegate;
         WaitCallback _waitCallback;
+        bool disposing = false;
 
         public RioStream(RioSocket socket)
         {
@@ -73,6 +74,9 @@ namespace RioSharp
 
         int GetNewSegment()
         {
+            if (disposing)
+                return 0;
+
             var tmp = _currentInputSegment;
             _nextInputSegment.GetResult();
             _currentInputSegment = _nextInputSegment;
@@ -152,9 +156,11 @@ namespace RioSharp
             {
                 if (_remainingSpaceInOutputSegment == 0)
                 {
-                    _currentOutputSegment.SegmentPointer->Length = _outputSegmentTotalLength;
-                    _socket.Send(_currentOutputSegment, RIO_SEND_FLAGS.DEFER); // | RIO_SEND_FLAGS.DONT_NOTIFY
-                    _currentOutputSegment.DisposeWhenComplete();
+                    var tmp = _currentOutputSegment;
+                    _currentOutputSegment = null;
+                    tmp.SegmentPointer->Length = _outputSegmentTotalLength;
+                    _socket.Send(tmp, RIO_SEND_FLAGS.DEFER); // | RIO_SEND_FLAGS.DONT_NOTIFY
+                    tmp.DisposeWhenComplete();
                     while (!_socket.SendBufferPool.TryGetBuffer(out _currentOutputSegment))
                         _socket.Flush();
                     _outputSegmentTotalLength = _currentOutputSegment.TotalLength;
@@ -186,6 +192,7 @@ namespace RioSharp
         protected override void Dispose(bool disposing)
         {
             Flush(false);
+            this.disposing = true;
 
             _currentInputSegment?.Dispose();
             _currentOutputSegment?.Dispose();

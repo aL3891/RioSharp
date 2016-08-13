@@ -58,7 +58,9 @@ namespace RioSharp
                 await Task.Delay(1000);
                 foreach (var s in activeSockets.Values)
                 {
-                    if ((s.pendingRecives > 0 && CurrentTime - s.lastReceiveStart > s.receiveTimeout) || (s.pendingRecives > 0 && CurrentTime - s.lastSendStart > s.sendTimeout))
+                    if (!activeSockets.ContainsKey(s.GetHashCode()))
+                        continue;
+                    if ((s.pendingRecives > 0 && CurrentTime - s.lastReceiveStart > s.receiveTimeout) || (s.pendingSends > 0 && CurrentTime - s.lastSendStart > s.sendTimeout))
                     {
                         WinSock.closesocket(s.Socket);
                         s.Socket = IntPtr.Zero;
@@ -124,20 +126,20 @@ namespace RioSharp
         internal unsafe virtual void BeginRecycle(RioConnectionOrientedSocket socket, bool force)
         {
             RioConnectionOrientedSocket c;
-            activeSockets.TryRemove(socket.GetHashCode(), out c);
+           var apa= activeSockets.TryRemove(socket.GetHashCode(), out c);
 
             if (force || socket.Socket == IntPtr.Zero || socket.pendingRecives > 0 || socket.pendingSends > 0)
             {
                 socket.ResetSocket();
+                var ss = RioSocketPool.CurrentTime;
+                var to = Stopwatch.Frequency * 2;
+                while (socket.pendingRecives > 0 || socket.pendingSends > 0)
+                    if ((RioSocketPool.CurrentTime -ss) > to)
+                        break;
+
                 if ((Kernel32.CreateIoCompletionPort(socket.Socket, socketIocp, 0, 1)) == IntPtr.Zero)
                     Kernel32.ThrowLastError();
                 InitializeSocket(socket);
-
-                Stopwatch s = new Stopwatch();
-                while (socket.pendingRecives > 0 || socket.pendingSends > 0)
-                    if (s.ElapsedMilliseconds > 2000)
-                        break;
-
                 EndRecycle(socket, false);
             }
             else

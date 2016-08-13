@@ -26,7 +26,7 @@ namespace RioSharp.BenchClient
             timer = new Stopwatch();
             span = TimeSpan.FromSeconds(int.Parse(args.FirstOrDefault(f => f.StartsWith("-d"))?.Substring(2) ?? "25"));
             uri = new Uri(args.FirstOrDefault(a => !a.StartsWith("-")) ?? "http://localhost:5000/plaintext");
-            keepAlive = bool.Parse(args.FirstOrDefault(f => f.StartsWith("-k"))?.Substring(2) ?? "false");
+            keepAlive = bool.Parse(args.FirstOrDefault(f => f.StartsWith("-k"))?.Substring(2) ?? "true");
 
             Console.WriteLine("RioSharp http benchmark");
             Console.WriteLine("Connections: " + connections);
@@ -294,9 +294,10 @@ namespace RioSharp.BenchClient
                     stream.Dispose();
                     connection.Dispose();
                     connection = null;
+                    stream = null;
                 }
             }
-
+            stream?.Dispose();
             connection?.Dispose();
             return state;
         }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace RioSharp
@@ -10,17 +11,18 @@ namespace RioSharp
         internal IntPtr _adressBuffer;
         RioConnectionOrientedSocketPool _pool;
         internal long disconnectStartTime;
-        Action onreadCompletion;
-        Action onSendCompletion;
+        Action<decimal> onreadCompletion;
+        Action<decimal> onSendCompletion;
         internal long lastSendStart;
         internal long lastReceiveStart;
         internal int pendingRecives;
         internal int pendingSends;
         internal long sendTimeout;
         internal long receiveTimeout;
+        ulong currentId;
 
 
-        internal RioConnectionOrientedSocket(IntPtr overlapped, IntPtr adressBuffer, RioConnectionOrientedSocketPool pool, RioFixedBufferPool sendBufferPool, RioFixedBufferPool receiveBufferPool, RioFixedBufferPool adressBufferPool,
+        internal RioConnectionOrientedSocket(ulong socketid, IntPtr overlapped, IntPtr adressBuffer, RioConnectionOrientedSocketPool pool, RioFixedBufferPool sendBufferPool, RioFixedBufferPool receiveBufferPool, RioFixedBufferPool adressBufferPool,
                     uint maxOutstandingReceive, uint maxOutstandingSend, IntPtr SendCompletionQueue, IntPtr ReceiveCompletionQueue,
                     ADDRESS_FAMILIES adressFam, SOCKET_TYPE sockType, PROTOCOL protocol) :
                     base(sendBufferPool, receiveBufferPool, adressBufferPool, maxOutstandingReceive, maxOutstandingSend, SendCompletionQueue, ReceiveCompletionQueue,
@@ -29,10 +31,11 @@ namespace RioSharp
             _overlapped = (RioNativeOverlapped*)overlapped.ToPointer();
             _adressBuffer = adressBuffer;
             _pool = pool;
-            onreadCompletion = () => { Interlocked.Decrement(ref pendingRecives); };
-            onSendCompletion = () => { Interlocked.Decrement(ref pendingSends); };
+            onreadCompletion = id => { if (id == currentId) Interlocked.Decrement(ref pendingRecives); };
+            onSendCompletion = id => { if (id == currentId) Interlocked.Decrement(ref pendingSends); };
             sendTimeout = Stopwatch.Frequency * 5;
             receiveTimeout = Stopwatch.Frequency * 5;
+            currentId = socketid;
         }
 
         public TimeSpan SendTimeout { get { return TimeSpan.FromSeconds(sendTimeout / Stopwatch.Frequency); } set { sendTimeout = (long)(Stopwatch.Frequency * value.TotalSeconds); } }
@@ -48,11 +51,20 @@ namespace RioSharp
 
         public override void Dispose()
         {
+            unchecked
+            {
+                currentId++;
+            }
+
             _pool.BeginRecycle(this, false);
         }
 
         internal void Close()
         {
+            unchecked
+            {
+                currentId++;
+            }
             WinSock.closesocket(Socket);
         }
 
@@ -61,6 +73,7 @@ namespace RioSharp
             lastSendStart = RioSocketPool.CurrentTime;
             Interlocked.Increment(ref pendingSends);
             segment._internalCompletionSignal = onSendCompletion;
+            segment.socketId = currentId;
 
             base.Send(segment, remoteAdress, flags);
         }
@@ -70,6 +83,7 @@ namespace RioSharp
             lastSendStart = RioSocketPool.CurrentTime;
             Interlocked.Increment(ref pendingSends);
             segment._internalCompletionSignal = onSendCompletion;
+            segment.socketId = currentId;
 
             base.Send(segment, flags);
         }
@@ -79,6 +93,7 @@ namespace RioSharp
             lastReceiveStart = RioSocketPool.CurrentTime;
             Interlocked.Increment(ref pendingRecives);
             segment._internalCompletionSignal = onreadCompletion;
+            segment.socketId = currentId;
 
             return base.BeginReceive(segment);
         }

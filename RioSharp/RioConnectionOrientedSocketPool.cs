@@ -28,10 +28,10 @@ namespace RioSharp
             var adressBuffer = Marshal.AllocHGlobal(new IntPtr(socketCount * adrSize));
 
             allSockets = new RioConnectionOrientedSocket[socketCount];
-
+            var inc = ulong.MaxValue / socketCount;
             for (int i = 0; i < socketCount; i++)
             {
-                allSockets[i] = new RioConnectionOrientedSocket(overlapped + (i * Marshal.SizeOf<RioNativeOverlapped>()), adressBuffer + (i * adrSize), this, SendBufferPool, ReceiveBufferPool, adressBufferPool, maxOutstandingReceive, maxOutstandingSend, SendCompletionQueue, ReceiveCompletionQueue, adressFam, sockType, protocol);
+                allSockets[i] = new RioConnectionOrientedSocket(inc * (ulong)i, overlapped + (i * Marshal.SizeOf<RioNativeOverlapped>()), adressBuffer + (i * adrSize), this, SendBufferPool, ReceiveBufferPool, adressBufferPool, maxOutstandingReceive, maxOutstandingSend, SendCompletionQueue, ReceiveCompletionQueue, adressFam, sockType, protocol);
                 allSockets[i]._overlapped->SocketIndex = i;
             }
 
@@ -126,17 +126,11 @@ namespace RioSharp
         internal unsafe virtual void BeginRecycle(RioConnectionOrientedSocket socket, bool force)
         {
             RioConnectionOrientedSocket c;
-           var apa= activeSockets.TryRemove(socket.GetHashCode(), out c);
+            var apa = activeSockets.TryRemove(socket.GetHashCode(), out c);
 
             if (force || socket.Socket == IntPtr.Zero || socket.pendingRecives > 0 || socket.pendingSends > 0)
             {
                 socket.ResetSocket();
-                var ss = RioSocketPool.CurrentTime;
-                var to = Stopwatch.Frequency * 2;
-                while (socket.pendingRecives > 0 || socket.pendingSends > 0)
-                    if ((RioSocketPool.CurrentTime -ss) > to)
-                        break;
-
                 if ((Kernel32.CreateIoCompletionPort(socket.Socket, socketIocp, 0, 1)) == IntPtr.Zero)
                     Kernel32.ThrowLastError();
                 InitializeSocket(socket);

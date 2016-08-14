@@ -13,10 +13,10 @@ namespace RioSharp
     {
         static readonly Action _awaitableIsCompleted = () => { };
         static readonly Action _awaitableIsNotCompleted = () => { };
-        static readonly Action emptyCompletion = () => { };
+        static readonly Action<decimal> emptyCompletion = id => { };
         
         Action _awaitableState;
-       internal Action _internalCompletionSignal = emptyCompletion;
+       internal Action<decimal> _internalCompletionSignal = emptyCompletion;
         ManualResetEventSlim _manualResetEvent = new ManualResetEventSlim(false, 0);
         Exception _awaitableError;
         internal RioSocket lastSocket;
@@ -25,6 +25,7 @@ namespace RioSharp
         internal int Index;
         internal int TotalLength;
         public int CurrentContentLength => SegmentPointer->Length;
+        internal decimal socketId;
 
         internal byte* dataPointer;
         internal RIO_BUF* SegmentPointer;
@@ -110,7 +111,7 @@ namespace RioSharp
         public void Set()
         {
             var awaitableState = Interlocked.Exchange(ref _awaitableState, _awaitableIsCompleted);
-            _internalCompletionSignal();
+            _internalCompletionSignal(socketId);
             _manualResetEvent.Set();
 
             if (!ReferenceEquals(awaitableState, _awaitableIsCompleted) &&

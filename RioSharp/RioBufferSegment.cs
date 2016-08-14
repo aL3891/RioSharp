@@ -14,9 +14,9 @@ namespace RioSharp
         static readonly Action _awaitableIsCompleted = () => { };
         static readonly Action _awaitableIsNotCompleted = () => { };
         static readonly Action<decimal> emptyCompletion = id => { };
-        
+
         Action _awaitableState;
-       internal Action<decimal> _internalCompletionSignal = emptyCompletion;
+        internal Action<decimal> _internalCompletionSignal = emptyCompletion;
         ManualResetEventSlim _manualResetEvent = new ManualResetEventSlim(false, 0);
         Exception _awaitableError;
         internal RioSocket lastSocket;
@@ -70,6 +70,7 @@ namespace RioSharp
             SegmentPointer->BufferId = IntPtr.Zero;
             SegmentPointer->Offset = offset;
             SegmentPointer->Length = 0;
+            _awaitableState = _awaitableIsNotCompleted;
 
             _continuationWrapperDelegate = o => ((Action)o)();
         }
@@ -85,7 +86,8 @@ namespace RioSharp
 
             if (!disposeOnComplete)
                 Dispose();
-            else{
+            else
+            {
             }
         }
 
@@ -107,6 +109,7 @@ namespace RioSharp
 
         public bool IsCompleted => ReferenceEquals(_awaitableState, _awaitableIsCompleted);
 
+        public bool IsAwaited => !ReferenceEquals(_awaitableState, _awaitableIsCompleted) && !ReferenceEquals(_awaitableState, _awaitableIsNotCompleted);
 
         public void Set()
         {

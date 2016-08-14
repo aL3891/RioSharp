@@ -141,6 +141,7 @@ namespace ConsoleApplication1
 
         static void ServeSegment(RioSocket socket)
         {
+            socket.SetLinger(0);
             var reader = new RioSegmentReader<ServeState>(socket);
             reader.State = new ServeState();
             reader.State.leftoverLength = 0;

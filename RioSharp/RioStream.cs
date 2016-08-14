@@ -74,26 +74,18 @@ namespace RioSharp
 
         int GetNewSegment()
         {
-            if (disposing)
-                return 0;
+            _currentContentLength = _nextInputSegment.CurrentContentLength;
 
-            var tmp = _currentInputSegment;
-            _nextInputSegment.GetResult();
-            _currentInputSegment = _nextInputSegment;
-
-            _bytesReadInCurrentSegment = 0;
-            _currentContentLength = _currentInputSegment.CurrentContentLength;
-
-            if (_currentContentLength == 0)
+            if (disposing || _currentContentLength == 0)
             {
+                _nextInputSegment.Dispose();
                 _currentInputSegment.Dispose();
-                tmp.Dispose();
                 return 0;
             }
             else
             {
-                _nextInputSegment = tmp;
-                _socket.BeginReceive(_nextInputSegment);
+                _bytesReadInCurrentSegment = 0;
+                _nextInputSegment = _socket.BeginReceive(Interlocked.Exchange(ref _currentInputSegment, _nextInputSegment));
                 return CompleteRead();
             }
         }
@@ -139,11 +131,19 @@ namespace RioSharp
 
         void WaitCallbackcallback(object o)
         {
-            _readtcs.SetResult(GetNewSegment());
+            if (_readtcs.TrySetResult(GetNewSegment()))
+            {
+            }
+            else {
+
+            }
         }
 
         void GetNewSegmentDelegateWrapper()
         {
+            if (_readtcs.Task.IsCompleted) {
+
+            }
             ThreadPool.QueueUserWorkItem(_waitCallback);
         }
 
@@ -156,8 +156,7 @@ namespace RioSharp
             {
                 if (_remainingSpaceInOutputSegment == 0)
                 {
-                    var tmp = _currentOutputSegment;
-                    _currentOutputSegment = null;
+                    var tmp = Interlocked.Exchange(ref _currentOutputSegment, null);
                     tmp.SegmentPointer->Length = _outputSegmentTotalLength;
                     _socket.Send(tmp, RIO_SEND_FLAGS.DEFER); // | RIO_SEND_FLAGS.DONT_NOTIFY
                     tmp.DisposeWhenComplete();
@@ -191,12 +190,23 @@ namespace RioSharp
 
         protected override void Dispose(bool disposing)
         {
-            Flush(false);
+            if (this.disposing)
+                return;
             this.disposing = true;
 
-            _currentInputSegment?.Dispose();
+            Flush(false);
+            
+            
+
             _currentOutputSegment?.Dispose();
-            _nextInputSegment?.Dispose();
+            //_currentInputSegment?.Dispose();
+
+            if (!_nextInputSegment.IsAwaited)
+            {
+                _nextInputSegment?.DisposeWhenComplete();
+                _currentInputSegment?.Dispose();
+            }
+
         }
 
         public override bool CanRead => true;

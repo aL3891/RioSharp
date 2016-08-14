@@ -233,11 +233,12 @@ namespace RioSharp.BenchClient
                     try
                     {
                         connection = await clientPool.Connect(uri);
+                        connection.SetLinger(0);
                         stream = new RioStream(connection);
                     }
                     catch (Exception e)
                     {
-                        Debug.WriteLine(e.Message);
+                        //Debug.WriteLine(e.Message);
                         continue;
                     }
                 }

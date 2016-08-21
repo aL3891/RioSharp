@@ -20,8 +20,7 @@ namespace RioSharp
         internal long sendTimeout;
         internal long receiveTimeout;
         ulong currentId;
-
-
+        
         internal RioConnectionOrientedSocket(ulong socketid, IntPtr overlapped, IntPtr adressBuffer, RioConnectionOrientedSocketPool pool, RioFixedBufferPool sendBufferPool, RioFixedBufferPool receiveBufferPool, RioFixedBufferPool adressBufferPool,
                     uint maxOutstandingReceive, uint maxOutstandingSend, IntPtr SendCompletionQueue, IntPtr ReceiveCompletionQueue,
                     ADDRESS_FAMILIES adressFam, SOCKET_TYPE sockType, PROTOCOL protocol) :
@@ -39,18 +38,22 @@ namespace RioSharp
         }
 
         public TimeSpan SendTimeout { get { return TimeSpan.FromSeconds(sendTimeout / Stopwatch.Frequency); } set { sendTimeout = (long)(Stopwatch.Frequency * value.TotalSeconds); } }
+
         public TimeSpan ReciveTimeout { get { return TimeSpan.FromSeconds(receiveTimeout / Stopwatch.Frequency); } set { receiveTimeout = (long)(Stopwatch.Frequency * value.TotalSeconds); } }
 
         internal unsafe void ResetOverlapped()
         {
+            Debug.Assert(inUse);
             _overlapped->InternalHigh = IntPtr.Zero;
             _overlapped->InternalLow = IntPtr.Zero;
             _overlapped->OffsetHigh = 0;
             _overlapped->OffsetLow = 0;
         }
-
+        
         public override void Dispose()
         {
+            Debug.Assert(inUse);
+            SetInUse(false);
             unchecked
             {
                 currentId++;
@@ -70,6 +73,7 @@ namespace RioSharp
 
         internal override void Send(RioBufferSegment segment, RioBufferSegment remoteAdress, RIO_SEND_FLAGS flags)
         {
+            Debug.Assert(inUse);
             lastSendStart = RioSocketPool.CurrentTime;
             Interlocked.Increment(ref pendingSends);
             segment._internalCompletionSignal = onSendCompletion;
@@ -80,6 +84,7 @@ namespace RioSharp
 
         internal override void Send(RioBufferSegment segment, RIO_SEND_FLAGS flags)
         {
+            Debug.Assert(inUse);
             lastSendStart = RioSocketPool.CurrentTime;
             Interlocked.Increment(ref pendingSends);
             segment._internalCompletionSignal = onSendCompletion;
@@ -90,6 +95,7 @@ namespace RioSharp
 
         public override RioBufferSegment BeginReceive(RioBufferSegment segment)
         {
+            Debug.Assert(inUse);
             lastReceiveStart = RioSocketPool.CurrentTime;
             Interlocked.Increment(ref pendingRecives);
             segment._internalCompletionSignal = onreadCompletion;

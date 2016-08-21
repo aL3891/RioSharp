@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Net;
 using System.Runtime.CompilerServices;
@@ -19,6 +20,7 @@ namespace RioSharp
         SOCKET_TYPE sockType;
         PROTOCOL protocol;
         ADDRESS_FAMILIES adressFam;
+        protected bool inUse = false;
 
         internal RioSocket(RioFixedBufferPool sendBufferPool, RioFixedBufferPool receiveBufferPool, RioFixedBufferPool adressBufferPool,
             uint maxOutstandingReceive, uint maxOutstandingSend, IntPtr SendCompletionQueue, IntPtr ReceiveCompletionQueue,
@@ -39,87 +41,127 @@ namespace RioSharp
             ResetSocket();
         }
 
-
-
         internal void ResetSocket()
         {
+            //Debug.Assert(!inUse);
             if (Socket != IntPtr.Zero)
                 WinSock.closesocket(Socket);
 
             if ((Socket = WinSock.WSASocket(adressFam, sockType, protocol, IntPtr.Zero, 0, SOCKET_FLAGS.REGISTERED_IO | SOCKET_FLAGS.WSA_FLAG_OVERLAPPED)) == IntPtr.Zero)
                 WinSock.ThrowLastWSAError();
+            var error = 0;
+            do
+            {
+                _requestQueue = RioStatic.CreateRequestQueue(Socket, maxOutstandingReceive / 2, 1, maxOutstandingSend / 2, 1, ReceiveCompletionQueue, SendCompletionQueue, GetHashCode());
+                error = WinSock.WSAGetLastError();
+            } while (error == 10055);
 
-            _requestQueue = RioStatic.CreateRequestQueue(Socket, maxOutstandingReceive - 1, 1, maxOutstandingSend - 1, 1, ReceiveCompletionQueue, SendCompletionQueue, GetHashCode());
-            WinSock.ThrowLastWSAError();
+            if (error != 0 && error != Kernel32.ERROR_IO_PENDING)
+            {
+                throw new Win32Exception(error);
+            }
         }
 
-
+        [Conditional("DEBUG")]
+        internal void SetInUse(bool value)
+        {
+            inUse = value;
+        }
 
         public RioBufferSegment Send(RioBufferSegment Segment)
         {
+            Debug.Assert(inUse);
             Send(Segment, RIO_SEND_FLAGS.NONE);
             return Segment;
         }
 
         public unsafe RioBufferSegment Send(byte[] buffer)
         {
+            Debug.Assert(inUse);
             return Send(buffer, 0, buffer.Length);
         }
 
         public unsafe RioBufferSegment Send(byte[] buffer, IPEndPoint remoteAdress)
         {
+            Debug.Assert(inUse);
             var currentSegment = SendBufferPool.GetBuffer();
             fixed (byte* p = &buffer[0])
             {
                 Unsafe.CopyBlock(currentSegment.dataPointer, p, (uint)buffer.Length);
             }
             currentSegment.SegmentPointer->Length = buffer.Length;
-            Send(currentSegment, remoteAdress, RIO_SEND_FLAGS.NONE);
-            currentSegment.DisposeWhenComplete();
+            SendAndDispose(currentSegment, remoteAdress, RIO_SEND_FLAGS.NONE);
             return currentSegment;
         }
 
         public unsafe RioBufferSegment Send(byte[] buffer, int offset, int count)
         {
+            Debug.Assert(inUse);
             var currentSegment = SendBufferPool.GetBuffer();
             fixed (byte* p = &buffer[offset])
             {
                 Unsafe.CopyBlock(currentSegment.dataPointer, p, (uint)count);
             }
             currentSegment.SegmentPointer->Length = buffer.Length;
-            Send(currentSegment, RIO_SEND_FLAGS.NONE);
-            currentSegment.DisposeWhenComplete();
+            SendAndDispose(currentSegment, RIO_SEND_FLAGS.NONE);
             return currentSegment;
+        }
+
+        internal virtual void SendAndDispose(RioBufferSegment segment, RIO_SEND_FLAGS flags)
+        {
+            Debug.Assert(inUse);
+            segment.DisposeOnComplete();
+            if (!RioStatic.Send(_requestQueue, segment.SegmentPointer, 1, flags, segment.Index))
+                WinSock.ThrowLastWSAError();
+        }
+
+        internal virtual void SendAndDispose(RioBufferSegment segment, RioBufferSegment remoteAdress, RIO_SEND_FLAGS flags)
+        {
+            Debug.Assert(inUse);
+            segment.DisposeOnComplete();
+            if (!RioStatic.SendEx(_requestQueue, segment.SegmentPointer, 1, RIO_BUF.NullSegment, remoteAdress.SegmentPointer, RIO_BUF.NullSegment, RIO_BUF.NullSegment, flags, segment.Index))
+                WinSock.ThrowLastWSAError();
+        }
+
+        internal void SendAndDispose(RioBufferSegment segment, IPEndPoint remoteAdress, RIO_SEND_FLAGS flags)
+        {
+            Debug.Assert(inUse);
+            var adresssegment = AllocateAdress(remoteAdress);
+            SendAndDispose(segment, adresssegment, flags);
+            adresssegment.Dispose();
         }
 
         internal virtual void Send(RioBufferSegment segment, RIO_SEND_FLAGS flags)
         {
-            segment.SetNotComplete();
+            Debug.Assert(inUse);
             if (!RioStatic.Send(_requestQueue, segment.SegmentPointer, 1, flags, segment.Index))
+                WinSock.ThrowLastWSAError();
+        }
+
+        internal virtual void Send(RioBufferSegment segment, RioBufferSegment remoteAdress, RIO_SEND_FLAGS flags)
+        {
+            Debug.Assert(inUse);
+            if (!RioStatic.SendEx(_requestQueue, segment.SegmentPointer, 1, RIO_BUF.NullSegment, remoteAdress.SegmentPointer, RIO_BUF.NullSegment, RIO_BUF.NullSegment, flags, segment.Index))
                 WinSock.ThrowLastWSAError();
         }
 
         internal void Send(RioBufferSegment segment, IPEndPoint remoteAdress, RIO_SEND_FLAGS flags)
         {
+            Debug.Assert(inUse);
             var adresssegment = AllocateAdress(remoteAdress);
             Send(segment, adresssegment, flags);
             adresssegment.Dispose();
         }
 
-        internal virtual void Send(RioBufferSegment segment, RioBufferSegment remoteAdress, RIO_SEND_FLAGS flags)
-        {
-            segment.SetNotComplete();
-            if (!RioStatic.SendEx(_requestQueue, segment.SegmentPointer, 1, RIO_BUF.NullSegment, remoteAdress.SegmentPointer, RIO_BUF.NullSegment, RIO_BUF.NullSegment, flags, segment.Index))
-                WinSock.ThrowLastWSAError();
-        }
-
         public RioBufferSegment BeginReceive()
         {
+            Debug.Assert(inUse);
             return BeginReceive(ReceiveBufferPool.GetBuffer());
         }
 
         public virtual RioBufferSegment BeginReceive(RioBufferSegment segment)
         {
+            Debug.Assert(inUse);
             segment.SegmentPointer->Length = segment.TotalLength;
             segment.SetNotComplete();
             if (!RioStatic.Receive(_requestQueue, segment.SegmentPointer, 1, RIO_RECEIVE_FLAGS.NONE, segment.Index))
@@ -130,12 +172,14 @@ namespace RioSharp
 
         public unsafe void Flush()
         {
+            Debug.Assert(inUse);
             if (!RioStatic.Send(_requestQueue, RIO_BUF.NullSegment, 0, RIO_SEND_FLAGS.COMMIT_ONLY, 0))
                 WinSock.ThrowLastWSAError();
         }
 
         public RioBufferSegment AllocateAdress(IPEndPoint remoteAdress)
         {
+            Debug.Assert(inUse);
             var adresssegment = AdressPool.GetBuffer();
             SOCKADDR_INET* adress = (SOCKADDR_INET*)adresssegment.DataPointer;
             var adressBytes = remoteAdress.Address.GetAddressBytes();
@@ -154,6 +198,7 @@ namespace RioSharp
 
         public virtual void Dispose()
         {
+            Debug.Assert(inUse);
             WinSock.closesocket(Socket);
         }
 
@@ -166,6 +211,7 @@ namespace RioSharp
 
         public void SetLoopbackFastPath(bool value)
         {
+            //Debug.Assert(inUse);
             int v = value ? 1 : 0;
             uint dwBytes = 0;
 
@@ -175,8 +221,9 @@ namespace RioSharp
 
         public void SetLinger(int value)
         {
-            if (SetSocketOption(SOL_SOCKET_SocketOptions.SO_LINGER, &value, sizeof(int)) != 0) ;
-            WinSock.ThrowLastWSAError();
+            //Debug.Assert(inUse);
+            if (SetSocketOption(SOL_SOCKET_SocketOptions.SO_LINGER, &value, sizeof(int)) != 0)
+                WinSock.ThrowLastWSAError();
         }
 
 

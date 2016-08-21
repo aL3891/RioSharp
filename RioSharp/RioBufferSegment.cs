@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -11,15 +12,22 @@ namespace RioSharp
 {
     public sealed unsafe class RioBufferSegment : IDisposable, INotifyCompletion
     {
-        static readonly Action _awaitableIsCompleted = () => { };
-        static readonly Action _awaitableIsNotCompleted = () => { };
+        internal static readonly Action _completed = () => { Debug.Assert(false); };
+        internal static readonly Action _completing = () => { Debug.Assert(false); };
+        internal static readonly Action _pending = () => { Debug.Assert(false); };
+        internal static readonly Action _notStarted = () => { Debug.Assert(false); };
+        internal static readonly Action _disposePending = () => { Debug.Assert(false); };
+        internal static readonly Action _disposeReady = () => { Debug.Assert(false); };
+
         static readonly Action<decimal> emptyCompletion = id => { };
 
-        Action _awaitableState;
+        internal Action _awaitableState;
         internal Action<decimal> _internalCompletionSignal = emptyCompletion;
-        ManualResetEventSlim _manualResetEvent = new ManualResetEventSlim(false, 0);
+        ManualResetEventSlim _blockingEvent = new ManualResetEventSlim(false, 0);
+        ManualResetEventSlim _disposeEvent = new ManualResetEventSlim(false, 0);
+        ManualResetEventSlim _completeEvent = new ManualResetEventSlim(false, 0);
         Exception _awaitableError;
-        internal RioSocket lastSocket;
+        internal RioSocket lastSocket = null;
 
         RioFixedBufferPool _pool;
         internal int Index;
@@ -29,31 +37,28 @@ namespace RioSharp
 
         internal byte* dataPointer;
         internal RIO_BUF* SegmentPointer;
-
-        bool disposeOnComplete = false;
+        internal bool InUse = false;
         WaitCallback _continuationWrapperDelegate;
+        private Action pendingContinuation;
 
         public byte* DataPointer => dataPointer;
 
         public unsafe int Read(byte[] data, int offset)
         {
+            Debug.Assert(InUse);
             var count = Math.Min((data.Length - offset), CurrentContentLength);
-
             fixed (void* p = &data[0])
                 Unsafe.CopyBlock(p, dataPointer, (uint)count);
-
             return count;
         }
 
         public unsafe int Write(byte[] data)
         {
+            Debug.Assert(InUse);
             var count = Math.Min((data.Length), TotalLength - SegmentPointer->Length);
-
             fixed (void* p = &data[0])
                 Unsafe.CopyBlock(dataPointer + SegmentPointer->Length, p, (uint)count);
-
             SegmentPointer->Length += count;
-
             return count;
         }
 
@@ -70,9 +75,9 @@ namespace RioSharp
             SegmentPointer->BufferId = IntPtr.Zero;
             SegmentPointer->Offset = offset;
             SegmentPointer->Length = 0;
-            _awaitableState = _awaitableIsNotCompleted;
-
             _continuationWrapperDelegate = o => ((Action)o)();
+
+            _awaitableState = _notStarted;
         }
 
         internal void SetBufferId(IntPtr id)
@@ -80,71 +85,145 @@ namespace RioSharp
             SegmentPointer->BufferId = id;
         }
 
-        public void DisposeWhenComplete()
+        public void Dispose()
         {
-            disposeOnComplete = !ReferenceEquals(_awaitableState, _awaitableIsCompleted);
+            Debug.Assert(InUse);
+            
+            var res = Interlocked.Exchange(ref _awaitableState, _disposePending);
 
-            if (!disposeOnComplete)
-                Dispose();
+            if (ReferenceEquals(res, _completed))
+                Disposeinternal();
+            else if (ReferenceEquals(res, _notStarted))
+                Disposeinternal();
+            else if (ReferenceEquals(res, _disposePending))
+                return;
+            else if (ReferenceEquals(res, _disposeReady))
+                return;
+            else if (ReferenceEquals(res, _completing))
+            {
+                _completeEvent.Wait();
+                Disposeinternal();
+            }
+            else if (ReferenceEquals(res, _pending))
+            {
+                pendingContinuation = null;
+                Interlocked.Exchange(ref _awaitableState, _disposeReady);
+                _disposeEvent.Set();
+            }
             else
             {
+                pendingContinuation = res;
+                Interlocked.Exchange(ref _awaitableState, _disposeReady);
+                _disposeEvent.Set();
             }
+
         }
 
         internal void SetNotComplete()
         {
-            Interlocked.Exchange(ref _awaitableState, _awaitableIsNotCompleted);
-            _manualResetEvent.Reset();
+            Debug.Assert(InUse);
+            Interlocked.Exchange(ref _awaitableState, _pending);
+            _blockingEvent.Reset();
+            _completeEvent.Reset();
         }
 
-        public void Dispose()
+        internal void DisposeOnComplete()
         {
-            Interlocked.Exchange(ref _awaitableState, _awaitableIsNotCompleted);
-            _manualResetEvent.Reset();
-            disposeOnComplete = false;
+            Debug.Assert(InUse);
+            Interlocked.Exchange(ref _awaitableState, _disposeReady);
+            _blockingEvent.Reset();
+            _completeEvent.Reset();
+        }
+
+        void Disposeinternal()
+        {
+            Debug.Assert(InUse);
+            pendingContinuation = null;
+            Interlocked.Exchange(ref _awaitableState, _notStarted);
             _internalCompletionSignal = emptyCompletion;
             SegmentPointer->Length = 0;
+            _disposeEvent.Set();
+            _blockingEvent.Set();
+            _completeEvent.Set();
             _pool.ReleaseBuffer(this);
         }
 
-        public bool IsCompleted => ReferenceEquals(_awaitableState, _awaitableIsCompleted);
-
-        public bool IsAwaited => !ReferenceEquals(_awaitableState, _awaitableIsCompleted) && !ReferenceEquals(_awaitableState, _awaitableIsNotCompleted);
+        public bool IsCompleted => ReferenceEquals(_awaitableState, _completed);
 
         public void Set()
         {
-            var awaitableState = Interlocked.Exchange(ref _awaitableState, _awaitableIsCompleted);
+            Debug.Assert(InUse);
+            var state = Interlocked.Exchange(ref _awaitableState, _completing);
             _internalCompletionSignal(socketId);
-            _manualResetEvent.Set();
+            _blockingEvent.Set();
 
-            if (!ReferenceEquals(awaitableState, _awaitableIsCompleted) &&
-                !ReferenceEquals(awaitableState, _awaitableIsNotCompleted))
+            if (ReferenceEquals(state, _disposePending))
+                _disposeEvent.Wait();
+
+            if (ReferenceEquals(state, _disposeReady))
             {
-                awaitableState();
+                if (pendingContinuation != null)
+                {
+                    _awaitableError = new ObjectDisposedException("dizpizzled");
+                    ThreadPool.QueueUserWorkItem(o => pendingContinuation());
+                }
+                else
+                    Disposeinternal();
             }
-
-            if (disposeOnComplete)
-                Dispose();
+            else if (
+                !ReferenceEquals(state, _completed) &&
+                !ReferenceEquals(state, _completing) &&
+                !ReferenceEquals(state, _disposePending) &&
+                !ReferenceEquals(state, _disposeReady) &&
+                !ReferenceEquals(state, _pending) &&
+                !ReferenceEquals(state, _notStarted))
+            {
+                state();
+            }
             else
             {
+                Interlocked.Exchange(ref _awaitableState, _completed);
+                _completeEvent.Set();
             }
         }
 
         public void OnCompleted(Action continuation)
         {
-            var awaitableState = Interlocked.CompareExchange(ref _awaitableState, continuation, _awaitableIsNotCompleted);
+            Debug.Assert(InUse);
+            var awaitableState = Interlocked.CompareExchange(ref _awaitableState, continuation, _pending);
 
-            if (ReferenceEquals(awaitableState, _awaitableIsNotCompleted))
+            if (ReferenceEquals(awaitableState, _pending))
                 return;
-
-            else if (ReferenceEquals(awaitableState, _awaitableIsCompleted))
+            else if (ReferenceEquals(awaitableState, _notStarted))
+                new InvalidOperationException("Can't wait for unstarted operation");
+            else if (ReferenceEquals(awaitableState, _completed))
                 ThreadPool.QueueUserWorkItem(o => continuation());
+            else if (ReferenceEquals(awaitableState, _completing))
+            {
+                _completeEvent.Wait();
+                continuation();
+            }
+            else if (ReferenceEquals(awaitableState, _disposePending))
+            {
+                _disposeEvent.Wait();
+
+                if (pendingContinuation != null)
+                {
+                    _awaitableError = new ObjectDisposedException("dizpizzled");
+                    ThreadPool.QueueUserWorkItem(o => continuation());
+                    ThreadPool.QueueUserWorkItem(o => awaitableState());
+                }
+                else
+                {
+                    pendingContinuation = continuation;
+                }
+            }
             else
             {
                 _awaitableError = new InvalidOperationException("Concurrent operations are not supported.");
 
-                Interlocked.Exchange(ref _awaitableState, _awaitableIsCompleted);
-                _manualResetEvent.Set();
+                Interlocked.Exchange(ref _awaitableState, _completed);
+                _blockingEvent.Set();
 
                 ThreadPool.QueueUserWorkItem(o => continuation());
                 ThreadPool.QueueUserWorkItem(o => awaitableState());
@@ -153,19 +232,17 @@ namespace RioSharp
 
         public RioBufferSegment GetResult()
         {
+            Debug.Assert(InUse);
             if (!IsCompleted)
-            {
-                _manualResetEvent.Wait();
-            }
+                _blockingEvent.Wait();
+
+            Interlocked.Exchange(ref _awaitableState, _completed);
+            _completeEvent.Set();
+
             var error = _awaitableError;
             if (error != null)
-            {
-                if (error is TaskCanceledException || error is InvalidOperationException)
-                {
-                    throw error;
-                }
-                throw new IOException(error.Message, error);
-            }
+                throw error;
+
             return this;
         }
 

@@ -53,7 +53,7 @@ namespace Sandbox
                 while (true)
                     s.BeginReceive().GetResult().Dispose();
 
-                s.Dispose();
+                //s.Dispose();
             };
             while (running)
             {
@@ -65,7 +65,7 @@ namespace Sandbox
                     while (true)
                         socket.Send(new byte[] { 1, 2, 3 });
 
-                    operations++;
+                    
                 }
                 catch (Exception e)
                 {

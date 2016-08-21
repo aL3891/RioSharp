@@ -47,9 +47,7 @@ namespace RioSharp
         //    WinSock.ThrowLastWSAError();
 
         //}
-
-
-
+        
         public unsafe void JoinMulticastGroup(IPAddress groupAdress, uint interfaceIndex = 0)
         {
             var adress = groupAdress.GetAddressBytes();

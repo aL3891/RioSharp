@@ -56,6 +56,7 @@ namespace RioSharp
         {
             var tmp = _currentInputSegment;
             _currentInputSegment = _nextInputSegment;
+            _currentInputSegment.GetResult();
             _nextInputSegment = tmp;
             if (_currentInputSegment.CurrentContentLength != 0)
                 _socket.BeginReceive(_nextInputSegment);
@@ -88,8 +89,8 @@ namespace RioSharp
 
         public void Dispose()
         {
-            _nextInputSegment.DisposeWhenComplete();
-            _currentInputSegment.DisposeWhenComplete();
+            _nextInputSegment.Dispose();
+            _currentInputSegment.Dispose();
         }
     }
 

@@ -114,12 +114,7 @@ namespace RioSharp
         public unsafe RioBufferSegment PreAllocateWrite(byte[] buffer)
         {
             var currentSegment = SendBufferPool.GetBuffer();
-            fixed (byte* p = &buffer[0])
-            {
-                Unsafe.CopyBlock(currentSegment.dataPointer, p, (uint)buffer.Length);
-            }
-
-            currentSegment.SegmentPointer->Length = buffer.Length;
+            currentSegment.Write(buffer);
             return currentSegment;
         }
 
@@ -157,10 +152,12 @@ namespace RioSharp
                 else
                 {
                     var error = Marshal.GetLastWin32Error();
-                    if (error != 0 && error != 735)
-                        throw new Win32Exception(error);
-                    else
+                    if (error == 0 || error == 735)
                         break;
+                    else if (error == 126)
+                        continue;
+                    else
+                        throw new Win32Exception(error);
                 }
             }
         }
@@ -197,10 +194,13 @@ namespace RioSharp
                 {
                     var error = Marshal.GetLastWin32Error();
 
-                    if (error != 0 && error != Kernel32.ERROR_ABANDONED_WAIT_0)
-                        throw new Win32Exception(error);
-                    else
+
+                    if (error == 0 || error == Kernel32.ERROR_ABANDONED_WAIT_0)
                         break;
+                    else if (error == 126)
+                        continue;
+                    else
+                        throw new Win32Exception(error);
                 }
             }
         }

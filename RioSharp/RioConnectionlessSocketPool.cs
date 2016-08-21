@@ -48,6 +48,7 @@ namespace RioSharp
                     WinSock.ThrowLastWSAError();
             }
 
+            socket.SetInUse(true);
             return socket;
         }
     }

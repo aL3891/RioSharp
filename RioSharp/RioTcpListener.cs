@@ -43,7 +43,11 @@ namespace RioSharp
                 WinSock.ThrowLastWSAError();
             }
             else
+            {
+                acceptSocket.SetInUse(true);
                 OnAccepted(acceptSocket);
+            }
+                
         }
 
         public void Listen(IPEndPoint localEP, int backlog)
@@ -91,6 +95,7 @@ namespace RioSharp
                     if (res.SetSocketOption(SOL_SOCKET_SocketOptions.SO_UPDATE_ACCEPT_CONTEXT, &apa, IntPtr.Size) != 0)
                         WinSock.ThrowLastWSAError();
 
+                    res.SetInUse(true);
                     OnAccepted(res);
                 }
                 else

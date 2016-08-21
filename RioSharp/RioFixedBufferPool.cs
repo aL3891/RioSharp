@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 
@@ -18,15 +19,21 @@ namespace RioSharp
         {
             AllSegments = new RioBufferSegment[segmentCount];
             TotalLength = segmentCount * segmentLength;
-            BufferPointer = Kernel32.VirtualAlloc(IntPtr.Zero, (uint)TotalLength, 0x00001000 | 0x00002000, 0x04);           
+            BufferPointer = Kernel32.VirtualAlloc(IntPtr.Zero, (uint)TotalLength, 0x00001000 | 0x00002000, 0x04);
             _segmentpointer = Kernel32.VirtualAlloc(IntPtr.Zero, (uint)(Marshal.SizeOf<RIO_BUF>() * segmentCount), 0x00001000 | 0x00002000, 0x04);
 
             for (int i = 0; i < segmentCount; i++)
             {
-                var b = new RioBufferSegment(this, BufferPointer ,_segmentpointer, i, segmentLength );
+                var b = new RioBufferSegment(this, BufferPointer, _segmentpointer, i, segmentLength);
                 AllSegments[i] = b;
                 _availableSegments.Enqueue(b);
             }
+        }
+
+        [Conditional("DEBUG")]
+        void SetInUse(RioBufferSegment buf, bool value)
+        {
+            buf.InUse = value;
         }
 
         public void SetBufferId(IntPtr id)
@@ -43,13 +50,17 @@ namespace RioSharp
             do
             {
                 if (_availableSegments.TryDequeue(out buf))
+                {
+                    SetInUse(buf, true);
                     return buf;
+                }
+
             } while (true);
         }
         
-
         public void ReleaseBuffer(RioBufferSegment buffer)
         {
+            SetInUse(buffer, false);
             _availableSegments.Enqueue(buffer);
         }
 

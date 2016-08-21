@@ -27,8 +27,7 @@ namespace RioSharp
                 _freeSockets.Enqueue(s);
             }
         }
-
-
+        
         internal override void InitializeSocket(RioConnectionOrientedSocket socket)
         {
             socket.SetLoopbackFastPath(true);
@@ -62,6 +61,7 @@ namespace RioSharp
             {
                 TaskCompletionSource<RioSocket> r;
                 activeSockets.TryAdd(socket.GetHashCode(), socket);
+                socket.SetInUse(true);
                 if (socket.SetSocketOption(SOL_SOCKET_SocketOptions.SO_UPDATE_CONNECT_CONTEXT, (void*)0, 0) != 0)
                     WinSock.ThrowLastWSAError();
 
@@ -116,6 +116,7 @@ namespace RioSharp
             RioConnectionOrientedSocket s;
             if (_freeSockets.TryDequeue(out s))
             {
+                s.SetInUse(true);
                 var tcs = new TaskCompletionSource<RioSocket>();
                 _ongoingConnections.TryAdd(s, tcs);
                 uint bytesSent;

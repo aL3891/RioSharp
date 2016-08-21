@@ -4,6 +4,7 @@ using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RioSharp.BenchClient
@@ -34,6 +35,8 @@ namespace RioSharp.BenchClient
             Console.WriteLine("Pipeline depth: " + pipeLineDeph);
             Console.WriteLine("Target: " + uri);
 
+            Task.Delay(span).ContinueWith(t => { Console.WriteLine("should be done by now..."); });
+
             var _requestBytes = Encoding.ASCII.GetBytes($"GET {uri.PathAndQuery} HTTP/1.1\r\nHost: {uri.Host}:{uri.Port}\r\n\r\n");
 
             reqz = new byte[pipeLineDeph + 1][];
@@ -44,7 +47,7 @@ namespace RioSharp.BenchClient
             }
 
             sendPool = new RioFixedBufferPool(10 * connections, _requestBytes.Length * pipeLineDeph);
-            clientPool = new RioTcpClientPool(sendPool, new RioFixedBufferPool(10 * connections, (256 * pipeLineDeph)), (uint)connections);
+            clientPool = new RioTcpClientPool(sendPool, new RioFixedBufferPool(10 * connections, (256 * pipeLineDeph)), (uint)connections,4096,4096);
             Console.WriteLine("Benchmarking...");
 
             timer.Start();
@@ -145,11 +148,10 @@ namespace RioSharp.BenchClient
 
             state.tcs.SetResult(state);
         }
-
-
+        
         public unsafe static void doit(byte* input, int length)
         {
-            byte v = 0x20;
+            //byte v = 0x20;
             int res = -1;
             var index = 0;
             Vector<int> t;
@@ -235,10 +237,12 @@ namespace RioSharp.BenchClient
                         connection = await clientPool.Connect(uri);
                         connection.SetLinger(0);
                         stream = new RioStream(connection);
+
+                        //stream.Dispose();
                     }
                     catch (Exception e)
                     {
-                        //Debug.WriteLine(e.Message);
+                        Debug.WriteLine(e.Message);
                         continue;
                     }
                 }
@@ -296,6 +300,7 @@ namespace RioSharp.BenchClient
                     connection.Dispose();
                     connection = null;
                     stream = null;
+                    Thread.Sleep(100);
                 }
             }
             stream?.Dispose();

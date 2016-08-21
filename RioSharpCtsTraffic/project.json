@@ -9,7 +9,7 @@
       "type": "platform",
       "version": "1.0.0-rc2-3002702"
     },
-    "RioSharp": "0.0.5-alpha"
+    "RioSharp": "0.0.9-beta"
   },
 
   "frameworks": {

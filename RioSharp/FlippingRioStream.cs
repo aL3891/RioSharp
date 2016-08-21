@@ -7,14 +7,14 @@ using System.Threading.Tasks;
 
 namespace RioSharp
 {
-    public class RioStream : Stream
+    internal class FlippingRioStream : Stream
     {
         RioSocket _socket;
         RioBufferSegment _currentInputSegment;
         RioBufferSegment _nextInputSegment = null;
         RioBufferSegment _currentOutputSegment;
         int _bytesReadInCurrentSegment = 0;
-        int _remainingSpaceInOutputSegment = 0;
+        int _remainingSpaceInOutputSegment = 0, _currentContentLength = 0;
         int _outputSegmentTotalLength;
         TaskCompletionSource<int> _readtcs;
         byte[] _readBuffer;
@@ -22,28 +22,38 @@ namespace RioSharp
         int _readCount;
         Action _getNewSegmentDelegateDelegate;
         WaitCallback _waitCallback;
+        bool disposing = false;
 
-        public RioStream(RioSocket socket)
+        public FlippingRioStream(RioSocket socket)
         {
             _socket = socket;
             _currentInputSegment = _socket.ReceiveBufferPool.GetBuffer();
             _currentOutputSegment = _socket.SendBufferPool.GetBuffer();
             _nextInputSegment = _socket.ReceiveBufferPool.GetBuffer();
+
+            if (_nextInputSegment._awaitableState != RioBufferSegment._notStarted)
+            {
+
+            }
+
             _getNewSegmentDelegateDelegate = GetNewSegmentDelegateWrapper;
+
             _outputSegmentTotalLength = _currentOutputSegment.TotalLength;
             _remainingSpaceInOutputSegment = _outputSegmentTotalLength;
             _socket.BeginReceive(_nextInputSegment);
+
             _waitCallback = WaitCallbackcallback;
         }
 
-        public void Flush(bool disposing)
+
+        void Flush(bool disposing)
         {
             if (_remainingSpaceInOutputSegment == 0)
                 _socket.Flush();
             else if (_remainingSpaceInOutputSegment == _outputSegmentTotalLength)
             {
-                _currentOutputSegment.Dispose();
-                return;
+                if (disposing)
+                    _currentOutputSegment.Dispose();
             }
             else
             {
@@ -51,17 +61,18 @@ namespace RioSharp
                 {
                     _currentOutputSegment.SegmentPointer->Length = _outputSegmentTotalLength - _remainingSpaceInOutputSegment;
                 }
-                _socket.SendAndDispose(_currentOutputSegment, RIO_SEND_FLAGS.NONE);
-                if (!disposing)
+                _socket.Send(_currentOutputSegment, RIO_SEND_FLAGS.NONE);
+                _currentOutputSegment.Dispose();
+                if (disposing)
+                {
+                    _remainingSpaceInOutputSegment = 0;
+                    _outputSegmentTotalLength = 0;
+                }
+                else
                 {
                     _currentOutputSegment = _socket.SendBufferPool.GetBuffer();
                     _outputSegmentTotalLength = _currentOutputSegment.TotalLength;
                     _remainingSpaceInOutputSegment = _outputSegmentTotalLength;
-                }
-                else
-                {
-                    _remainingSpaceInOutputSegment = 0;
-                    _outputSegmentTotalLength = 0;
                 }
             }
         }
@@ -73,10 +84,13 @@ namespace RioSharp
 
         int GetNewSegment()
         {
-            if (_nextInputSegment.CurrentContentLength == 0)
+            _nextInputSegment.GetResult();
+            _currentContentLength = _nextInputSegment.CurrentContentLength;
+            if (disposing || _currentContentLength == 0)
             {
                 _nextInputSegment.Dispose();
                 _currentInputSegment.Dispose();
+                toCopy = 0;
                 return 0;
             }
             else
@@ -89,18 +103,40 @@ namespace RioSharp
 
         int CompleteRead()
         {
-            var toCopy = _currentInputSegment.Read(_readBuffer, _readoffset);
+            toCopy = _currentContentLength - _bytesReadInCurrentSegment;
+            if (toCopy > _readCount)
+                toCopy = _readCount;
+
+            unsafe
+            {
+                fixed (byte* p = &_readBuffer[_readoffset])
+                    Unsafe.CopyBlock(p, _currentInputSegment.dataPointer + _bytesReadInCurrentSegment, (uint)toCopy);
+            }
+
             _bytesReadInCurrentSegment += toCopy;
+
+
+            Interlocked.Decrement(ref pendingreads);
             return toCopy;
         }
 
+        int pendingreads = 0;
+        private int toCopy;
+
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
+
+            Interlocked.Increment(ref pendingreads);
+
+            if (pendingreads > 1)
+            {
+
+            }
             _readBuffer = buffer;
             _readoffset = offset;
             _readCount = count;
 
-            if (_nextInputSegment.CurrentContentLength == _bytesReadInCurrentSegment)
+            if (_currentContentLength == _bytesReadInCurrentSegment)
             {
                 if (_nextInputSegment.IsCompleted)
                     return Task.FromResult(GetNewSegment());
@@ -118,11 +154,19 @@ namespace RioSharp
 
         void WaitCallbackcallback(object o)
         {
-            _readtcs.SetResult(GetNewSegment());
+            //dispose hinner inte färdigt av nån anledning
+
+
+            _readtcs.SetResult(toCopy);
         }
 
         void GetNewSegmentDelegateWrapper()
         {
+            if (_readtcs.Task.IsCompleted)
+            {
+
+            }
+            GetNewSegment();
             ThreadPool.QueueUserWorkItem(_waitCallback);
         }
 
@@ -137,7 +181,8 @@ namespace RioSharp
                 {
                     var tmp = Interlocked.Exchange(ref _currentOutputSegment, null);
                     tmp.SegmentPointer->Length = _outputSegmentTotalLength;
-                    _socket.SendAndDispose(tmp, RIO_SEND_FLAGS.DEFER); // | RIO_SEND_FLAGS.DONT_NOTIFY
+                    _socket.Send(tmp, RIO_SEND_FLAGS.DEFER); // | RIO_SEND_FLAGS.DONT_NOTIFY
+                    tmp.Dispose();
                     while (!_socket.SendBufferPool.TryGetBuffer(out _currentOutputSegment))
                         _socket.Flush();
                     _outputSegmentTotalLength = _currentOutputSegment.TotalLength;
@@ -145,7 +190,15 @@ namespace RioSharp
                     continue;
                 }
 
-                var toWrite = _currentOutputSegment.Write(buffer);
+                var toWrite = count - writtenFromBuffer;
+                if (toWrite > _remainingSpaceInOutputSegment)
+                    toWrite = _remainingSpaceInOutputSegment;
+
+                fixed (byte* p = &buffer[offset])
+                {
+                    Unsafe.CopyBlock(_currentOutputSegment.dataPointer + (_outputSegmentTotalLength - _remainingSpaceInOutputSegment), p + writtenFromBuffer, (uint)toWrite);
+                }
+
                 writtenFromBuffer += toWrite;
                 _remainingSpaceInOutputSegment -= toWrite;
 
@@ -160,8 +213,11 @@ namespace RioSharp
 
         protected override void Dispose(bool disposing)
         {
-            Flush(false);
+            if (this.disposing)
+                return;
+            this.disposing = true;
 
+            Flush(true);
             _nextInputSegment?.Dispose();
             _currentInputSegment?.Dispose();
         }
@@ -175,37 +231,5 @@ namespace RioSharp
         public override void SetLength(long value) { throw new NotImplementedException(); }
 
     }
-
-    internal class PoolingLinkedList<T>
-    {
-        Node _first = null, _last = null;
-        Node _firstFree = null, _lastFree = null;
-
-        public void Push(object value)
-        {
-            var n = Interlocked.Exchange(ref _firstFree, _firstFree.Next);
-            var l = Interlocked.Exchange(ref _last.Next, n);
-            while (l != null)
-                l = Interlocked.Exchange(ref _last.Next, n);
-        }
-
-        public T Pop()
-        {
-            T res;
-            var r = Interlocked.Exchange(ref _first, _first.Next);
-            res = r.value;
-            var l = Interlocked.Exchange(ref _lastFree.Next, r);
-            while (l != null)
-                l = Interlocked.Exchange(ref _lastFree.Next, r);
-
-            return res;
-        }
-
-        public class Node
-        {
-            public Node Next = null;
-            public Node prev = null;
-            public T value = default(T);
-        }
-    }
+    
 }

@@ -126,7 +126,7 @@ namespace RioSharp
         internal unsafe virtual void BeginRecycle(RioConnectionOrientedSocket socket, bool force)
         {
             RioConnectionOrientedSocket c;
-            var apa = activeSockets.TryRemove(socket.GetHashCode(), out c);
+            activeSockets.TryRemove(socket.GetHashCode(), out c);
 
             if (force || socket.Socket == IntPtr.Zero || socket.pendingRecives > 0 || socket.pendingSends > 0)
             {
@@ -139,7 +139,7 @@ namespace RioSharp
             else
             {
                 disconnectingSockets.TryAdd(socket.GetHashCode(), socket);
-                socket.disconnectStartTime = RioSocketPool.CurrentTime;
+                socket.disconnectStartTime = CurrentTime;
 
                 socket._overlapped->Status = 1;
                 if (!RioStatic.DisconnectEx(socket.Socket, socket._overlapped, WinSock.TF_REUSE_SOCKET, 0))

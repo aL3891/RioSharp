@@ -735,7 +735,7 @@ namespace RioSharp
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = false)]
         [SuppressUnmanagedCodeSecurity]
-        internal delegate Int32 RIONotify([In] IntPtr CQ);
+        internal delegate int RIONotify([In] IntPtr CQ);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         [SuppressUnmanagedCodeSecurity]
@@ -767,7 +767,7 @@ namespace RioSharp
             var result = setsockopt(socket, IPPROTO_TCP, TCP_NODELAY, (char*)&True, 4);
             if (result != 0)
             {
-                var error = WinSock.WSAGetLastError();
+                var error = WSAGetLastError();
                 WinSock.WSACleanup();
                 throw new Exception(String.Format("ERROR: setsockopt TCP_NODELAY returned {0}", error));
             }
@@ -778,7 +778,7 @@ namespace RioSharp
 
             if (result != 0)
             {
-                var error = WinSock.WSAGetLastError();
+                var error = WSAGetLastError();
                 WinSock.WSACleanup();
                 throw new Exception(String.Format("ERROR: WSAIoctl SIO_LOOPBACK_FAST_PATH returned {0}", error));
             }
@@ -790,7 +790,7 @@ namespace RioSharp
 
             if (result != 0)
             {
-                var error = WinSock.WSAGetLastError();
+                var error = WSAGetLastError();
                 WinSock.WSACleanup();
                 throw new Exception(String.Format("ERROR: RIOInitalize returned {0}", error));
             }
@@ -876,7 +876,7 @@ namespace RioSharp
         internal static extern SocketError WSAStartup([In] short wVersionRequested, [Out] out WSAData lpWSAData);
 
         [DllImport(WS2_32, SetLastError = true, CharSet = CharSet.Ansi)]
-        internal static extern IntPtr WSASocket([In] ADDRESS_FAMILIES af, [In] SOCKET_TYPE type, [In] PROTOCOL protocol, [In] IntPtr lpProtocolInfo, [In] Int32 group, [In] SOCKET_FLAGS dwFlags);
+        internal static extern IntPtr WSASocket([In] ADDRESS_FAMILIES af, [In] SOCKET_TYPE type, [In] PROTOCOL protocol, [In] IntPtr lpProtocolInfo, [In] int group, [In] SOCKET_FLAGS dwFlags);
 
         [DllImport(WS2_32, SetLastError = true)]
         internal static extern ushort htons([In] ushort hostshort);
@@ -898,11 +898,11 @@ namespace RioSharp
         internal static extern IntPtr accept(IntPtr s, ref sockaddr_in addr, ref int addrlen);
 
         [DllImport(WS2_32)]
-        internal static extern Int32 WSAGetLastError();
+        internal static extern int WSAGetLastError();
 
         internal static int ThrowLastWSAError()
         {
-            var error = WinSock.WSAGetLastError();
+            var error = WSAGetLastError();
 
             if (error != 0 && error != Kernel32.ERROR_IO_PENDING)
             {
@@ -913,7 +913,7 @@ namespace RioSharp
         }
 
         [DllImport(WS2_32, SetLastError = true)]
-        internal static extern Int32 WSACleanup();
+        internal static extern int WSACleanup();
 
         [DllImport(WS2_32, SetLastError = true)]
         internal static extern int closesocket(IntPtr s);
@@ -929,10 +929,7 @@ namespace RioSharp
         internal const uint SIO_GET_MULTIPLE_EXTENSION_FUNCTION_POINTER = IOC_INOUT | IOC_WS2 | 36;
         internal const uint SIO_LOOPBACK_FAST_PATH = IOC_IN | IOC_VENDOR | 16;
         internal const int TCP_NODELAY = 0x0001;
-
         internal const uint TF_REUSE_SOCKET = 0x02;
-
-
         internal const int IPPROTO_IP = 0;
         internal const int IPPROTO_IPV6 = 41;
         //internal const int IPPROTO_RM = 6;
@@ -943,6 +940,6 @@ namespace RioSharp
         //internal const int SOL_IRLMP = 6;
         internal const int SOL_SOCKET = 0xffff;
 
-        internal static int WSAENOTCONN= 10057;
+        internal static int WSAENOTCONN = 10057;
     }
 }

@@ -1,16 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26228.9
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{30F29216-EED7-44CB-BF5B-16D5017A00A1}"
-	ProjectSection(SolutionItems) = preProject
-		global.json = global.json
-	EndProjectSection
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "RioSharp", "RioSharp\RioSharp.xproj", "{36DDDB67-1DA4-4670-9D20-605AA2EAF1D3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RioSharp", "RioSharp\RioSharp.csproj", "{36DDDB67-1DA4-4670-9D20-605AA2EAF1D3}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "RioSharpCtsTraffic", "RioSharpCtsTraffic\RioSharpCtsTraffic.xproj", "{67365BAE-4F1B-43B3-AD57-86551B330889}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RioSharpCtsTraffic", "RioSharpCtsTraffic\RioSharpCtsTraffic.csproj", "{67365BAE-4F1B-43B3-AD57-86551B330889}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RioSharp.BenchClient46", "RioSharp.BenchClient46\RioSharp.BenchClient46.csproj", "{D3344BC8-690E-4225-AB5D-5E4B76DEFE6E}"
 EndProject
@@ -18,18 +15,15 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RioSharp.BenchServer46", "R
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RioSharp46", "RioSharp46\RioSharp46.csproj", "{EE898441-8293-41CA-B9D9-E4B45BCEAD44}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "UdpSample", "UdpSample\UdpSample.xproj", "{8DAD64B7-CB5B-4F8D-817C-7919EE81A42F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UdpSample", "UdpSample\UdpSample.csproj", "{8DAD64B7-CB5B-4F8D-817C-7919EE81A42F}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "RioSharp.BenchServer", "RioSharp.BenchServer\RioSharp.BenchServer.xproj", "{9E963954-4CE3-4562-96C7-DBDB980E45A6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RioSharp.BenchServer", "RioSharp.BenchServer\RioSharp.BenchServer.csproj", "{9E963954-4CE3-4562-96C7-DBDB980E45A6}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "RioSharp.BenchClient", "RioSharp.BenchClient\RioSharp.BenchClient.xproj", "{4F27E9F4-2EF9-400A-B15F-97C03846542F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RioSharp.BenchClient", "RioSharp.BenchClient\RioSharp.BenchClient.csproj", "{4F27E9F4-2EF9-400A-B15F-97C03846542F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sandbox", "Sandbox\Sandbox.csproj", "{4661882C-2A4D-4D1E-B5A0-7DD30BE2834B}"
 EndProject
 Global
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU

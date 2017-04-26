@@ -3,6 +3,9 @@ A .net wrapper around the registered io winsock extensions
 
 This was inspired (and based on) by the work Ben Adams did over at the asp.net 5 benchmarking repo allthough significant changes have now been made. I wanted to create something similar to the .net socket classes while still retaining the perf of rio.
 
+## Status
+This library is largley obsoleted by the pipelines work happening in the dotnet/corefxlab repo. The piplines library is more flexible and uses a lot more flexible primitives than riosharp, and there are RIO implementations on pipelines in the works as well. This repo still has support for udp (and raw tcp) that is not yet available in pipelines though so i'm leaving it as a reference if nothing else.
+
 ## Installation
 Riosharp is on nuget:
     

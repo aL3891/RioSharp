@@ -1,25 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
-    <TargetFramework>netcoreapp1.0</TargetFramework>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <AssemblyName>UdpSample</AssemblyName>
     <OutputType>Exe</OutputType>
-    <PackageId>UdpSample</PackageId>
-    <UserSecretsId>aspnet-UdpSample-20160630012057</UserSecretsId>
-    <RuntimeFrameworkVersion>1.0.4</RuntimeFrameworkVersion>
-    <PackageTargetFallback>$(PackageTargetFallback);dnxcore50</PackageTargetFallback>
-    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
-    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
-    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
   </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\RioSharp\RioSharp.csproj" />
   </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="system.net.networkinformation" Version="4.0.10-beta-23123" />
-  </ItemGroup>
-
 </Project>
